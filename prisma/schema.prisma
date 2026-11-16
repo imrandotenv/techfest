@@ -1,0 +1,136 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  student
+  college
+  admin
+}
+
+enum VerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum NoteCategory {
+  LECTURE_NOTE
+  MAKAUT_PYQ
+  LAB_MANUAL
+  SYLLABUS_COPY
+}
+
+model UserProfile {
+  id            String       @id // Clerk User ID (e.g. user_2...)
+  email         String       @unique
+  fullName      String
+  role          UserRole     @default(student)
+  studentId     String?      // e.g. "SH2026001"
+  department    String?      // e.g. "CSE", "ECE"
+  semester      Int?         // 1 to 8
+  avatarUrl     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  notesUploaded NoteItem[]   @relation("UserNotes")
+  forumPosts    ForumPost[]
+  forumReplies  ForumReply[]
+  notesVerified NoteItem[]   @relation("VerifierNotes")
+
+  @@index([role])
+  @@index([department])
+}
+
+model NoteItem {
+  id              String             @id @default(cuid())
+  title           String
+  subjectCode     String             // e.g. "PCC-CS301", "ESC301"
+  subjectName     String
+  department      String             // e.g. "CSE"
+  semester        Int                // 1-8
+  category        NoteCategory       @default(LECTURE_NOTE)
+  academicYear    String             // e.g. "2026-2027"
+  fileUrl         String
+  fileSize        Int                // in bytes
+  downloadsCount  Int                @default(0)
+  status          VerificationStatus @default(pending)
+  
+  uploaderId      String
+  uploader        UserProfile        @relation("UserNotes", fields: [uploaderId], references: [id], onDelete: Cascade)
+  
+  verifiedById    String?
+  verifiedBy      UserProfile?       @relation("VerifierNotes", fields: [verifiedById], references: [id])
+  verifiedAt      DateTime?
+  
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([subjectCode])
+  @@index([department, semester])
+  @@index([status])
+}
+
+model ForumPost {
+  id           String       @id @default(cuid())
+  title        String
+  content      String       @db.Text
+  category     String       // "Academic", "TechFest", "Campus Life", "Placements", "Hostel"
+  upvotesCount Int          @default(0)
+  authorId     String
+  author       UserProfile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  isPinned     Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  replies      ForumReply[]
+  upvotes      PostUpvote[]
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ForumReply {
+  id               String       @id @default(cuid())
+  content          String       @db.Text
+  postId           String
+  post             ForumPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId         String
+  author           UserProfile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  isOfficialAnswer Boolean      @default(false)
+  upvotesCount     Int          @default(0)
+  parentId         String?
+  parent           ForumReply?  @relation("NestedReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  children         ForumReply[] @relation("NestedReplies")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([postId])
+}
+
+model PostUpvote {
+  id        String    @id @default(cuid())
+  postId    String
+  userId    String
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model CampusFacility {
+  id           String   @id @default(cuid())
+  category     String   // "department", "hostel", "bus", "emergency", "zone"
+  name         String
+  building     String?
+  description  String   @db.Text
+  inCharge     String?
+  contactPhone String?
+  contactEmail String?
+  meta         Json?
+  createdAt    DateTime @default(now())
+}

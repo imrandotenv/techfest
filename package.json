@@ -9,9 +9,18 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.10.0",
+    "@google/genai": "^3.3.0",
+    "@prisma/client": "^6.19.3",
+    "@types/three": "^0.187.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.73.0",
     "next": "16.4.6",
+    "pdf-lib": "^1.17.1",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
@@ -20,6 +29,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "prisma": "^6.19.3",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
   }
