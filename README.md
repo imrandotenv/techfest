@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SanakaHub (Techfest Project)
+> **Centralized Academic Vault, Campus Directory & Student Utility Portal** for Sanaka Educational Trust Group of Institutions (SETGOI) Durgapur (MAKAUT Affiliated).
 
-## Getting Started
+Built with **Next.js 16 (App Router + Turbopack)**, **TypeScript**, **Tailwind CSS**, **Clerk Authentication (3-Role RBAC)**, and **Swiss Editorial Minimalism**.
 
-First, run the development server:
+---
+
+## ⚡ Core Features
+
+- **Notes & Solved PYQ Vault (`/notes`)**:
+  - Semester-wise (S1–S8) & branch-specific (CSE, ECE, EE, ME, CE) MAKAUT lecture notes and previous year question papers.
+  - Live search by subject code (e.g. `PCC-CS301`), module tag filtering, and inline PDF preview/download.
+  - Faculty note upload and moderation workflows.
+
+- **Student Q&A & Discussion Forum (`/forum`)**:
+  - Categorized threads covering Placements, Academics, Hackathons, and Coding.
+  - Real-time upvoting, nested replies, verified answer pins, and faculty badges.
+
+- **Campus Directory & Transit (`/campus`)**:
+  - Comprehensive department listings and faculty office hours.
+  - Hostel directory with warden contacts and amenities.
+  - Daily bus transit schedules (pickup and evening drop timings across Durgapur & Asansol).
+  - 24/7 Campus Medical & Anti-Ragging Emergency SOS helpline (`1800-180-5522`).
+
+- **Academic Utilities Suite (`/tools`)**:
+  - Real-time **MAKAUT 10-Point SGPA & CGPA Calculator** with official grading scale reference.
+  - Official institution notice board with priority tags (`Urgent`, `Exam`, `Notice`).
+  - Browser-side PDF merger for assignment submissions.
+  - Academic calendar roadmap with semester milestones.
+
+- **Clerk Authentication & 3-Role RBAC**:
+  - Seamless authentication via `@clerk/nextjs` with Light Mode styling.
+  - Three distinct permission tiers: `student`, `college` (faculty), and `admin` (super-admin).
+  - Admin management console (`/dashboard/admin`) for approving notes and assigning roles.
+  - Faculty verification dashboard (`/dashboard/college`) for managing departmental resources.
+
+- **Swiss Editorial Minimalist Design**:
+  - Pure `#FAFAFA` canvas background with zero heavy card wrappers.
+  - Floating glassmorphic navbar on desktop (`bg-white/90 backdrop-blur-xl border border-zinc-200/80`).
+  - Mobile bottom thumb-zone dock (`bottom-4`, `rounded-full`) with integrated slide-up drawer.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone & Install Dependencies
+
+```bash
+git clone https://github.com/imrandotenv/techfest.git
+cd techfest
+npm install
+```
+
+### 2. Configure Environment Variables
+
+Create a `.env.local` file in the root directory based on `.env.example`:
+
+```env
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+# Super-Admin Whitelist (comma-separated emails)
+SUPER_ADMIN_EMAILS=mail@ceimran.in
+
+# Database URL (PostgreSQL / Supabase / Neon)
+DATABASE_URL="postgresql://postgres:password@localhost:5432/sanakahub?schema=public"
+
+# Google Gemini API (Optional for AI Companion)
+GEMINI_API_KEY=AIzaSy...
+```
+
+### 3. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to explore the portal.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS, Lucide React Icons
+- **Auth & RBAC**: [Clerk](https://clerk.com/)
+- **Database / ORM**: Prisma ORM & PostgreSQL
+- **Deployment**: Vercel / Node.js runtime
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📜 License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Created for Sanaka Educational Trust Group of Institutions (SETGOI) Durgapur. Distributed under the MIT License.
