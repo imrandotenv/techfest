@@ -228,6 +228,7 @@ export function NotesVaultView() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         resultCount={filteredNotes.length}
+        onOpenUpload={() => setIsUploadOpen(true)}
       />
 
       {/* Toast Notification */}

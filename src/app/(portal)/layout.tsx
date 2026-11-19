@@ -3,5 +3,5 @@ export default function PortalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="pt-20 md:pt-24">{children}</div>;
+  return <div className="pt-24 md:pt-28">{children}</div>;
 }

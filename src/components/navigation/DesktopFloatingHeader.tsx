@@ -26,7 +26,7 @@ export function DesktopFloatingHeader() {
   ];
 
   return (
-    <header className="hidden md:flex fixed top-5 left-1/2 -translate-x-1/2 z-50 items-center gap-8 px-5 py-2.5 rounded-full bg-white/90 backdrop-blur-xl border border-zinc-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.04)] pointer-events-auto">
+    <header className="hidden md:flex fixed top-5 left-1/2 -translate-x-1/2 z-50 items-center gap-8 px-5 py-2.5 rounded-full bg-white/90 backdrop-blur-xl border border-zinc-200/90 shadow-[0_8px_30px_rgba(0,0,0,0.06)] pointer-events-auto">
       {/* Brand Mark */}
       <Link
         href="/"
