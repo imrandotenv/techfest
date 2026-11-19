@@ -119,6 +119,16 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/calendar" className="hover:text-[#0F172A] transition-colors">
+                  Academic Calendar
+                </Link>
+              </li>
+              <li>
+                <Link href="/notices" className="hover:text-[#0F172A] transition-colors">
+                  Priority Notice Board
+                </Link>
+              </li>
+              <li>
                 <Link href="/dashboard/college" className="hover:text-[#0F172A] transition-colors">
                   Faculty Console
                 </Link>
@@ -147,8 +157,12 @@ export function Footer() {
               </a>
             </span>
             <span>•</span>
-            <Link href="/notes" className="hover:text-[#0F172A] transition-colors">
-              Terms & Privacy
+            <Link href="/terms" className="hover:text-[#0F172A] transition-colors">
+              Terms of Service
+            </Link>
+            <span>•</span>
+            <Link href="/privacy" className="hover:text-[#0F172A] transition-colors">
+              Privacy Policy
             </Link>
           </div>
         </div>

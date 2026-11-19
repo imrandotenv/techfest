@@ -128,6 +128,9 @@ export function CampusDetailDrawer({
       onClick={onClose}
     >
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="campus-drawer-title"
         className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col border-l border-[#E2E8F0] animate-in slide-in-from-right duration-250 ease-out"
         onClick={(e) => e.stopPropagation()}
       >
@@ -139,7 +142,7 @@ export function CampusDetailDrawer({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-[#0F172A] font-display">
+                <h2 id="campus-drawer-title" className="text-base sm:text-lg font-bold text-[#0F172A] font-display">
                   {meta.title}
                 </h2>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${meta.badgeColor}`}>

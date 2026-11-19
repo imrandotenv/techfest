@@ -32,12 +32,17 @@ export function NotePreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-xs">
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="note-preview-title"
+        className="bg-white border border-zinc-200 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+      >
         
         {/* Modal Top Bar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-zinc-200 bg-zinc-50">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-zinc-900 text-white">
+            <span id="note-preview-title" className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-zinc-900 text-white">
               {note.subjectCode}
             </span>
             <span className="text-xs text-zinc-500 font-mono">

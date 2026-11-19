@@ -98,6 +98,9 @@ export function CreatePostModal({
       onClick={onClose}
     >
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-post-title"
         className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-[#E2E8F0] animate-in slide-in-from-right duration-250 ease-out"
         onClick={(e) => e.stopPropagation()}
       >
@@ -108,7 +111,7 @@ export function CreatePostModal({
               <Plus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-[#0F172A] font-display">
+              <h2 id="create-post-title" className="text-base sm:text-lg font-bold text-[#0F172A] font-display">
                 Ask a Question
               </h2>
               <p className="text-xs text-[#475569] font-mono">

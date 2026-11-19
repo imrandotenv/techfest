@@ -43,11 +43,11 @@ export function NotesFilterBar({
   return (
     <div className="sticky top-20 z-30 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-[#E2E8F0] py-3 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Single-Line Clean Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
+        {/* Single-Line Clean Filter Bar with Mobile Wrap Protection */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[220px] sm:min-w-[280px]">
+          <div className="relative w-full sm:flex-1 sm:min-w-[240px]">
             <Search className="w-4 h-4 text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -56,6 +56,7 @@ export function NotesFilterBar({
                 onFilterChange({ ...filters, searchQuery: e.target.value })
               }
               placeholder="Search PCC-CS301, topic, or faculty..."
+              aria-label="Search lecture notes, PYQs, and syllabus"
               className="w-full h-9 pl-9 pr-8 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans"
             />
             {filters.searchQuery && (
@@ -64,6 +65,7 @@ export function NotesFilterBar({
                 onClick={() => onFilterChange({ ...filters, searchQuery: '' })}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#0F172A]"
                 title="Clear search"
+                aria-label="Clear search input"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -71,14 +73,15 @@ export function NotesFilterBar({
           </div>
 
           {/* Controls: Branch + Semester + Category Dropdowns + + Upload */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
             {/* Branch Dropdown */}
             <select
               value={filters.branch}
               onChange={(e) =>
                 onFilterChange({ ...filters, branch: e.target.value as any })
               }
-              className="h-9 px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs"
+              aria-label="Filter by engineering branch"
+              className="flex-1 sm:flex-none h-9 px-2.5 sm:px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-0"
             >
               {BRANCHES.map((b) => (
                 <option key={b.code} value={b.code}>
@@ -96,7 +99,8 @@ export function NotesFilterBar({
                   semester: e.target.value === 'ALL' ? 'ALL' : Number(e.target.value),
                 })
               }
-              className="h-9 px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs"
+              aria-label="Filter by semester"
+              className="flex-1 sm:flex-none h-9 px-2.5 sm:px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-0"
             >
               {SEMESTERS.map((s) => (
                 <option key={s} value={s}>
@@ -111,7 +115,8 @@ export function NotesFilterBar({
               onChange={(e) =>
                 onFilterChange({ ...filters, category: e.target.value as any })
               }
-              className="h-9 px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs"
+              aria-label="Filter by resource type"
+              className="flex-1 sm:flex-none h-9 px-2.5 sm:px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-0"
             >
               {CATEGORIES.map((c) => (
                 <option key={c.key} value={c.key}>
@@ -125,7 +130,8 @@ export function NotesFilterBar({
               <button
                 type="button"
                 onClick={onOpenUpload}
-                className="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 text-xs font-medium tracking-wide shadow-2xs transition-colors shrink-0 font-sans cursor-pointer"
+                aria-label="Upload lecture notes or PYQ"
+                className="h-9 inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 text-xs font-medium tracking-wide shadow-2xs transition-colors shrink-0 font-sans cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5 text-slate-300" />
                 <span>+ Upload</span>

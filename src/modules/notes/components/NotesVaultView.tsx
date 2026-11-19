@@ -26,7 +26,9 @@ import {
   FileText, 
   Clock, 
   CheckCircle2, 
-  BookOpen
+  BookOpen,
+  RotateCcw,
+  Upload
 } from 'lucide-react';
 
 export function NotesVaultView() {
@@ -99,6 +101,17 @@ export function NotesVaultView() {
       return;
     }
     setIsUploadOpen(true);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      searchQuery: '',
+      branch: 'ALL',
+      semester: 'ALL',
+      category: 'ALL',
+      status: 'ALL',
+    });
+    setActiveTab('all');
   };
 
   // Compute live stats
@@ -323,13 +336,24 @@ export function NotesVaultView() {
                 <p className="text-xs text-[#475569] mt-1 max-w-sm mx-auto font-sans">
                   Try clearing your search query or choosing another branch/semester. You can also upload notes for this subject code.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setIsUploadOpen(true)}
-                  className="mt-4 px-4 py-2 rounded-lg bg-[#0F172A] text-white text-xs font-medium hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 font-sans shadow-2xs"
-                >
-                  Upload First Note for this Subject
-                </button>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleResetFilters}
+                    className="px-4 py-2 rounded-lg bg-white border border-[#E2E8F0] text-[#0F172A] text-xs font-medium hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 font-sans shadow-2xs cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <span>Reset All Filters</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenUpload}
+                    className="px-4 py-2 rounded-lg bg-[#0F172A] text-white text-xs font-medium hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 font-sans shadow-2xs cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-300" />
+                    <span>Upload First Note for this Subject</span>
+                  </button>
+                </div>
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

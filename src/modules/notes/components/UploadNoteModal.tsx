@@ -140,6 +140,9 @@ export function UploadNoteModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/50 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-modal-title"
         className="bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -147,7 +150,7 @@ export function UploadNoteModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] bg-slate-50/70">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight font-display">
+            <h2 id="upload-modal-title" className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight font-display">
               Upload to MAKAUT Vault
             </h2>
             <p className="text-xs text-[#475569] font-mono mt-0.5">

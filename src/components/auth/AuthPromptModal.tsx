@@ -75,7 +75,12 @@ export function AuthPromptModal({ isOpen, onClose, reason }: AuthPromptModalProp
         aria-hidden="true" 
       />
 
-      <div className="relative z-10 w-full max-w-md bg-white rounded-3xl border border-[#E2E8F0] shadow-2xl p-6 sm:p-7 overflow-hidden space-y-5 animate-in zoom-in-95 duration-200">
+      <div 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="auth-modal-title"
+        className="relative z-10 w-full max-w-md bg-white rounded-3xl border border-[#E2E8F0] shadow-2xl p-6 sm:p-7 overflow-hidden space-y-5 animate-in zoom-in-95 duration-200"
+      >
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200 font-semibold tracking-wider">
@@ -85,8 +90,8 @@ export function AuthPromptModal({ isOpen, onClose, reason }: AuthPromptModalProp
 
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-[#475569] hover:text-[#0F172A] hover:bg-slate-100 transition-colors"
-            aria-label="Close auth dialog"
+            className="p-1 rounded-full text-[#475569] hover:text-[#0F172A] hover:bg-slate-100 transition-colors cursor-pointer"
+            aria-label="Close authentication dialog"
           >
             <X className="w-4 h-4" />
           </button>
@@ -98,7 +103,7 @@ export function AuthPromptModal({ isOpen, onClose, reason }: AuthPromptModalProp
             <Icon className="w-6 h-6 text-[#2563EB]" />
           </div>
 
-          <h3 className="text-lg font-bold text-[#0F172A] font-display tracking-tight">
+          <h3 id="auth-modal-title" className="text-lg font-bold text-[#0F172A] font-display tracking-tight">
             {config.title}
           </h3>
 

@@ -54,8 +54,8 @@ export function DesktopFloatingHeader() {
   return (
     <>
       {/* Top Floating Pill Navbar (Responsive for Desktop & Mobile) */}
-      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-        <div className="flex items-center justify-between gap-4 sm:gap-7 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/85 backdrop-blur-[12px] border border-[#E2E8F0] shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all">
+      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto max-w-[calc(100vw-24px)]">
+        <div className="flex items-center justify-between gap-3 sm:gap-7 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/85 backdrop-blur-[12px] border border-[#E2E8F0] shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all">
           {/* Brand Mark */}
           <Link
             href="/"

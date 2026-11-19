@@ -516,8 +516,8 @@ export function SgpaCgpaCalculator() {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full min-w-[580px] text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-[#E2E8F0] bg-zinc-50/50 text-[#475569] font-mono text-[11px] uppercase">
                     <th className="py-2.5 px-4 font-semibold">Semester</th>
@@ -685,8 +685,8 @@ export function SgpaCgpaCalculator() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full min-w-[580px] text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-[#E2E8F0] bg-zinc-50/50 text-[#475569] font-mono text-[11px] uppercase">
                     <th className="py-2.5 px-4 font-semibold">Subject Code</th>
