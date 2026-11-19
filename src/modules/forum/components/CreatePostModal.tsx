@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ForumCategory, FORUM_CATEGORIES, CustomUserRole } from '../types';
-import { X, Plus, Sparkles, Tag, HelpCircle, Layers } from 'lucide-react';
+import { X, Plus, Tag, Send, AlertCircle } from 'lucide-react';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -21,6 +21,8 @@ interface CreatePostModalProps {
     department: string;
   }) => void;
 }
+
+const SUGGESTED_TAGS = ['PCC-CS301', 'MAKAUT', 'TechFest2026', 'Placements', 'CA2', 'Hostel'];
 
 export function CreatePostModal({
   isOpen,
@@ -60,7 +62,7 @@ export function CreatePostModal({
 
     const tags = tagInput
       .split(',')
-      .map((t) => t.trim())
+      .map((t) => t.trim().replace(/^#/, ''))
       .filter((t) => t.length > 0);
 
     onSubmit({
@@ -80,48 +82,63 @@ export function CreatePostModal({
     onClose();
   };
 
+  const addSuggestedTag = (tag: string) => {
+    const existing = tagInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    if (!existing.includes(tag)) {
+      setTagInput([...existing, tag].join(', '));
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/60 backdrop-blur-xs">
+    <div 
+      className="fixed inset-0 z-50 bg-[#0F172A]/50 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div 
-        className="w-full max-w-xl bg-white border border-zinc-200 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-[#E2E8F0] animate-in slide-in-from-right duration-250 ease-out"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 bg-zinc-50/70">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-zinc-900 flex items-center justify-center text-white">
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] bg-slate-50/70">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#0F172A] flex items-center justify-center text-white shrink-0 shadow-2xs">
               <Plus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-zinc-900">
+              <h2 className="text-base sm:text-lg font-bold text-[#0F172A] font-display">
                 Ask a Question
               </h2>
-              <p className="text-xs text-zinc-500">
-                Posting as <strong>{currentUser.name}</strong> ({currentUser.role.toUpperCase()})
+              <p className="text-xs text-[#475569] font-mono">
+                Posting as <strong className="text-[#0F172A]">{currentUser.name}</strong> ({currentUser.role.toUpperCase()})
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-700 p-1 rounded-md transition-colors cursor-pointer"
+            className="text-[#475569] hover:text-[#0F172A] hover:bg-slate-100 p-1.5 rounded-lg transition-colors cursor-pointer"
+            title="Close composer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Form Body (Scrollable) */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 font-sans text-xs">
           {errorMessage && (
-            <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs">
-              {errorMessage}
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Category Selector */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5 font-mono">
-              Forum Category *
+            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5 font-sans">
+              Forum Category <span className="text-rose-500">*</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {FORUM_CATEGORIES.map((cat) => (
@@ -129,14 +146,14 @@ export function CreatePostModal({
                   key={cat.id}
                   type="button"
                   onClick={() => setCategory(cat.id)}
-                  className={`px-3 py-2 rounded-md text-xs font-medium border text-left transition-all cursor-pointer ${
+                  className={`px-3 py-2 rounded-lg text-xs font-medium border text-left transition-all cursor-pointer ${
                     category === cat.id
-                      ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs'
-                      : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300'
+                      ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-2xs'
+                      : 'bg-white text-[#475569] border-[#E2E8F0] hover:bg-slate-50 hover:border-slate-300 hover:text-[#0F172A]'
                   }`}
                 >
                   <div className="font-semibold">{cat.id}</div>
-                  <div className={`text-[10px] truncate ${category === cat.id ? 'text-zinc-300' : 'text-zinc-400'}`}>
+                  <div className={`text-[10px] truncate ${category === cat.id ? 'text-slate-300' : 'text-[#475569]/70'}`}>
                     {cat.id === 'Academic' ? 'MAKAUT & Exams' : cat.id === 'TechFest' ? 'Hackathons' : cat.id === 'Placements' ? 'T&P Jobs' : cat.id === 'Campus Life' ? 'Transport/Clubs' : 'Wardens'}
                   </div>
                 </button>
@@ -146,22 +163,22 @@ export function CreatePostModal({
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5 font-mono">
-              Question Title *
+            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5 font-sans">
+              Question Title <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. How to prepare for PCC-CS301 CA2 data structures exam?"
-              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 transition-all"
+              className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans"
               required
             />
           </div>
 
-          {/* Department / Subtitle */}
+          {/* Department / Designation */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5 font-mono">
+            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5 font-sans">
               Department / Year / Designation
             </label>
             <input
@@ -169,56 +186,79 @@ export function CreatePostModal({
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
               placeholder="e.g. CSE • 3rd Sem or IT Faculty Mentor"
-              className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 transition-all"
+              className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans"
             />
           </div>
 
-          {/* Detailed Content */}
+          {/* Detailed Question Content */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5 font-mono">
-              Detailed Question / Explanation *
+            <label className="block text-xs font-semibold text-[#0F172A] mb-1.5 font-sans">
+              Detailed Question / Explanation <span className="text-rose-500">*</span>
             </label>
             <textarea
               rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Provide background, syllabus module or specific code doubt so professors and classmates can provide precise answers..."
-              className="w-full p-3 bg-white border border-zinc-200 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 transition-all"
+              placeholder="Provide background, syllabus module or specific doubt so professors and classmates can provide precise answers..."
+              className="w-full p-3 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans leading-relaxed"
               required
             />
           </div>
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-600 mb-1.5 font-mono">
-              Subject Tags (Comma separated)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-[#0F172A] font-sans">
+                Subject Tags (Comma separated)
+              </label>
+              <span className="text-[11px] font-mono text-[#475569]/70">
+                e.g. PCC-CS301, CA2
+              </span>
+            </div>
             <div className="relative">
-              <Tag className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Tag className="w-4 h-4 text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
-                placeholder="e.g. PCC-CS301, CA2, Trees, Graph"
-                className="w-full pl-9 pr-3 py-2 bg-white border border-zinc-200 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 transition-all"
+                placeholder="PCC-CS301, CA2, Trees, Graph"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans"
               />
+            </div>
+
+            {/* Quick Tag Suggestions */}
+            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+              <span className="text-[10px] font-mono text-[#475569] uppercase">
+                Suggest:
+              </span>
+              {SUGGESTED_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => addSuggestedTag(tag)}
+                  className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[#475569] hover:text-[#0F172A] text-[11px] font-mono transition-colors cursor-pointer"
+                >
+                  +{tag}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Footer CTA */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100">
+          {/* Sticky Drawer Footer */}
+          <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-zinc-600 hover:text-zinc-900 rounded-md cursor-pointer"
+              className="px-4 py-2 rounded-lg border border-[#E2E8F0] text-[#475569] hover:text-[#0F172A] hover:bg-slate-50 transition-colors text-xs font-medium cursor-pointer font-sans"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-zinc-900 text-white rounded-md text-xs font-semibold hover:bg-zinc-800 transition-colors cursor-pointer shadow-xs"
+              className="px-4 py-2 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 transition-colors text-xs font-medium inline-flex items-center gap-1.5 shadow-2xs cursor-pointer font-sans"
             >
-              Publish Question
+              <Send className="w-3.5 h-3.5" />
+              <span>Publish Question</span>
             </button>
           </div>
         </form>

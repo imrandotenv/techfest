@@ -5,7 +5,8 @@ import {
   X, 
   Upload, 
   AlertCircle, 
-  GraduationCap 
+  GraduationCap,
+  FileCheck2
 } from 'lucide-react';
 import { CustomUserRole, NoteCategory } from '@/types';
 import { BranchCode, UploadNoteFormData } from '../types';
@@ -43,6 +44,7 @@ export function UploadNoteModal({
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [fileSize, setFileSize] = useState<number>(3450000);
   const [error, setError] = useState<string>('');
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -94,6 +96,19 @@ export function UploadNoteModal({
     }
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setSelectedFileName(file.name);
+      setFileSize(file.size);
+      if (!title) {
+        setTitle(file.name.replace(/\.[^/.]+$/, ''));
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -123,46 +138,50 @@ export function UploadNoteModal({
   const isFacultyOrAdmin = currentRole === 'college' || currentRole === 'admin';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/50 backdrop-blur-xs">
-      <div className="bg-white border border-zinc-200 rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/50 backdrop-blur-xs animate-in fade-in duration-200">
+      <div 
+        className="bg-white border border-[#E2E8F0] rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 bg-zinc-50/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] bg-slate-50/70">
           <div>
-            <h2 className="text-base font-bold text-zinc-900 tracking-tight">
+            <h2 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight font-display">
               Upload to MAKAUT Vault
             </h2>
-            <p className="text-xs text-zinc-500 font-mono mt-0.5">
-              Submit lecture notes, solved PYQs, or lab manuals
+            <p className="text-xs text-[#475569] font-mono mt-0.5">
+              Submit lecture notes, solved PYQs, cheat sheets, or lab manuals
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+            className="p-1.5 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs font-sans">
           
           {/* Role Status Notice */}
           <div
-            className={`p-3 rounded-lg border flex items-start gap-2.5 ${
+            className={`p-3 rounded-xl border flex items-start gap-2.5 ${
               isFacultyOrAdmin
-                ? 'bg-sky-50/60 border-sky-200 text-sky-900'
-                : 'bg-amber-50/60 border-amber-200 text-amber-900'
+                ? 'bg-blue-50/70 border-blue-200 text-blue-900'
+                : 'bg-amber-50/70 border-amber-200 text-amber-900'
             }`}
           >
             {isFacultyOrAdmin ? (
-              <GraduationCap className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+              <GraduationCap className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
             ) : (
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             )}
             <div className="space-y-0.5">
-              <span className="font-semibold block">
+              <span className="font-semibold block font-sans">
                 {isFacultyOrAdmin ? 'Faculty Direct Publication' : 'Student Submission Review'}
               </span>
               <p className="text-[11px] leading-relaxed">
@@ -174,7 +193,7 @@ export function UploadNoteModal({
           </div>
 
           {error && (
-            <div className="p-2.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
               {error}
             </div>
           )}
@@ -182,14 +201,14 @@ export function UploadNoteModal({
           {/* Department and Semester */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor={branchId} className="block text-zinc-700 font-medium mb-1">
+              <label htmlFor={branchId} className="block text-[#0F172A] font-medium mb-1 font-sans">
                 Branch / Department:
               </label>
               <select
                 id={branchId}
                 value={departmentCode}
                 onChange={(e) => handleDepartmentChange(e.target.value as BranchCode)}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-md font-mono focus:outline-hidden focus:border-zinc-900"
+                className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg font-mono text-xs text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 shadow-2xs"
               >
                 <option value="CSE">Computer Science (CSE)</option>
                 <option value="ECE">Electronics &amp; Comm (ECE)</option>
@@ -200,14 +219,14 @@ export function UploadNoteModal({
             </div>
 
             <div>
-              <label htmlFor={semesterId} className="block text-zinc-700 font-medium mb-1">
+              <label htmlFor={semesterId} className="block text-[#0F172A] font-medium mb-1 font-sans">
                 Semester:
               </label>
               <select
                 id={semesterId}
                 value={semester}
                 onChange={(e) => handleSemesterChange(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-md font-mono focus:outline-hidden focus:border-zinc-900"
+                className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg font-mono text-xs text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 shadow-2xs"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                   <option key={s} value={s}>
@@ -220,14 +239,14 @@ export function UploadNoteModal({
 
           {/* Subject Selector (Populated from MAKAUT curriculum) */}
           <div>
-            <label htmlFor={subjectId} className="block text-zinc-700 font-medium mb-1">
+            <label htmlFor={subjectId} className="block text-[#0F172A] font-medium mb-1 font-sans">
               MAKAUT Subject Code &amp; Title:
             </label>
             <select
               id={subjectId}
               value={subjectCode}
               onChange={(e) => handleSubjectSelect(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-md font-mono focus:outline-hidden focus:border-zinc-900"
+              className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg font-mono text-xs text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 shadow-2xs"
             >
               {availableSubjects.map((sub) => (
                 <option key={sub.code} value={sub.code}>
@@ -239,7 +258,7 @@ export function UploadNoteModal({
 
           {/* Title */}
           <div>
-            <label htmlFor={titleId} className="block text-zinc-700 font-medium mb-1">
+            <label htmlFor={titleId} className="block text-[#0F172A] font-medium mb-1 font-sans">
               Resource Title:
             </label>
             <input
@@ -248,7 +267,7 @@ export function UploadNoteModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Unit 1 to 5 Comprehensive Notes with Formula Sheet"
-              className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-md focus:outline-hidden focus:border-zinc-900 text-xs"
+              className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs"
               required
             />
           </div>
@@ -256,31 +275,32 @@ export function UploadNoteModal({
           {/* Category & Academic Year */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor={categoryId} className="block text-zinc-700 font-medium mb-1">
+              <label htmlFor={categoryId} className="block text-[#0F172A] font-medium mb-1 font-sans">
                 Resource Category:
               </label>
               <select
                 id={categoryId}
                 value={category}
                 onChange={(e) => setCategory(e.target.value as NoteCategory)}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-md font-mono focus:outline-hidden focus:border-zinc-900"
+                className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg font-mono text-xs text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 shadow-2xs"
               >
                 <option value="LECTURE_NOTE">Lecture Notes</option>
                 <option value="MAKAUT_PYQ">MAKAUT Solved PYQ</option>
                 <option value="LAB_MANUAL">Lab Manual</option>
+                <option value="CHEAT_SHEET">Cheat Sheet / Formula Guide</option>
                 <option value="SYLLABUS_COPY">Syllabus Copy</option>
               </select>
             </div>
 
             <div>
-              <label htmlFor={yearId} className="block text-zinc-700 font-medium mb-1">
+              <label htmlFor={yearId} className="block text-[#0F172A] font-medium mb-1 font-sans">
                 Academic Year:
               </label>
               <select
                 id={yearId}
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-md font-mono focus:outline-hidden focus:border-zinc-900"
+                className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg font-mono text-xs text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 shadow-2xs"
               >
                 <option value="2026-2027">2026-2027 (Current)</option>
                 <option value="2025-2026">2025-2026</option>
@@ -290,17 +310,33 @@ export function UploadNoteModal({
             </div>
           </div>
 
-          {/* Simulated File Upload Zone */}
+          {/* PDF File Dropzone */}
           <div>
-            <span className="block text-zinc-700 font-medium mb-1">
+            <span className="block text-[#0F172A] font-medium mb-1 font-sans">
               Document File (PDF / DOCX):
             </span>
-            <label className="border-2 border-dashed border-zinc-200 hover:border-zinc-400 bg-zinc-50/50 rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-colors block">
-              <Upload className="w-6 h-6 text-zinc-400 mb-1" />
-              <span className="text-zinc-600 font-medium">
-                {selectedFileName || 'Click to select or drop PDF file'}
+            <label
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all block text-center ${
+                isDragging
+                  ? 'border-[#0F172A] bg-slate-100'
+                  : 'border-[#E2E8F0] hover:border-slate-400 bg-slate-50/60'
+              }`}
+            >
+              {selectedFileName ? (
+                <FileCheck2 className="w-7 h-7 text-emerald-600 mb-1.5" />
+              ) : (
+                <Upload className="w-7 h-7 text-[#475569] mb-1.5" />
+              )}
+              <span className="text-[#0F172A] font-medium block">
+                {selectedFileName || 'Click to browse or drop PDF file here'}
               </span>
-              <span className="text-[10px] text-zinc-400 font-mono mt-0.5">
+              <span className="text-[11px] text-[#475569] font-mono mt-0.5 block">
                 Up to 25 MB • Encrypted SETGOI Vault Storage
               </span>
               <input
@@ -313,19 +349,19 @@ export function UploadNoteModal({
           </div>
 
           {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E2E8F0]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
+              className="px-4 py-2 rounded-lg border border-[#E2E8F0] text-[#475569] hover:text-[#0F172A] hover:bg-slate-50 transition-colors font-medium text-xs font-sans cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded bg-zinc-900 hover:bg-zinc-800 text-white font-medium transition-colors inline-flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-medium text-xs transition-colors inline-flex items-center gap-1.5 shadow-2xs font-sans cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload className="w-3.5 h-3.5 text-slate-300" />
               <span>{isFacultyOrAdmin ? 'Publish Resource' : 'Submit for Review'}</span>
             </button>
           </div>

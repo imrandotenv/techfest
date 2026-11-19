@@ -89,7 +89,7 @@ export interface CampusZone {
 // ----------------------------------------------------
 // NOTES & MAKAUT PYQ VAULT TYPES
 // ----------------------------------------------------
-export type NoteCategory = 'LECTURE_NOTE' | 'MAKAUT_PYQ' | 'LAB_MANUAL' | 'SYLLABUS_COPY';
+export type NoteCategory = 'LECTURE_NOTE' | 'MAKAUT_PYQ' | 'LAB_MANUAL' | 'SYLLABUS_COPY' | 'CHEAT_SHEET';
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface NoteItem {

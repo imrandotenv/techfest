@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Search, Plus, X } from 'lucide-react';
 import { ForumSortOption } from '../types';
 
 interface ForumHeaderProps {
@@ -50,22 +50,22 @@ export function ForumHeader({
       </div>
 
       {/* Search and Sort Control Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Search Input */}
-        <div className="relative md:col-span-8">
+        <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-[#475569] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search questions, MAKAUT course codes (e.g. PCC-CS301), faculty names, or topics..."
-            className="w-full pl-9 pr-9 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] transition-all font-sans"
+            placeholder="Search questions, course codes (e.g. PCC-CS301), faculty names, or topics..."
+            className="w-full h-10 pl-9 pr-9 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#0F172A]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#0F172A] cursor-pointer"
               title="Clear search"
             >
               <X className="w-4 h-4" />
@@ -73,22 +73,57 @@ export function ForumHeader({
           )}
         </div>
 
-        {/* Sort Filter Selector */}
-        <div className="md:col-span-4 flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-[#475569] font-mono shrink-0">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>Sort:</span>
+        {/* Sort Toggles: Trending, Recent, Unanswered, Official */}
+        <div className="flex items-center gap-1.5 self-start md:self-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <span className="text-xs font-mono text-[#475569] shrink-0 mr-1 hidden sm:inline-block">
+            Sort by:
+          </span>
+          <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-[#E2E8F0]">
+            <button
+              type="button"
+              onClick={() => onSortChange('upvotes')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium font-sans transition-all cursor-pointer ${
+                sortOption === 'upvotes'
+                  ? 'bg-white text-[#0F172A] shadow-2xs font-bold'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              Trending
+            </button>
+            <button
+              type="button"
+              onClick={() => onSortChange('recent')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium font-sans transition-all cursor-pointer ${
+                sortOption === 'recent'
+                  ? 'bg-white text-[#0F172A] shadow-2xs font-bold'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              Recent
+            </button>
+            <button
+              type="button"
+              onClick={() => onSortChange('unanswered')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium font-sans transition-all cursor-pointer ${
+                sortOption === 'unanswered'
+                  ? 'bg-white text-[#0F172A] shadow-2xs font-bold'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              Unanswered
+            </button>
+            <button
+              type="button"
+              onClick={() => onSortChange('official')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium font-sans transition-all cursor-pointer ${
+                sortOption === 'official'
+                  ? 'bg-white text-[#0F172A] shadow-2xs font-bold'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              Official
+            </button>
           </div>
-          <select
-            value={sortOption}
-            onChange={(e) => onSortChange(e.target.value as ForumSortOption)}
-            className="w-full py-2 px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer"
-          >
-            <option value="recent">Most Recent First</option>
-            <option value="upvotes">Highest Upvoted</option>
-            <option value="official">Official Faculty Answers First</option>
-            <option value="unanswered">Unanswered First</option>
-          </select>
         </div>
       </div>
     </div>

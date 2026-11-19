@@ -49,7 +49,12 @@ function getCategoryBadge(category: NoteCategory) {
     case 'SYLLABUS_COPY':
       return {
         label: 'Syllabus',
-        className: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+        className: 'bg-slate-100 text-[#475569] border-[#E2E8F0]',
+      };
+    case 'CHEAT_SHEET':
+      return {
+        label: 'Cheat Sheet',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       };
   }
 }

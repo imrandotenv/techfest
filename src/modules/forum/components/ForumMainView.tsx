@@ -10,7 +10,7 @@ import { ForumCategoryFilter } from './ForumCategoryFilter';
 import { ForumPostCard } from './ForumPostCard';
 import { ForumPostDetail } from './ForumPostDetail';
 import { CreatePostModal } from './CreatePostModal';
-import { MessageSquare, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { MessageSquare, RefreshCw, AlertCircle, Sparkles, Tag, X } from 'lucide-react';
 
 interface ForumMainViewProps {
   initialPosts?: ForumPost[];
@@ -47,6 +47,7 @@ export function ForumMainView({
 
   // Filters & Sorting
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortOption, setSortOption] = useState<ForumSortOption>('recent');
 
@@ -309,6 +310,14 @@ export function ForumMainView({
       );
     }
 
+    // Tag filter
+    if (selectedTag) {
+      const tagLower = selectedTag.toLowerCase().replace(/^#/, '');
+      result = result.filter((p) =>
+        p.tags?.some((t) => t.toLowerCase().replace(/^#/, '') === tagLower)
+      );
+    }
+
     // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -345,7 +354,7 @@ export function ForumMainView({
     });
 
     return result;
-  }, [posts, selectedCategory, searchQuery, sortOption]);
+  }, [posts, selectedCategory, selectedTag, searchQuery, sortOption]);
 
   // Compute category counts
   const categoryCounts = useMemo(() => {
@@ -362,6 +371,18 @@ export function ForumMainView({
       }
     });
     return counts;
+  }, [posts]);
+
+  // Extract all unique tags across all posts
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    posts.forEach((p) => {
+      p.tags?.forEach((t) => {
+        const clean = t.trim().replace(/^#/, '');
+        if (clean) set.add(clean);
+      });
+    });
+    return Array.from(set);
   }, [posts]);
 
   // Currently selected post
@@ -426,6 +447,43 @@ export function ForumMainView({
             categoryCounts={categoryCounts}
           />
 
+          {/* Interactive Popular Topics / Tags Filter Bar */}
+          {allTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-mono text-[#475569] uppercase tracking-wider mr-1">
+                Topics:
+              </span>
+              {allTags.map((tag) => {
+                const isSelected = selectedTag?.toLowerCase() === tag.toLowerCase();
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSelectedTag(isSelected ? null : tag)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer border ${
+                      isSelected
+                        ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-2xs font-semibold'
+                        : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-slate-300 hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <Tag className="w-2.5 h-2.5 opacity-70" />
+                    <span>#{tag}</span>
+                    {isSelected && <X className="w-3 h-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+              {selectedTag && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTag(null)}
+                  className="text-xs text-[#2563EB] hover:underline ml-1 font-sans cursor-pointer"
+                >
+                  Clear topic
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Posts List */}
           {filteredPosts.length === 0 ? (
             <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center shadow-xs">
@@ -434,24 +492,27 @@ export function ForumMainView({
                 No discussion threads found
               </h3>
               <p className="text-xs text-[#475569] mt-1 max-w-sm mx-auto font-sans">
-                {searchQuery
-                  ? `No questions matching "${searchQuery}". Try searching by MAKAUT code or another keyword.`
+                {searchQuery || selectedTag
+                  ? `No questions matching your active filters. Try clearing the topic or searching another keyword.`
                   : `No threads in category "${selectedCategory}" yet. Be the first to start the discussion!`}
               </p>
               <div className="flex items-center justify-center gap-3 mt-4">
-                {searchQuery && (
+                {(searchQuery || selectedTag) && (
                   <button
                     type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-[#0F172A] hover:bg-slate-200 transition-colors font-sans"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedTag(null);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-[#0F172A] hover:bg-slate-200 transition-colors font-sans cursor-pointer"
                   >
-                    Clear Search
+                    Reset Filters
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors font-sans shadow-2xs"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors font-sans shadow-2xs cursor-pointer"
                 >
                   Ask a Question
                 </button>
@@ -465,6 +526,7 @@ export function ForumMainView({
                   post={post}
                   onSelect={(id) => setSelectedPostId(id)}
                   onUpvote={handleUpvotePost}
+                  onSelectTag={(tag) => setSelectedTag(tag.replace(/^#/, ''))}
                 />
               ))}
             </div>

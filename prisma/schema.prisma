@@ -24,6 +24,7 @@ enum NoteCategory {
   MAKAUT_PYQ
   LAB_MANUAL
   SYLLABUS_COPY
+  CHEAT_SHEET
 }
 
 model UserProfile {
