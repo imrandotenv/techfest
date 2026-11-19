@@ -14,7 +14,9 @@ import {
   ArrowRight,
   Info,
   Search,
-  Sparkles
+  Sparkles,
+  FlaskConical,
+  GraduationCap
 } from 'lucide-react';
 import { EXTENDED_CAMPUS_ZONES } from '../data';
 import { CampusZoneExtended } from '../types';
@@ -23,11 +25,181 @@ interface CampusVisualizer3DProps {
   onSelectDepartment?: (deptCode: string) => void;
 }
 
+const MAIN_BUILDING_BRANCH_FLOORS: Record<
+  'CSE' | 'ECE' | 'EE' | 'ME' | 'CE',
+  { floor: string; level: number; facilities: string[]; labsCount: number }[]
+> = {
+  CSE: [
+    {
+      floor: 'Level 3 (Floor 3)',
+      level: 3,
+      facilities: [
+        'CSE HOD Executive Office (Cabin 304)',
+        'Algorithm & Data Structures Laboratory (Lab 301 • 60 Workstations)',
+        'Object-Oriented Programming & Java Lab (Lab 302 • Dual Mon")',
+        'Database Management & SQL Systems Center (Lab 303)',
+      ],
+      labsCount: 3,
+    },
+    {
+      floor: 'Level 4 (Floor 4)',
+      level: 4,
+      facilities: [
+        'AI & Machine Learning Research Hub (Lab 402 • RTX GPU Cluster)',
+        'Cloud Server Infrastructure & Networking Rack (Room 404)',
+        'Software Project Incubation Cell (Lab 405)',
+        'Smart Interactive Classrooms 406–409',
+      ],
+      labsCount: 2,
+    },
+    {
+      floor: 'Level 5 (Rooftop Shaded)',
+      level: 5,
+      facilities: [
+        'High-Performance Computing Cluster (Lab 501)',
+        'Annual TechFest Hackathon Co-Working Arena',
+        'Robotics & Autonomous Vision Sandbox',
+      ],
+      labsCount: 2,
+    },
+  ],
+  ECE: [
+    {
+      floor: 'Level 2 (Floor 2)',
+      level: 2,
+      facilities: [
+        'ECE HOD Executive Cabin (Room 208)',
+        'Embedded Systems & IoT Development Lab (Lab 201)',
+        'VLSI & Microelectronics Chip Design Lab (Lab 202 • Cadence Suite)',
+        'Digital Electronics & Logic Design Lab (Room 204)',
+      ],
+      labsCount: 3,
+    },
+    {
+      floor: 'Level 3 (Floor 3)',
+      level: 3,
+      facilities: [
+        'Analog & Digital Communication Lab (Room 307 • DSO Benches)',
+        'Digital Signal Processing (DSP) & MATLAB Studio (Room 308)',
+        'Faculty Consultation Cabins 211–216',
+      ],
+      labsCount: 2,
+    },
+    {
+      floor: 'Level 5 (Rooftop Shaded)',
+      level: 5,
+      facilities: [
+        'Microwave Engineering & Antenna Radiation Test Range',
+        'Optical Fiber Communication & Optoelectronics Bay',
+      ],
+      labsCount: 2,
+    },
+  ],
+  EE: [
+    {
+      floor: 'Ground Floor (Level 0)',
+      level: 0,
+      facilities: [
+        'High Voltage Engineering & Arc Breakdown Lab (Lab G-01)',
+        'Electrical Machines-I & II Heavy Motor Test Bay (Lab G-02)',
+        'Power Systems Simulation & Load Flow Computing Lab (Lab G-05)',
+      ],
+      labsCount: 3,
+    },
+    {
+      floor: 'Level 1 (Floor 1)',
+      level: 1,
+      facilities: [
+        'Electrical Engg HOD Cabin (Room 112)',
+        'Control Systems & Process Automation Lab (Room 105)',
+        'Electrical Measurement & Sensor Instrumentation Lab (Room 107)',
+        'Power Electronics & Electric Drives Laboratory (Room 109)',
+      ],
+      labsCount: 3,
+    },
+    {
+      floor: 'Level 5 (Rooftop Shaded)',
+      level: 5,
+      facilities: [
+        '50kW Grid-Connected Solar Photovoltaic Test Array',
+        'Smart Microgrid Inverter & Battery Storage Station',
+      ],
+      labsCount: 2,
+    },
+  ],
+  ME: [
+    {
+      floor: 'Ground Floor / Workshop Annex',
+      level: 0,
+      facilities: [
+        'Central Mechanical Workshop & Machine Shop (Lathe, Shaper, Milling)',
+        'CNC Machining & Turning Center (Room W-01)',
+        'Foundry, Smithy & TIG/MIG Welding Bay (Room W-02)',
+        'Fluid Mechanics & Hydraulic Turbo-Machinery Lab (Lab G-08)',
+      ],
+      labsCount: 4,
+    },
+    {
+      floor: 'Level 1 (Floor 1)',
+      level: 1,
+      facilities: [
+        'ME HOD Executive Office (Cabin 115)',
+        'Heat Transfer & Applied Thermodynamics Lab (Room 116)',
+        'Strength of Materials & Universal Testing Machine (UTM) Lab (Room 118)',
+      ],
+      labsCount: 2,
+    },
+    {
+      floor: 'Level 2 (Floor 2)',
+      level: 2,
+      facilities: [
+        'CAD/CAM & FEA Ansys Engineering Workstation Lab (Room 218)',
+        'Kinematics & Dynamics of Machines Lab (Room 220)',
+        'IC Engines & Multi-Cylinder Automobile Testing Bay (Lab G-10)',
+      ],
+      labsCount: 3,
+    },
+  ],
+  CE: [
+    {
+      floor: 'Ground Floor (Level 0)',
+      level: 0,
+      facilities: [
+        'Concrete Technology & Non-Destructive Testing Lab (Lab G-03)',
+        'Soil Mechanics & Geotechnical Triaxial Lab (Lab G-04)',
+        'Highway Materials & Transportation Engineering Lab (Lab G-06)',
+        'Advanced Surveying, Total Station & GPS Equipment Vault (Room G-07)',
+      ],
+      labsCount: 4,
+    },
+    {
+      floor: 'Level 1 (Floor 1)',
+      level: 1,
+      facilities: [
+        'Civil Engineering HOD Cabin (Room 102)',
+        'Structural Analysis & Deflection Mechanics Lab (Room 103)',
+        'Environmental Engineering & Water Pollution Testing Lab (Room 104)',
+      ],
+      labsCount: 2,
+    },
+    {
+      floor: 'Level 2 (Floor 2)',
+      level: 2,
+      facilities: [
+        'Computer-Aided Structural Design Studio (AutoCAD & STAAD.Pro) (Room 205)',
+        'GIS Mapping & Satellite Remote Sensing Cartography Lab (Room 207)',
+      ],
+      labsCount: 2,
+    },
+  ],
+};
+
 export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedZone, setSelectedZone] = useState<CampusZoneExtended | null>(
     EXTENDED_CAMPUS_ZONES[0]
   );
+  const [selectedBranch, setSelectedBranch] = useState<'ALL' | 'CSE' | 'ECE' | 'EE' | 'ME' | 'CE'>('CSE');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [cameraView, setCameraView] = useState<'iso' | 'front' | 'gate' | 'top'>('iso');
@@ -597,84 +769,160 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
 
       {/* Selected Zone Deep Dive Card (Swiss 1px Border Light Mode Card) */}
       {selectedZone && (
-        <div className="w-full bg-white border border-zinc-200 rounded-lg p-5 shadow-xs transition-all">
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+        <div className="w-full bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 shadow-xs transition-all">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             {/* Zone Identity & Header */}
-            <div className="space-y-2 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-semibold">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded bg-slate-100 text-[#0F172A] border border-[#E2E8F0] font-semibold">
                   {selectedZone.tag}
                 </span>
-                <span className="text-zinc-300">•</span>
-                <span className="text-xs font-mono text-zinc-500">
+                <span className="text-slate-300">•</span>
+                <span className="text-xs font-mono text-[#475569]">
                   {selectedZone.levels} {selectedZone.levels === 1 ? 'Level' : 'Levels / Floors'}
                 </span>
                 {selectedZone.operatingHours && (
                   <>
-                    <span className="text-zinc-300">•</span>
-                    <span className="inline-flex items-center gap-1 text-xs font-mono text-zinc-500">
-                      <Clock className="w-3 h-3 text-zinc-400" />
+                    <span className="text-slate-300">•</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-mono text-[#475569]">
+                      <Clock className="w-3 h-3 text-[#475569]" />
                       {selectedZone.operatingHours}
                     </span>
                   </>
                 )}
               </div>
 
-              <h3 className="text-lg font-semibold text-zinc-900 tracking-tight flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-sky-600" />
+              <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight flex items-center gap-2 font-display">
+                <Building2 className="w-5 h-5 text-[#2563EB]" />
                 {selectedZone.name}
               </h3>
 
-              <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#475569] leading-relaxed font-sans">
                 {selectedZone.description}
               </p>
 
+              {/* Branch Pill Selector for Academic Core (Main Building) */}
+              {selectedZone.id === 'zone-main' && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-mono text-[#475569] uppercase font-semibold flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-[#2563EB]" />
+                      Select Academic Branch:
+                    </span>
+                    <span className="text-[11px] font-mono text-[#2563EB]">
+                      Dynamically updates labs &amp; room numbers
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(['CSE', 'ECE', 'EE', 'ME', 'CE', 'ALL'] as const).map((branch) => {
+                      const isSelected = selectedBranch === branch;
+                      return (
+                        <button
+                          key={branch}
+                          type="button"
+                          onClick={() => setSelectedBranch(branch)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-2xs font-bold'
+                              : 'bg-white text-[#475569] border-[#E2E8F0] hover:bg-slate-50 hover:text-[#0F172A] hover:border-slate-300'
+                          }`}
+                        >
+                          {branch === 'ALL' ? 'All Floors' : `${branch} Labs & Rooms`}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Departments Housed */}
-              <div className="pt-2">
-                <span className="text-xs font-mono text-zinc-500 block mb-1.5 uppercase font-medium">
-                  Departments & Facilities In Zone:
+              <div className="pt-1">
+                <span className="text-xs font-mono text-[#475569] block mb-1.5 uppercase font-medium">
+                  Departments &amp; Facilities In Zone:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedZone.departmentsHoused.map((dept, i) => (
                     <span
                       key={i}
-                      className="px-2.5 py-1 rounded text-xs bg-zinc-50 text-zinc-800 border border-zinc-200 font-medium"
+                      className="px-2.5 py-1 rounded-lg text-xs bg-slate-50 text-[#0F172A] border border-[#E2E8F0] font-medium font-sans"
                     >
                       {dept}
                     </span>
                   ))}
                 </div>
               </div>
+
+              {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL' && onSelectDepartment && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => onSelectDepartment(selectedBranch)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium font-sans text-[#2563EB] hover:underline cursor-pointer"
+                  >
+                    <span>View {selectedBranch} Department Faculty &amp; Syllabi</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Floor Breakdown Table (Swiss Tabular Layout) */}
-            {selectedZone.floorsDetail && selectedZone.floorsDetail.length > 0 && (
-              <div className="w-full lg:w-96 shrink-0 bg-zinc-50 rounded border border-zinc-200 p-3.5 space-y-2">
-                <div className="flex items-center justify-between pb-1.5 border-b border-zinc-200">
-                  <span className="text-xs font-mono uppercase text-zinc-700 font-semibold flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                    Floor-by-Floor Directory
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400">
-                    {selectedZone.floorsDetail.length} Levels
-                  </span>
-                </div>
-                <div className="space-y-2 max-h-52 overflow-y-auto pr-1 text-xs divide-y divide-zinc-200/60">
-                  {selectedZone.floorsDetail.map((fl, idx) => (
-                    <div key={idx} className="pt-1.5 first:pt-0">
-                      <div className="font-mono text-[11px] font-semibold text-zinc-900">
-                        {fl.floor}
+            <div className="w-full lg:w-[420px] shrink-0 bg-slate-50/80 rounded-xl border border-[#E2E8F0] p-4 space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E2E8F0]">
+                <span className="text-xs font-mono uppercase text-[#0F172A] font-bold flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
+                  {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL'
+                    ? `${selectedBranch} Floor & Lab Directory`
+                    : 'Floor-by-Floor Directory'}
+                </span>
+                <span className="text-[11px] font-mono text-[#475569] bg-white px-2 py-0.5 rounded border border-[#E2E8F0]">
+                  {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL'
+                    ? `${MAIN_BUILDING_BRANCH_FLOORS[selectedBranch].length} Levels Active`
+                    : `${selectedZone.floorsDetail?.length || selectedZone.levels} Levels`}
+                </span>
+              </div>
+
+              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1 text-xs divide-y divide-[#E2E8F0]">
+                {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL' ? (
+                  MAIN_BUILDING_BRANCH_FLOORS[selectedBranch].map((fl, idx) => (
+                    <div key={idx} className="pt-2 first:pt-0">
+                      <div className="flex items-center justify-between font-mono text-[11px] font-bold text-[#0F172A] mb-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+                          {fl.floor}
+                        </span>
+                        <span className="text-[10px] text-[#475569] font-normal">
+                          {fl.labsCount} Labs/Rooms
+                        </span>
                       </div>
-                      <ul className="text-zinc-600 mt-0.5 space-y-0.5 pl-2 list-disc list-inside text-[11px]">
+                      <ul className="text-[#475569] mt-0.5 space-y-1 pl-3 text-[11px] font-sans">
                         {fl.facilities.map((fac, fIdx) => (
-                          <li key={fIdx} className="leading-tight">{fac}</li>
+                          <li key={fIdx} className="leading-snug list-disc">
+                            {fac}
+                          </li>
                         ))}
                       </ul>
                     </div>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  selectedZone.floorsDetail?.map((fl, idx) => (
+                    <div key={idx} className="pt-2 first:pt-0">
+                      <div className="font-mono text-[11px] font-bold text-[#0F172A] mb-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#0F172A]" />
+                        {fl.floor}
+                      </div>
+                      <ul className="text-[#475569] mt-0.5 space-y-1 pl-3 text-[11px] font-sans">
+                        {fl.facilities.map((fac, fIdx) => (
+                          <li key={fIdx} className="leading-snug list-disc">
+                            {fac}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}

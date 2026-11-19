@@ -13,7 +13,10 @@ import {
   ExternalLink,
   SlidersHorizontal,
   Compass,
-  ArrowUpRight
+  ArrowUpRight,
+  PhoneCall,
+  Maximize2,
+  X
 } from 'lucide-react';
 import { 
   DEPARTMENTS, 
@@ -31,11 +34,14 @@ import { FacultyDirectory } from './FacultyDirectory';
 import { HostelDirectory } from './HostelDirectory';
 import { BusTimingsDirectory } from './BusTimingsDirectory';
 import { EmergencySosSection } from './EmergencySosSection';
+import { CampusDetailDrawer, CampusDrawerType } from './CampusDetailDrawer';
 
 export function CampusDirectoryView() {
   const [activeTab, setActiveTab] = useState<CampusTab>('overview');
   const [globalSearch, setGlobalSearch] = useState('');
   const [selectedDeptForFaculty, setSelectedDeptForFaculty] = useState<string | undefined>(undefined);
+  const [activeDrawer, setActiveDrawer] = useState<CampusDrawerType>(null);
+  const [isFull3DModalOpen, setIsFull3DModalOpen] = useState(false);
 
   // Global search across all datasets
   const universalResults = useMemo<UniversalSearchResult[]>(() => {
@@ -254,158 +260,229 @@ export function CampusDirectoryView() {
         {/* Dynamic Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Quick 3D Map Preview Banner */}
-            <div className="p-5 bg-white border border-[#E2E8F0] rounded-xl shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200 font-semibold mb-1 inline-block">
-                  Spatial Interactive Visualization
-                </span>
-                <h3 className="text-base font-bold text-[#0F172A] tracking-tight font-display">
-                  SETGOI 3D Digital Twin &amp; Campus Explorer
-                </h3>
-                <p className="text-xs text-[#475569] mt-0.5 max-w-xl font-sans">
-                  Interactive real-time spatial visualizer modeled after the actual SETGOI Durgapur infrastructure: 
-                  6-level U-shaped academic core, portico gates, transit bays, and residential zones.
-                </p>
-              </div>
+            {/* Architectural Grid 3D Map Preview Banner */}
+            <div className="relative overflow-hidden bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-7 shadow-xs">
+              {/* Blueprint Grid Watermark Background */}
+              <div 
+                className="absolute inset-0 opacity-[0.035] pointer-events-none bg-[radial-gradient(#0F172A_1px,transparent_1px)] [background-size:16px_16px]" 
+                aria-hidden="true" 
+              />
 
-              <button
-                onClick={() => setActiveTab('3d-map')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-mono font-medium transition-colors shrink-0 shadow-2xs"
-              >
-                <span>Launch Full 3D Map</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200 font-semibold tracking-wider inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
+                      LOD-300 Architectural Grid
+                    </span>
+                    <span className="text-[11px] font-mono text-[#475569] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                      23°31&apos;48.2&quot;N 87°18&apos;22.1&quot;E • 74m ASL
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight font-display">
+                    SETGOI 3D Digital Twin &amp; Campus Explorer
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-[#475569] leading-relaxed max-w-2xl font-sans">
+                    Spatial multi-level visualizer modeled directly on SETGOI Durgapur infrastructure: 
+                    6-level U-shaped academic core, departmental lab wings (CSE, ECE, EE, ME, CE), central portico, and transit corridors.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setIsFull3DModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-mono font-medium transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Launch Full 3D Map</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Embedded 3D Map in Overview */}
             <CampusVisualizer3D onSelectDepartment={handleSelectDeptFaculty} />
 
-            {/* Quick Sections Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Departments Quick Box */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-xs flex flex-col justify-between">
+            {/* 6 Equal-Height Directory Cards in 3x2 Grid */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="p-2 rounded-lg bg-slate-100 border border-[#E2E8F0] text-[#0F172A]">
-                      <Building2 className="w-4 h-4" />
-                    </span>
-                    <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
-                      {DEPARTMENTS.length} Depts
-                    </span>
-                  </div>
-                  <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display">Academic Departments</h4>
-                  <p className="text-xs text-[#475569] leading-relaxed mb-3 font-sans">
-                    CSE, ECE, Electrical, Mechanical, Civil Engineering, and Sanaka Institute of Pharmacy.
+                  <h3 className="text-base font-bold text-[#0F172A] font-display">
+                    Campus Directory &amp; Fast Resource Desks
+                  </h3>
+                  <p className="text-xs text-[#475569] font-mono mt-0.5">
+                    Click any resource card below to open its dedicated quick-access drawer
                   </p>
                 </div>
-                <button
-                  onClick={() => setActiveTab('departments')}
-                  className="inline-flex items-center gap-1 text-xs font-mono font-medium text-[#2563EB] hover:text-[#1D4ED8] pt-2 border-t border-[#E2E8F0]"
-                >
-                  <span>Explore All Departments</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+                <span className="text-xs font-mono text-[#475569] hidden sm:inline-block">
+                  6 Desks Verified
+                </span>
               </div>
 
-              {/* Faculty Quick Box */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="p-2 rounded-lg bg-slate-100 border border-[#E2E8F0] text-[#0F172A]">
-                      <Users className="w-4 h-4" />
-                    </span>
-                    <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
-                      {ALL_FACULTY.length} Faculty
-                    </span>
-                  </div>
-                  <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display">Faculty Directory</h4>
-                  <p className="text-xs text-[#475569] leading-relaxed mb-3 font-sans">
-                    Office cabins, consultation hours, research domains, email contacts, and phone extensions.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('faculty')}
-                  className="inline-flex items-center gap-1 text-xs font-mono font-medium text-[#2563EB] hover:text-[#1D4ED8] pt-2 border-t border-[#E2E8F0]"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* 1. Academic Departments */}
+                <div 
+                  onClick={() => setActiveDrawer('departments')}
+                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
-                  <span>Search Faculty Profiles</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                        <Building2 className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                        {DEPARTMENTS.length} Depts
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                      Academic Departments
+                    </h4>
+                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                      CSE, ECE, Electrical, Mechanical, Civil Engineering, and Sanaka Institute of Pharmacy.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                    <span>View All Departments</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
 
-              {/* Hostels & Mess Quick Box */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="p-2 rounded-lg bg-slate-100 border border-[#E2E8F0] text-[#0F172A]">
-                      <Home className="w-4 h-4" />
-                    </span>
-                    <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
-                      {HOSTELS.length} Halls
-                    </span>
-                  </div>
-                  <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display">Hostels &amp; Mess Timings</h4>
-                  <p className="text-xs text-[#475569] leading-relaxed mb-3 font-sans">
-                    Aryabhatta (Boys) &amp; Kalpana Chawla (Girls) halls, biometric curfews, warden numbers, and meal tables.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('hostels')}
-                  className="inline-flex items-center gap-1 text-xs font-mono font-medium text-[#2563EB] hover:text-[#1D4ED8] pt-2 border-t border-[#E2E8F0]"
+                {/* 2. Faculty Directory */}
+                <div 
+                  onClick={() => setActiveDrawer('faculty')}
+                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
-                  <span>View Hostel Rules &amp; Mess</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                        <Users className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                        {ALL_FACULTY.length} Faculty
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                      Faculty Directory
+                    </h4>
+                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                      Office cabins, consultation hours, research domains, email contacts, and phone extensions.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                    <span>Search Faculty Profiles</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
 
-              {/* Bus Routes Quick Box */}
-              <div className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="p-2 rounded-lg bg-slate-100 border border-[#E2E8F0] text-[#0F172A]">
-                      <Bus className="w-4 h-4" />
-                    </span>
-                    <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
-                      {BUS_ROUTES.length} Routes
-                    </span>
-                  </div>
-                  <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display">Bus Transit Schedule</h4>
-                  <p className="text-xs text-[#475569] leading-relaxed mb-3 font-sans">
-                    Daily shuttle routes covering Asansol, Raniganj, Andal, and Durgapur Station to campus.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('buses')}
-                  className="inline-flex items-center gap-1 text-xs font-mono font-medium text-[#2563EB] hover:text-[#1D4ED8] pt-2 border-t border-[#E2E8F0]"
+                {/* 3. Hostels & Mess Timings */}
+                <div 
+                  onClick={() => setActiveDrawer('hostels')}
+                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
-                  <span>Check Bus Timetable</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                        <Home className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                        {HOSTELS.length} Halls
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                      Hostels &amp; Mess Timings
+                    </h4>
+                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                      Aryabhatta (Boys) &amp; Kalpana Chawla (Girls) halls, biometric curfews, warden numbers, and meal tables.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                    <span>View Hostel &amp; Mess Rules</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
 
-              {/* 24/7 SOS Hotlines Quick Box */}
-              <div className="bg-white border border-red-200 rounded-xl p-5 shadow-xs flex flex-col justify-between md:col-span-2">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="p-2 rounded-lg bg-red-100 border border-red-200 text-red-700">
-                      <ShieldAlert className="w-4 h-4" />
-                    </span>
-                    <span className="text-xs font-mono font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                      24/7 Hotlines
-                    </span>
-                  </div>
-                  <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display">Emergency SOS &amp; Campus Security</h4>
-                  <p className="text-xs text-[#475569] leading-relaxed mb-3 font-sans">
-                    Instant access to Campus Medical Centre ambulance (+91 94340 00001), Main Gate Security (+91 94340 00002), and Anti-Ragging Hotline (1800-180-5522).
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('emergency')}
-                  className="inline-flex items-center gap-1 text-xs font-mono font-medium text-red-600 hover:text-red-700 pt-2 border-t border-[#E2E8F0]"
+                {/* 4. Bus Transit Schedule */}
+                <div 
+                  onClick={() => setActiveDrawer('buses')}
+                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
-                  <span>View All SOS Emergency Desks</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+                  <div>
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                        <Bus className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                        {BUS_ROUTES.length} Routes
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                      Bus Transit Schedule
+                    </h4>
+                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                      Daily shuttle routes covering Asansol, Raniganj, Andal, and Durgapur Station to campus.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                    <span>Check Bus Timetable</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+
+                {/* 5. Emergency SOS & Campus Security */}
+                <div 
+                  onClick={() => setActiveDrawer('emergency')}
+                  className="group bg-white border border-rose-200 hover:border-rose-300 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-600">
+                        <ShieldAlert className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                        Immediate SOS
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-rose-600 transition-colors">
+                      Emergency SOS &amp; Security
+                    </h4>
+                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                      Campus Medical Centre ambulance (+91 94340 00001), Main Gate Security (+91 94340 00002), and hospital link.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-rose-600 pt-3 border-t border-rose-100">
+                    <span>Emergency SOS Contacts</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+
+                {/* 6. 24/7 Helplines */}
+                <div 
+                  onClick={() => setActiveDrawer('helplines')}
+                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3.5">
+                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                        <PhoneCall className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                        24/7 Toll-Free
+                      </span>
+                    </div>
+                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                      24/7 Helplines &amp; Support
+                    </h4>
+                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                      UGC Anti-Ragging toll-free desk (1800-180-5522), Women&apos;s Safety Cell, and Student Grievance desks.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                    <span>View 24/7 Helplines</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -465,6 +542,70 @@ export function CampusDirectoryView() {
           <BusTimingsDirectory busRoutes={BUS_ROUTES} />
         )}
       </div>
+
+      {/* Slide-over Fast Resource Detail Drawer */}
+      <CampusDetailDrawer
+        type={activeDrawer}
+        onClose={() => setActiveDrawer(null)}
+        onSelectDepartmentFaculty={(deptCode) => {
+          setActiveDrawer(null);
+          handleSelectDeptFaculty(deptCode);
+        }}
+      />
+
+      {/* Full Immersion 3D Map Modal */}
+      {isFull3DModalOpen && (
+        <div className="fixed inset-0 z-50 bg-[#0F172A]/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Modal Bar */}
+            <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between bg-slate-50 shrink-0">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-[#0F172A]">
+                    SETGOI 3D Digital Twin &amp; Campus Explorer
+                  </h3>
+                  <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200 font-semibold">
+                    Full CAD View
+                  </span>
+                </div>
+                <p className="font-mono text-[11px] text-[#475569] mt-0.5">
+                  23°31&apos;48.2&quot;N 87°18&apos;22.1&quot;E • Sanaka Educational Trust Group of Institutions
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsFull3DModalOpen(false);
+                    setActiveTab('3d-map');
+                  }}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50 text-xs font-mono text-[#0F172A] transition-colors"
+                >
+                  <span>Open as Tab</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-[#475569]" />
+                </button>
+                <button
+                  onClick={() => setIsFull3DModalOpen(false)}
+                  className="p-1.5 rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-100 text-[#475569] hover:text-[#0F172A] transition-colors cursor-pointer"
+                  aria-label="Close Full 3D Map Modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(92vh-70px)]">
+              <CampusVisualizer3D
+                onSelectDepartment={(deptCode) => {
+                  setIsFull3DModalOpen(false);
+                  handleSelectDeptFaculty(deptCode);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
