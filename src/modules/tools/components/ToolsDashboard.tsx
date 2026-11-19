@@ -48,59 +48,16 @@ export function ToolsDashboard() {
     router.replace(`/tools?${params.toString()}`, { scroll: false });
   };
 
-  const tabs = [
-    {
-      id: 'calculator' as ToolTab,
-      label: 'SGPA / CGPA / YGPA',
-      shortLabel: 'Calculator',
-      icon: Calculator,
-      description: 'MAKAUT 10-point credit index & degree division',
-      badge: 'Official MAKAUT',
-    },
-    {
-      id: 'notices' as ToolTab,
-      label: 'Priority Notice Board',
-      shortLabel: 'Notices',
-      icon: Bell,
-      description: 'Official academic & transit circulars',
-      badge: 'Live Board',
-    },
-    {
-      id: 'calendar' as ToolTab,
-      label: 'Academic Calendar',
-      shortLabel: 'Calendar',
-      icon: Calendar,
-      description: '2026–27 timeline & CA/PCA test windows',
-      badge: '2026–27',
-    },
-    {
-      id: 'pdf-merger' as ToolTab,
-      label: 'Client PDF Merger',
-      shortLabel: 'PDF Merger',
-      icon: FileSpreadsheet,
-      description: 'In-browser notes & PYQ merger (pdf-lib)',
-      badge: 'Private',
-    },
-    {
-      id: 'techfest' as ToolTab,
-      label: 'TechFest 2026 Board',
-      shortLabel: 'TechFest',
-      icon: Ticket,
-      description: 'Flagship hackathons & digital pass passes',
-      badge: 'Nov 2026',
-    },
-    {
-      id: 'ai-companion' as ToolTab,
-      label: 'AI Campus Companion',
-      shortLabel: 'AI Assistant',
-      icon: Bot,
-      description: 'Streaming SETGOI study & rules assistant',
-      badge: 'Gemini',
-    },
+  const pillTabs = [
+    { id: 'calculator' as ToolTab, label: 'SGPA Calculator', icon: Calculator },
+    { id: 'notices' as ToolTab, label: 'Notice Board', icon: Bell },
+    { id: 'calendar' as ToolTab, label: 'Academic Calendar', icon: Calendar },
+    { id: 'pdf-merger' as ToolTab, label: 'PDF Merger', icon: FileSpreadsheet },
+    { id: 'ai-companion' as ToolTab, label: 'AI Helper', icon: Bot },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+    <div className="w-full space-y-6 sm:space-y-8">
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2">
@@ -119,50 +76,23 @@ export function ToolsDashboard() {
         </p>
       </div>
 
-      {/* Tabs Navigation Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 border-b border-[#E4E4E7] pb-3">
-        {tabs.map((tab) => {
+      {/* Clean Horizontal Pill Tab Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-[#E4E4E7] pb-3">
+        {pillTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold font-sans transition-all shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-white border-[#2563EB] shadow-xs ring-1 ring-[#2563EB]'
-                  : 'bg-white border-[#E4E4E7] hover:border-zinc-300 hover:shadow-2xs'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white text-[#52525B] border border-[#E4E4E7] hover:border-zinc-300 hover:text-[#09090B] hover:bg-zinc-50'
               }`}
             >
-              <div className="flex items-center justify-between gap-1">
-                <div
-                  className={`p-1.5 rounded-lg border ${
-                    isActive
-                      ? 'bg-blue-50 text-[#2563EB] border-blue-200/60'
-                      : 'bg-zinc-50 text-[#52525B] border-[#E4E4E7]'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span
-                  className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full font-semibold ${
-                    isActive
-                      ? 'bg-blue-100/70 text-[#2563EB]'
-                      : 'bg-zinc-100 text-[#52525B]'
-                  }`}
-                >
-                  {tab.badge}
-                </span>
-              </div>
-
-              <div className="mt-3">
-                <p className={`text-xs font-bold tracking-tight leading-tight font-display ${isActive ? 'text-[#2563EB]' : 'text-[#09090B]'}`}>
-                  {tab.label}
-                </p>
-                <p className="text-[10px] text-[#52525B] mt-0.5 truncate hidden sm:block font-sans">
-                  {tab.description}
-                </p>
-              </div>
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
             </button>
           );
         })}

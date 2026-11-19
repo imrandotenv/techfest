@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useId } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { 
   X, 
   Upload, 
@@ -18,6 +18,8 @@ interface UploadNoteModalProps {
   onSubmit: (data: UploadNoteFormData) => void;
   currentRole: CustomUserRole;
   uploaderName: string;
+  defaultBranch?: BranchCode;
+  defaultSemester?: number;
 }
 
 export function UploadNoteModal({
@@ -26,6 +28,8 @@ export function UploadNoteModal({
   onSubmit,
   currentRole,
   uploaderName,
+  defaultBranch,
+  defaultSemester,
 }: UploadNoteModalProps) {
   const branchId = useId();
   const semesterId = useId();
@@ -34,8 +38,8 @@ export function UploadNoteModal({
   const titleId = useId();
   const yearId = useId();
 
-  const [departmentCode, setDepartmentCode] = useState<BranchCode>('CSE');
-  const [semester, setSemester] = useState<number>(3);
+  const [departmentCode, setDepartmentCode] = useState<BranchCode>(() => defaultBranch || 'CSE');
+  const [semester, setSemester] = useState<number>(() => defaultSemester || 3);
   const [subjectCode, setSubjectCode] = useState<string>('PCC-CS301');
   const [subjectName, setSubjectName] = useState<string>('Data Structures & Algorithms');
   const [title, setTitle] = useState<string>('');
@@ -45,6 +49,23 @@ export function UploadNoteModal({
   const [fileSize, setFileSize] = useState<number>(3450000);
   const [error, setError] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // Sync with default props whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const targetBranch = defaultBranch || 'CSE';
+      const targetSem = defaultSemester || 3;
+      setDepartmentCode(targetBranch);
+      setSemester(targetSem);
+      const firstMatching = MAKAUT_SUBJECTS.find(
+        (s) => (s.branch === 'ALL' || s.branch === targetBranch) && s.semester === targetSem
+      );
+      if (firstMatching) {
+        setSubjectCode(firstMatching.code);
+        setSubjectName(firstMatching.name);
+      }
+    }
+  }, [isOpen, defaultBranch, defaultSemester]);
 
   if (!isOpen) return null;
 

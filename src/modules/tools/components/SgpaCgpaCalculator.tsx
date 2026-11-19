@@ -37,6 +37,7 @@ export function SgpaCgpaCalculator() {
   const [activeTab, setActiveTab] = useState<'cumulative' | 'subject'>('cumulative');
   const [semesters, setSemesters] = useState<SemesterDetail[]>(DEFAULT_MAKAUT_SEMESTERS);
   const [showGradeInfo, setShowGradeInfo] = useState(false);
+  const [showYgpaBreakdown, setShowYgpaBreakdown] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -267,485 +268,371 @@ export function SgpaCgpaCalculator() {
         )}
       </div>
 
-      {/* TAB 1: CUMULATIVE CGPA & YGPA */}
-      {activeTab === 'cumulative' && (
-        <div className="space-y-6">
-          {/* Hero Academic Audit Performance Cockpit Card */}
-          <div className="relative overflow-hidden bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-7 shadow-xs">
-            {/* Subtle blueprint grid watermark */}
-            <div 
-              className="absolute inset-0 opacity-[0.035] pointer-events-none bg-[radial-gradient(#09090B_1px,transparent_1px)] [background-size:16px_16px]" 
-              aria-hidden="true" 
-            />
-
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200/60 font-semibold tracking-wider inline-flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
-                    Live MAKAUT Academic Cockpit
-                  </span>
-                  <span className="text-[11px] font-mono text-[#52525B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-[#E4E4E7]">
-                    Credit Index: {cumulativeSummary.totalCreditIndex.toFixed(1)} Points
+      {/* 2-Column Responsive Layout: Left Input Table | Right Sticky Summary Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Compact Semester/Subject Input Table (8 cols on lg) */}
+        <div className="lg:col-span-8 space-y-6">
+          {activeTab === 'cumulative' ? (
+            <>
+              {/* Semesters Table: Airy Padding and Clean Borders */}
+              <div className="border border-[#E4E4E7] rounded-2xl bg-white overflow-hidden shadow-xs">
+                <div className="px-4 py-3 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-[#2563EB]" />
+                    <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[#09090B]">
+                      Semester Scoreboard (Semesters 1 – 8)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[#52525B] font-mono hidden sm:inline">
+                    Edit SGPA and Credits live below
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-baseline gap-6 sm:gap-8">
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#52525B] block mb-0.5">Calculated SGPA / CGPA</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl sm:text-5xl font-extrabold text-[#09090B] tracking-tight font-mono">
-                        {cumulativeSummary.cgpa > 0 ? cumulativeSummary.cgpa.toFixed(2) : '8.42'}
-                      </span>
-                      <span className="text-sm font-mono text-[#52525B]">/ 10.00</span>
-                    </div>
-                  </div>
-
-                  <div className="h-10 w-px bg-[#E4E4E7] hidden sm:block self-center" />
-
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#52525B] block mb-0.5">MAKAUT Equivalent</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-3xl sm:text-4xl font-extrabold text-[#2563EB] tracking-tight font-mono">
-                        {cumulativeSummary.percentage > 0 ? `${cumulativeSummary.percentage}%` : '76.7%'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="h-10 w-px bg-[#E4E4E7] hidden sm:block self-center" />
-
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#52525B] block mb-0.5">Total Credits</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-3xl sm:text-4xl font-extrabold text-[#09090B] tracking-tight font-mono">
-                        {cumulativeSummary.totalCredits.toFixed(1)}
-                      </span>
-                      <span className="text-xs font-mono text-[#52525B]">Completed</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Formula & Status Badges */}
-                <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-zinc-100 text-[#09090B] border border-[#E4E4E7]">
-                    <TrendingUp className="w-3.5 h-3.5 text-[#2563EB]" />
-                    <span>Formula: (SGPA − 0.75) × 10 = {cumulativeSummary.percentage > 0 ? `${cumulativeSummary.percentage}%` : '76.7%'}</span>
-                  </span>
-
-                  {cumulativeSummary.isHonoursEligible ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      <Award className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Eligible (CGPA ≥ 7.50)</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                      <Info className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Target: CGPA ≥ 7.50 for Honours</span>
-                    </span>
-                  )}
-
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-sans font-medium bg-blue-50 text-[#2563EB] border border-blue-200">
-                    {cumulativeSummary.classification}
-                  </span>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[540px] text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-[#E4E4E7] bg-zinc-50/70 text-[#52525B] font-mono text-[11px] uppercase">
+                        <th className="py-3 px-4 font-semibold">Semester</th>
+                        <th className="py-3 px-4 font-semibold">Credits</th>
+                        <th className="py-3 px-4 font-semibold">SGPA</th>
+                        <th className="py-3 px-4 font-semibold">Index</th>
+                        <th className="py-3 px-4 font-semibold text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E4E4E7] text-zinc-800 font-mono">
+                      {semesters.map((sem) => {
+                        const creditIndex = (sem.credits * sem.sgpa).toFixed(2);
+                        return (
+                          <tr key={sem.id} className="hover:bg-zinc-50/80 transition-colors">
+                            <td className="py-3 px-4 font-sans font-semibold text-[#09090B]">
+                              {sem.semesterName}
+                            </td>
+                            <td className="py-2.5 px-4">
+                              <input
+                                type="number"
+                                min="0"
+                                max="35"
+                                step="0.5"
+                                value={sem.credits || ''}
+                                onChange={(e) => handleSemesterChange(sem.id, 'credits', e.target.value)}
+                                className="w-16 px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono text-xs focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none bg-white text-[#09090B]"
+                              />
+                            </td>
+                            <td className="py-2.5 px-4">
+                              <input
+                                type="number"
+                                min="0"
+                                max="10"
+                                step="0.01"
+                                value={sem.sgpa || ''}
+                                onChange={(e) => handleSemesterChange(sem.id, 'sgpa', e.target.value)}
+                                className="w-20 px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono text-xs focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none bg-white font-bold text-[#2563EB]"
+                              />
+                            </td>
+                            <td className="py-3 px-4 text-[#09090B] font-semibold">{creditIndex}</td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedSemesterNum(sem.semesterNumber);
+                                  handleSemesterPresetSelect(sem.semesterNumber);
+                                  setActiveTab('subject');
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] text-[#2563EB] hover:underline font-sans font-medium cursor-pointer"
+                              >
+                                <span>Calculate Subjects</span>
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              {/* Primary CTA Buttons */}
-              <div className="flex sm:flex-col items-center sm:items-end gap-2.5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#E4E4E7]">
+              {/* Collapsible 4-Year YGPA Breakdown */}
+              <div className="border border-[#E4E4E7] rounded-2xl bg-white overflow-hidden shadow-xs">
                 <button
-                  onClick={handleCopyReport}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
+                  type="button"
+                  onClick={() => setShowYgpaBreakdown(!showYgpaBreakdown)}
+                  className="w-full px-4 py-3 bg-zinc-50 hover:bg-zinc-100/80 transition-colors flex items-center justify-between text-left cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Audit Copied!' : 'Copy Audit'}</span>
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-zinc-600" />
+                    <span className="text-xs font-mono font-bold text-[#09090B] uppercase">
+                      Yearly YGPA Breakdown (Year 1 to 4)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-[#2563EB]">
+                    <span>{showYgpaBreakdown ? 'Hide Breakdown' : 'View Yearly YGPA Breakdown'}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showYgpaBreakdown ? 'rotate-180' : ''}`} />
+                  </div>
                 </button>
 
-                <button
-                  onClick={handleResetCumulative}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-[#E4E4E7] bg-white hover:bg-zinc-50 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset to Default</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Key Stat Cards: 2 Clean Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Card 1: Cumulative CGPA */}
-            <div className="p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-mono uppercase tracking-wider text-[#52525B]">
-                    Cumulative CGPA
-                  </p>
-                  <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-semibold">
-                    Live Score
-                  </span>
-                </div>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-5xl font-extrabold text-[#09090B] tracking-tight font-mono">
-                    {cumulativeSummary.cgpa > 0 ? cumulativeSummary.cgpa.toFixed(2) : '8.42'}
-                  </span>
-                  <span className="text-sm font-mono text-[#52525B]">/ 10.00</span>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-[#E4E4E7] flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-[#52525B]">
-                  Total Credits: <strong className="font-mono text-[#09090B] font-bold">{cumulativeSummary.totalCredits.toFixed(1)} Completed</strong>
-                </span>
-                {cumulativeSummary.isHonoursEligible ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">
-                    <Award className="w-3.5 h-3.5 text-emerald-600" />
-                    Honours Eligible (CGPA ≥ 7.50)
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 font-mono">
-                    Requires CGPA ≥ 7.50
-                  </span>
+                {showYgpaBreakdown && (
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-[#E4E4E7] animate-in fade-in duration-150">
+                    {cumulativeSummary.yearWiseYgpa.map((y) => (
+                      <div
+                        key={y.year}
+                        className="p-3.5 rounded-xl border border-[#E4E4E7] bg-zinc-50/50 flex flex-col justify-between"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#09090B] font-display">{y.yearLabel}</span>
+                          {y.isHonoursPacing && y.ygpa > 0 && (
+                            <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">
+                              Honours Pace
+                            </span>
+                          )}
+                        </div>
+                        <div className="my-2">
+                          <span className="text-2xl font-bold font-mono text-[#09090B]">
+                            {y.ygpa > 0 ? y.ygpa.toFixed(2) : '—'}
+                          </span>
+                          <span className="text-xs text-[#52525B] ml-1 font-mono">YGPA</span>
+                        </div>
+                        <div className="text-[11px] text-[#52525B] border-t border-[#E4E4E7] pt-1.5 flex justify-between font-mono">
+                          <span>Sem {y.oddSem.semesterNumber}: {y.oddSem.sgpa > 0 ? y.oddSem.sgpa : '0'}</span>
+                          <span>Sem {y.evenSem.semesterNumber}: {y.evenSem.sgpa > 0 ? y.evenSem.sgpa : '0'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            </div>
-
-            {/* Card 2: Equivalent % */}
-            <div className="p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-mono uppercase tracking-wider text-[#52525B]">
-                    MAKAUT Equivalent %
+            </>
+          ) : (
+            <>
+              {/* Header & Semester Preset Selection */}
+              <div className="p-4 sm:p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-mono uppercase text-[#52525B]">Current Target Semester</p>
+                  <h3 className="text-base sm:text-lg font-bold text-[#09090B] mt-0.5 font-display">
+                    Semester {selectedSemesterNum} Curriculum
+                  </h3>
+                  <p className="text-xs text-[#52525B] mt-0.5 font-sans">
+                    Official MAKAUT subject codes with credit weighting.
                   </p>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {cumulativeSummary.classification}
-                  </span>
                 </div>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-5xl font-extrabold text-[#2563EB] tracking-tight font-mono">
-                    {cumulativeSummary.percentage > 0 ? `${cumulativeSummary.percentage}%` : '76.7%'}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 pt-3 border-t border-[#E4E4E7] flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-[#52525B] font-mono">
-                  Formula: (CGPA − 0.75) × 10
-                </span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleCopyReport}
-                    className="inline-flex items-center gap-1 text-[#2563EB] hover:text-blue-700 font-medium cursor-pointer"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Audit Copied' : 'Copy Audit'}</span>
-                  </button>
-                  <button
-                    onClick={handleResetCumulative}
-                    className="text-[#52525B] hover:text-[#09090B] inline-flex items-center gap-1 cursor-pointer font-mono text-[11px]"
-                    title="Reset to default template"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* 4-Year YGPA Cards */}
-          <div>
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#52525B] mb-3 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-zinc-500" />
-              Yearly Grade Point Average (YGPA) Breakdown
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {cumulativeSummary.yearWiseYgpa.map((y) => (
-                <div
-                  key={y.year}
-                  className="p-3.5 rounded-xl border border-[#E4E4E7] bg-white flex flex-col justify-between hover:border-zinc-300 transition-colors shadow-2xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#09090B] font-display">{y.yearLabel}</span>
-                    {y.isHonoursPacing && y.ygpa > 0 && (
-                      <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">
-                        Honours Pace
-                      </span>
-                    )}
-                  </div>
-                  <div className="my-2">
-                    <span className="text-2xl font-bold font-mono text-[#09090B]">
-                      {y.ygpa > 0 ? y.ygpa.toFixed(2) : '—'}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sNum) => (
+                    <button
+                      key={sNum}
+                      onClick={() => handleSemesterPresetSelect(sNum)}
+                      className={`px-2.5 py-1 text-xs font-mono rounded-full border transition-colors cursor-pointer ${
+                        selectedSemesterNum === sNum
+                          ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold shadow-xs'
+                          : 'bg-white text-[#52525B] border-[#E4E4E7] hover:bg-zinc-50 hover:text-[#09090B]'
+                      }`}
+                    >
+                      Sem {sNum}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subject Result Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl border border-[#E4E4E7] bg-white shadow-xs">
+                  <p className="text-[10px] font-mono uppercase text-[#52525B]">Semester SGPA</p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-2xl font-extrabold font-mono text-[#09090B]">
+                      {subjectSummary.sgpa.toFixed(2)}
                     </span>
-                    <span className="text-xs text-[#52525B] ml-1 font-mono">YGPA</span>
-                  </div>
-                  <div className="text-[11px] text-[#52525B] border-t border-[#E4E4E7] pt-1.5 flex justify-between font-mono">
-                    <span>Sem {y.oddSem.semesterNumber}: {y.oddSem.sgpa > 0 ? y.oddSem.sgpa : '0'}</span>
-                    <span>Sem {y.evenSem.semesterNumber}: {y.evenSem.sgpa > 0 ? y.evenSem.sgpa : '0'}</span>
+                    <span className="text-xs text-[#52525B] font-mono">/ 10.00</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Semesters Table: Airy Padding and Clean Borders */}
-          <div className="border border-[#E4E4E7] rounded-xl bg-white overflow-hidden shadow-xs">
-            <div className="px-4 py-3 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-zinc-600" />
-                <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[#09090B]">
-                  Semester Scoreboard (Semesters 1 – 8)
-                </h3>
+                <div className="p-3.5 rounded-xl border border-[#E4E4E7] bg-white shadow-xs">
+                  <p className="text-[10px] font-mono uppercase text-[#52525B]">Equivalent %</p>
+                  <div className="mt-1">
+                    <span className="text-2xl font-extrabold font-mono text-[#2563EB]">
+                      {subjectSummary.percentage}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-[#E4E4E7] bg-white shadow-xs flex items-center">
+                  <button
+                    onClick={handleApplyToCumulative}
+                    className="w-full py-2 px-3 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer font-sans"
+                  >
+                    <span>Apply to Scoreboard</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
-              <span className="text-xs text-[#52525B] font-mono">
-                Edit SGPA and Credits live below
+
+              {/* Subjects Table */}
+              <div className="border border-[#E4E4E7] rounded-2xl bg-white overflow-hidden shadow-xs">
+                <div className="px-4 py-3 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
+                  <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[#09090B]">
+                    Subjects &amp; Lab Assessments
+                  </h3>
+                  <button
+                    onClick={handleAddSubject}
+                    className="inline-flex items-center gap-1 text-xs text-[#2563EB] hover:underline font-medium cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Custom Paper</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[540px] text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-[#E4E4E7] bg-zinc-50/70 text-[#52525B] font-mono text-[11px] uppercase">
+                        <th className="py-2.5 px-3 font-semibold">Subject Code</th>
+                        <th className="py-2.5 px-3 font-semibold">Paper Name</th>
+                        <th className="py-2.5 px-3 font-semibold">Credits</th>
+                        <th className="py-2.5 px-3 font-semibold">Grade</th>
+                        <th className="py-2.5 px-3 font-semibold text-right">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E4E4E7] text-zinc-800 font-mono">
+                      {subjects.map((sub) => (
+                        <tr key={sub.id} className="hover:bg-zinc-50/80 transition-colors">
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={sub.code}
+                              onChange={(e) => handleSubjectChange(sub.id, 'code', e.target.value)}
+                              className="w-24 px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono text-xs uppercase bg-white focus:border-[#2563EB] outline-none text-[#09090B]"
+                            />
+                          </td>
+                          <td className="py-2 px-3 font-sans">
+                            <input
+                              type="text"
+                              value={sub.name}
+                              onChange={(e) => handleSubjectChange(sub.id, 'name', e.target.value)}
+                              className="w-full px-2 py-1 border border-[#E4E4E7] rounded-lg text-xs bg-white focus:border-[#2563EB] outline-none text-[#09090B]"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="number"
+                              min="0.5"
+                              max="10"
+                              step="0.5"
+                              value={sub.credits}
+                              onChange={(e) => handleSubjectChange(sub.id, 'credits', e.target.value)}
+                              className="w-14 px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono text-xs bg-white focus:border-[#2563EB] outline-none text-[#09090B]"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <select
+                              value={sub.grade}
+                              onChange={(e) => handleSubjectChange(sub.id, 'grade', e.target.value as LetterGrade)}
+                              className="px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono font-bold text-xs bg-white text-[#2563EB] focus:border-[#2563EB] outline-none cursor-pointer"
+                            >
+                              {MAKAUT_GRADE_SYSTEM.map((g) => (
+                                <option key={g.letter} value={g.letter}>
+                                  {g.letter} ({g.points} pts)
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <button
+                              onClick={() => handleRemoveSubject(sub.id)}
+                              className="text-[#52525B] hover:text-red-600 transition-colors p-1 cursor-pointer"
+                              title="Remove subject"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Right Column: Sticky, Minimal SGPA/CGPA Summary Card (4 cols on lg) */}
+        <div className="lg:col-span-4 lg:sticky lg:top-28 space-y-4">
+          <div className="p-5 sm:p-6 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs space-y-5">
+            {/* Header / Eyebrow */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono uppercase tracking-wider text-[#52525B] font-semibold">
+                Cumulative Summary
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-semibold">
+                Live Score
               </span>
             </div>
 
-            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full min-w-[580px] text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-[#E4E4E7] bg-zinc-50/70 text-[#52525B] font-mono text-[11px] uppercase">
-                    <th className="py-3.5 px-4 font-semibold">Semester</th>
-                    <th className="py-3.5 px-4 font-semibold">Credits</th>
-                    <th className="py-3.5 px-4 font-semibold">SGPA (0.00 – 10.00)</th>
-                    <th className="py-3.5 px-4 font-semibold">Credit Index</th>
-                    <th className="py-3.5 px-4 font-semibold">Equivalent %</th>
-                    <th className="py-3.5 px-4 font-semibold text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E4E4E7] text-zinc-800 font-mono">
-                  {semesters.map((sem) => {
-                    const creditIndex = (sem.credits * sem.sgpa).toFixed(2);
-                    const semPct = sem.sgpa > 0 ? calculatePercentageFromGpa(sem.sgpa) : 0;
-                    return (
-                      <tr key={sem.id} className="hover:bg-zinc-50/80 transition-colors">
-                        <td className="py-3.5 px-4 font-sans font-semibold text-[#09090B]">
-                          {sem.semesterName}
-                        </td>
-                        <td className="py-3 px-4">
-                          <input
-                            type="number"
-                            min="0"
-                            max="35"
-                            step="0.5"
-                            value={sem.credits || ''}
-                            onChange={(e) => handleSemesterChange(sem.id, 'credits', e.target.value)}
-                            className="w-20 px-2.5 py-1.5 border border-[#E4E4E7] rounded-lg font-mono text-xs focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none bg-white text-[#09090B]"
-                          />
-                        </td>
-                        <td className="py-3 px-4">
-                          <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.01"
-                            value={sem.sgpa || ''}
-                            onChange={(e) => handleSemesterChange(sem.id, 'sgpa', e.target.value)}
-                            className="w-24 px-2.5 py-1.5 border border-[#E4E4E7] rounded-lg font-mono text-xs focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none bg-white font-bold text-[#2563EB]"
-                          />
-                        </td>
-                        <td className="py-3.5 px-4 text-[#09090B] font-semibold">{creditIndex}</td>
-                        <td className="py-3.5 px-4 text-[#52525B]">
-                          {semPct > 0 ? `${semPct}%` : '—'}
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => {
-                              setSelectedSemesterNum(sem.semesterNumber);
-                              handleSemesterPresetSelect(sem.semesterNumber);
-                              setActiveTab('subject');
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] text-[#2563EB] hover:underline font-sans font-medium cursor-pointer"
-                          >
-                            <span>Calculate via Subjects</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: SUBJECT-WISE SGPA CALCULATOR */}
-      {activeTab === 'subject' && (
-        <div className="space-y-6">
-          {/* Header & Semester Preset Selection */}
-          <div className="p-4 sm:p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Score Headline */}
             <div>
-              <p className="text-xs font-mono uppercase text-[#52525B]">Current Target Semester</p>
-              <h3 className="text-lg font-bold text-[#09090B] mt-0.5 font-display">
-                Semester {selectedSemesterNum} (Computer Science &amp; Engg Curriculum)
-              </h3>
-              <p className="text-xs text-[#52525B] mt-0.5 font-sans">
-                Official MAKAUT subject codes with pre-loaded credit weighting.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((sNum) => (
-                <button
-                  key={sNum}
-                  onClick={() => handleSemesterPresetSelect(sNum)}
-                  className={`px-3 py-1 text-xs font-mono rounded-full border transition-colors cursor-pointer ${
-                    selectedSemesterNum === sNum
-                      ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold shadow-xs'
-                      : 'bg-white text-[#52525B] border-[#E4E4E7] hover:bg-zinc-50 hover:text-[#09090B]'
-                  }`}
-                >
-                  Sem {sNum}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Subject Result Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs">
-              <p className="text-[11px] font-mono uppercase text-[#52525B]">Semester SGPA</p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold font-mono text-[#09090B]">
-                  {subjectSummary.sgpa.toFixed(2)}
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl sm:text-5xl font-extrabold text-[#09090B] tracking-tight font-mono">
+                  {cumulativeSummary.cgpa > 0 ? cumulativeSummary.cgpa.toFixed(2) : '8.42'}
                 </span>
-                <span className="text-xs text-[#52525B] font-mono">/ 10.00</span>
+                <span className="text-sm font-mono text-[#52525B]">/ 10.00</span>
               </div>
-              <p className="text-[11px] text-[#52525B] font-mono mt-1">
-                Credit Index: {subjectSummary.creditIndex.toFixed(1)}
+              <p className="text-xs font-mono text-[#52525B] mt-1">
+                {cumulativeSummary.totalCredits.toFixed(1)} Credits Completed
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs">
-              <p className="text-[11px] font-mono uppercase text-[#52525B]">Equivalent Percentage</p>
-              <div className="mt-1">
-                <span className="text-3xl font-extrabold font-mono text-[#2563EB]">
-                  {subjectSummary.percentage}%
+            {/* Percentage & Division */}
+            <div className="pt-4 border-t border-[#E4E4E7] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#52525B] font-mono">MAKAUT Equivalent</span>
+                <span className="text-xl font-bold font-mono text-[#2563EB]">
+                  {cumulativeSummary.percentage > 0 ? `${cumulativeSummary.percentage}%` : '76.7%'}
                 </span>
               </div>
-              <p className="text-[11px] text-[#52525B] font-mono mt-1">
-                Total Credits: {subjectSummary.totalCredits}
-              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#52525B] font-mono">Classification</span>
+                <span className="text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-mono">
+                  {cumulativeSummary.classification}
+                </span>
+              </div>
+              <div className="text-[11px] font-mono text-[#52525B] pt-0.5">
+                Formula: (CGPA − 0.75) × 10
+              </div>
             </div>
 
-            <div className="p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs flex flex-col justify-between">
-              <div>
-                <p className="text-[11px] font-mono uppercase text-[#52525B]">Backlog Warning</p>
-                <div className="mt-1">
-                  {subjectSummary.hasBacklog ? (
-                    <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
-                      Contains &apos;F&apos; Grade (Backlog)
-                    </span>
-                  ) : (
-                    <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                      All Subjects Cleared
-                    </span>
-                  )}
+            {/* Honours Status */}
+            <div className="pt-3 border-t border-[#E4E4E7]">
+              {cumulativeSummary.isHonoursEligible ? (
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl font-mono">
+                  <Award className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Honours Eligible (CGPA ≥ 7.50)</span>
                 </div>
-              </div>
-              <button
-                onClick={handleApplyToCumulative}
-                className="mt-3 w-full py-2 px-3.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer font-sans"
-              >
-                <span>Apply to Sem {selectedSemesterNum} in Cumulative Planner</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Subjects Table */}
-          <div className="border border-[#E4E4E7] rounded-xl bg-white overflow-hidden shadow-xs">
-            <div className="px-4 py-3 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
-              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[#09090B]">
-                Subjects &amp; Laboratory Assessments
-              </h3>
-              <button
-                onClick={handleAddSubject}
-                className="inline-flex items-center gap-1 text-xs text-[#2563EB] hover:underline font-medium cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Custom Paper</span>
-              </button>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-amber-800 bg-amber-50 border border-amber-200 p-2.5 rounded-xl font-mono">
+                  <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Target: CGPA ≥ 7.50 for Honours</span>
+                </div>
+              )}
             </div>
 
-            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full min-w-[580px] text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-[#E4E4E7] bg-zinc-50/70 text-[#52525B] font-mono text-[11px] uppercase">
-                    <th className="py-3 px-4 font-semibold">Subject Code</th>
-                    <th className="py-3 px-4 font-semibold">Subject / Paper Name</th>
-                    <th className="py-3 px-4 font-semibold">Credits</th>
-                    <th className="py-3 px-4 font-semibold">Letter Grade</th>
-                    <th className="py-3 px-4 font-semibold">Grade Points</th>
-                    <th className="py-3 px-4 font-semibold text-right">Delete</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E4E4E7] text-zinc-800 font-mono">
-                  {subjects.map((sub) => {
-                    const points = MAKAUT_GRADE_SYSTEM.find((g) => g.letter === sub.grade)?.points || 0;
-                    return (
-                      <tr key={sub.id} className="hover:bg-zinc-50/80 transition-colors">
-                        <td className="py-2.5 px-4">
-                          <input
-                            type="text"
-                            value={sub.code}
-                            onChange={(e) => handleSubjectChange(sub.id, 'code', e.target.value)}
-                            className="w-28 px-2.5 py-1.5 border border-[#E4E4E7] rounded-lg font-mono text-xs uppercase bg-white focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none text-[#09090B]"
-                          />
-                        </td>
-                        <td className="py-2.5 px-4 font-sans">
-                          <input
-                            type="text"
-                            value={sub.name}
-                            onChange={(e) => handleSubjectChange(sub.id, 'name', e.target.value)}
-                            className="w-full px-2.5 py-1.5 border border-[#E4E4E7] rounded-lg text-xs bg-white focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none text-[#09090B]"
-                          />
-                        </td>
-                        <td className="py-2.5 px-4">
-                          <input
-                            type="number"
-                            min="0.5"
-                            max="10"
-                            step="0.5"
-                            value={sub.credits}
-                            onChange={(e) => handleSubjectChange(sub.id, 'credits', e.target.value)}
-                            className="w-16 px-2.5 py-1.5 border border-[#E4E4E7] rounded-lg font-mono text-xs bg-white focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none text-[#09090B]"
-                          />
-                        </td>
-                        <td className="py-2.5 px-4">
-                          <select
-                            value={sub.grade}
-                            onChange={(e) => handleSubjectChange(sub.id, 'grade', e.target.value as LetterGrade)}
-                            className="px-2.5 py-1.5 border border-[#E4E4E7] rounded-lg font-mono font-bold text-xs bg-white text-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-none cursor-pointer"
-                          >
-                            {MAKAUT_GRADE_SYSTEM.map((g) => (
-                              <option key={g.letter} value={g.letter}>
-                                {g.letter} ({g.points} pts - {g.percentageRange})
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="py-2.5 px-4 font-bold text-[#09090B]">
-                          {points} pts
-                        </td>
-                        <td className="py-2.5 px-4 text-right">
-                          <button
-                            onClick={() => handleRemoveSubject(sub.id)}
-                            className="text-[#52525B] hover:text-red-600 transition-colors p-1 cursor-pointer"
-                            title="Remove subject"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* Actions */}
+            <div className="pt-2 space-y-2">
+              <button
+                onClick={handleCopyReport}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Audit Copied!' : 'Copy Result'}</span>
+              </button>
+
+              <button
+                onClick={handleResetCumulative}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-[#E4E4E7] bg-white hover:bg-zinc-50 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset to Default</span>
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Real-time Toast Confirmation Banner */}
       {toastMessage && (

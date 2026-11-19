@@ -16,7 +16,8 @@ import {
   Search,
   Sparkles,
   FlaskConical,
-  GraduationCap
+  GraduationCap,
+  X
 } from 'lucide-react';
 import { EXTENDED_CAMPUS_ZONES } from '../data';
 import { CampusZoneExtended } from '../types';
@@ -203,6 +204,7 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [cameraView, setCameraView] = useState<'iso' | 'front' | 'gate' | 'top'>('iso');
+  const [isInspectDrawerOpen, setIsInspectDrawerOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   // Three.js internal references for interaction
@@ -767,50 +769,92 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
         </div>
       </div>
 
-      {/* Selected Zone Deep Dive Card (Swiss 1px Border Light Mode Card) */}
+      {/* Compact Building Status Bar with Inspect Floors Trigger (Replaces Permanent Clutter) */}
       {selectedZone && (
-        <div className="w-full bg-white border border-[#E2E8F0] rounded-xl p-5 sm:p-6 shadow-xs transition-all">
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-            {/* Zone Identity & Header */}
-            <div className="space-y-3 max-w-2xl">
+        <div className="w-full bg-white border border-[#E4E4E7] rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center shrink-0">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded bg-slate-100 text-[#0F172A] border border-[#E2E8F0] font-semibold">
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-zinc-100 text-[#52525B] font-semibold">
                   {selectedZone.tag}
                 </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-xs font-mono text-[#475569]">
-                  {selectedZone.levels} {selectedZone.levels === 1 ? 'Level' : 'Levels / Floors'}
+                <span className="text-xs font-mono text-[#52525B]">
+                  {selectedZone.levels} {selectedZone.levels === 1 ? 'Level' : 'Floors'}
                 </span>
                 {selectedZone.operatingHours && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="inline-flex items-center gap-1 text-xs font-mono text-[#475569]">
-                      <Clock className="w-3 h-3 text-[#475569]" />
-                      {selectedZone.operatingHours}
-                    </span>
-                  </>
+                  <span className="text-xs font-mono text-[#52525B] hidden md:inline">
+                    • {selectedZone.operatingHours}
+                  </span>
                 )}
               </div>
-
-              <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight flex items-center gap-2 font-display">
-                <Building2 className="w-5 h-5 text-[#2563EB]" />
+              <h3 className="text-base font-bold text-[#09090B] font-display mt-0.5">
                 {selectedZone.name}
               </h3>
+            </div>
+          </div>
 
-              <p className="text-xs sm:text-sm text-[#475569] leading-relaxed font-sans">
-                {selectedZone.description}
-              </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsInspectDrawerOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Inspect Floors →</span>
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* Slide-Over Drawer for Floor-by-Floor Lab Directory */}
+      {isInspectDrawerOpen && selectedZone && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-end animate-in fade-in duration-200">
+          <div
+            className="fixed inset-0"
+            onClick={() => setIsInspectDrawerOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative w-full max-w-lg h-full bg-white shadow-2xl flex flex-col z-10 border-l border-[#E4E4E7] overflow-hidden animate-in slide-in-from-right duration-200">
+            {/* Drawer Header */}
+            <div className="p-5 border-b border-[#E4E4E7] flex items-center justify-between bg-zinc-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#09090B] font-display">
+                    {selectedZone.name}
+                  </h3>
+                  <p className="text-xs text-[#52525B] font-mono">
+                    Floor-by-Floor Labs &amp; Facilities
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsInspectDrawerOpen(false)}
+                className="p-1.5 rounded-full text-[#52525B] hover:text-[#09090B] hover:bg-zinc-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Drawer Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {/* Branch Pill Selector for Academic Core (Main Building) */}
               {selectedZone.id === 'zone-main' && (
-                <div className="pt-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-mono text-[#475569] uppercase font-semibold flex items-center gap-1.5">
+                <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-[#09090B] font-bold flex items-center gap-1.5">
                       <GraduationCap className="w-3.5 h-3.5 text-[#2563EB]" />
                       Select Academic Branch:
                     </span>
                     <span className="text-[11px] font-mono text-[#2563EB]">
-                      Dynamically updates labs &amp; room numbers
+                      Filters Labs Live
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -821,13 +865,13 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
                           key={branch}
                           type="button"
                           onClick={() => setSelectedBranch(branch)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer border ${
+                          className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer border ${
                             isSelected
-                              ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-2xs font-bold'
-                              : 'bg-white text-[#475569] border-[#E2E8F0] hover:bg-slate-50 hover:text-[#0F172A] hover:border-slate-300'
+                              ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold shadow-2xs'
+                              : 'bg-white text-[#52525B] border-[#E4E4E7] hover:bg-zinc-50 hover:text-[#09090B]'
                           }`}
                         >
-                          {branch === 'ALL' ? 'All Floors' : `${branch} Labs & Rooms`}
+                          {branch === 'ALL' ? 'All Floors' : branch}
                         </button>
                       );
                     })}
@@ -835,69 +879,26 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
                 </div>
               )}
 
-              {/* Departments Housed */}
-              <div className="pt-1">
-                <span className="text-xs font-mono text-[#475569] block mb-1.5 uppercase font-medium">
-                  Departments &amp; Facilities In Zone:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedZone.departmentsHoused.map((dept, i) => (
-                    <span
-                      key={i}
-                      className="px-2.5 py-1 rounded-lg text-xs bg-slate-50 text-[#0F172A] border border-[#E2E8F0] font-medium font-sans"
-                    >
-                      {dept}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL' && onSelectDepartment && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => onSelectDepartment(selectedBranch)}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium font-sans text-[#2563EB] hover:underline cursor-pointer"
-                  >
-                    <span>View {selectedBranch} Department Faculty &amp; Syllabi</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Floor Breakdown Table (Swiss Tabular Layout) */}
-            <div className="w-full lg:w-[420px] shrink-0 bg-slate-50/80 rounded-xl border border-[#E2E8F0] p-4 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-[#E2E8F0]">
-                <span className="text-xs font-mono uppercase text-[#0F172A] font-bold flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
-                  {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL'
-                    ? `${selectedBranch} Floor & Lab Directory`
-                    : 'Floor-by-Floor Directory'}
-                </span>
-                <span className="text-[11px] font-mono text-[#475569] bg-white px-2 py-0.5 rounded border border-[#E2E8F0]">
-                  {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL'
-                    ? `${MAIN_BUILDING_BRANCH_FLOORS[selectedBranch].length} Levels Active`
-                    : `${selectedZone.floorsDetail?.length || selectedZone.levels} Levels`}
-                </span>
-              </div>
-
-              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1 text-xs divide-y divide-[#E2E8F0]">
+              {/* Floor Listings */}
+              <div className="space-y-3">
                 {selectedZone.id === 'zone-main' && selectedBranch !== 'ALL' ? (
                   MAIN_BUILDING_BRANCH_FLOORS[selectedBranch].map((fl, idx) => (
-                    <div key={idx} className="pt-2 first:pt-0">
-                      <div className="flex items-center justify-between font-mono text-[11px] font-bold text-[#0F172A] mb-1">
+                    <div
+                      key={idx}
+                      className="p-4 rounded-xl border border-[#E4E4E7] bg-white space-y-2"
+                    >
+                      <div className="flex items-center justify-between font-mono text-xs font-bold text-[#09090B]">
                         <span className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
+                          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
                           {fl.floor}
                         </span>
-                        <span className="text-[10px] text-[#475569] font-normal">
-                          {fl.labsCount} Labs/Rooms
+                        <span className="text-[11px] text-[#52525B] font-normal">
+                          {fl.labsCount} Labs
                         </span>
                       </div>
-                      <ul className="text-[#475569] mt-0.5 space-y-1 pl-3 text-[11px] font-sans">
+                      <ul className="text-[#52525B] space-y-1.5 pl-4 text-xs font-sans list-disc">
                         {fl.facilities.map((fac, fIdx) => (
-                          <li key={fIdx} className="leading-snug list-disc">
+                          <li key={fIdx} className="leading-relaxed">
                             {fac}
                           </li>
                         ))}
@@ -906,14 +907,17 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
                   ))
                 ) : (
                   selectedZone.floorsDetail?.map((fl, idx) => (
-                    <div key={idx} className="pt-2 first:pt-0">
-                      <div className="font-mono text-[11px] font-bold text-[#0F172A] mb-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#0F172A]" />
+                    <div
+                      key={idx}
+                      className="p-4 rounded-xl border border-[#E4E4E7] bg-white space-y-2"
+                    >
+                      <div className="font-mono text-xs font-bold text-[#09090B] flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#09090B]" />
                         {fl.floor}
                       </div>
-                      <ul className="text-[#475569] mt-0.5 space-y-1 pl-3 text-[11px] font-sans">
+                      <ul className="text-[#52525B] space-y-1.5 pl-4 text-xs font-sans list-disc">
                         {fl.facilities.map((fac, fIdx) => (
-                          <li key={fIdx} className="leading-snug list-disc">
+                          <li key={fIdx} className="leading-relaxed">
                             {fac}
                           </li>
                         ))}
@@ -922,6 +926,20 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
                   ))
                 )}
               </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-4 border-t border-[#E4E4E7] bg-zinc-50 flex items-center justify-between">
+              <span className="text-xs font-mono text-[#52525B]">
+                SETGOI Infrastructure Directory
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsInspectDrawerOpen(false)}
+                className="px-4 py-2 rounded-full bg-zinc-200 hover:bg-zinc-300 text-xs font-medium text-[#09090B] transition-colors cursor-pointer"
+              >
+                Close Drawer
+              </button>
             </div>
           </div>
         </div>

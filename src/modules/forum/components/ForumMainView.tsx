@@ -407,7 +407,7 @@ export function ForumMainView({
   }, [posts, selectedPostId]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Toast Notification */}
       {feedbackToast && (
         <div
@@ -515,7 +515,7 @@ export function ForumMainView({
               </div>
             </div>
           ) : (
-            <div className="space-y-3.5">
+            <div className="space-y-4">
               {filteredPosts.map((post) => (
                 <ForumPostCard
                   key={post.id}
