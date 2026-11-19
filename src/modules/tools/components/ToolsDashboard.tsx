@@ -100,27 +100,27 @@ export function ToolsDashboard() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="p-1.5 rounded-md bg-[#0F172A] text-white font-mono text-xs font-bold">
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-mono text-xs font-bold">
             UTILITIES
           </span>
-          <span className="text-xs font-mono uppercase text-[#475569] tracking-wider">
+          <span className="text-xs font-mono uppercase text-[#52525B] tracking-wider">
             SETGOI Academic &amp; Student Tools Suite
           </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] font-display mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#09090B] font-display mt-2">
           Student Utilities &amp; Academic Calculators
         </h1>
-        <p className="text-sm text-[#475569] mt-1 max-w-3xl font-sans leading-relaxed">
+        <p className="text-sm text-[#52525B] mt-1 max-w-3xl font-sans leading-relaxed">
           Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, track assessment schedules, merge study documents securely, and interact with the campus AI companion.
         </p>
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 border-b border-[#E2E8F0] pb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 border-b border-[#E4E4E7] pb-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -128,27 +128,27 @@ export function ToolsDashboard() {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+              className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                 isActive
-                  ? 'bg-white border-[#0F172A] shadow-xs ring-1 ring-[#0F172A]'
-                  : 'bg-white border-[#E2E8F0] hover:border-slate-300 hover:shadow-2xs'
+                  ? 'bg-white border-[#2563EB] shadow-xs ring-1 ring-[#2563EB]'
+                  : 'bg-white border-[#E4E4E7] hover:border-zinc-300 hover:shadow-2xs'
               }`}
             >
               <div className="flex items-center justify-between gap-1">
                 <div
                   className={`p-1.5 rounded-lg border ${
                     isActive
-                      ? 'bg-[#0F172A] text-white border-[#0F172A]'
-                      : 'bg-slate-50 text-[#475569] border-[#E2E8F0]'
+                      ? 'bg-blue-50 text-[#2563EB] border-blue-200/60'
+                      : 'bg-zinc-50 text-[#52525B] border-[#E4E4E7]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
                 </div>
                 <span
-                  className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-semibold ${
+                  className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full font-semibold ${
                     isActive
-                      ? 'bg-slate-100 text-[#0F172A]'
-                      : 'bg-slate-100 text-[#475569]'
+                      ? 'bg-blue-100/70 text-[#2563EB]'
+                      : 'bg-zinc-100 text-[#52525B]'
                   }`}
                 >
                   {tab.badge}
@@ -156,10 +156,10 @@ export function ToolsDashboard() {
               </div>
 
               <div className="mt-3">
-                <p className="text-xs font-bold text-[#0F172A] tracking-tight leading-tight font-display">
+                <p className={`text-xs font-bold tracking-tight leading-tight font-display ${isActive ? 'text-[#2563EB]' : 'text-[#09090B]'}`}>
                   {tab.label}
                 </p>
-                <p className="text-[10px] text-[#475569] mt-0.5 truncate hidden sm:block font-sans">
+                <p className="text-[10px] text-[#52525B] mt-0.5 truncate hidden sm:block font-sans">
                   {tab.description}
                 </p>
               </div>

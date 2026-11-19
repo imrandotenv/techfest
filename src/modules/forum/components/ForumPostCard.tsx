@@ -81,7 +81,7 @@ export function ForumPostCard({
   };
 
   return (
-    <article className="w-full bg-white border border-[#E2E8F0] rounded-xl p-4 sm:p-5 hover:border-slate-300 hover:shadow-xs transition-all group flex gap-3 sm:gap-4 items-start">
+    <article className="w-full bg-white border border-[#E4E4E7] rounded-xl p-4 sm:p-5 hover:border-zinc-300 hover:shadow-xs transition-all group flex gap-3 sm:gap-4 items-start">
       {/* Aligned Left Column: Upvote Control Widget */}
       <button
         type="button"
@@ -92,15 +92,15 @@ export function ForumPostCard({
         className={`w-11 sm:w-14 flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all cursor-pointer shrink-0 font-mono ${
           post.userUpvoted
             ? 'bg-blue-50 text-[#2563EB] border-blue-300 shadow-2xs font-bold'
-            : 'bg-slate-50/80 text-[#475569] border-[#E2E8F0] hover:bg-slate-100 hover:text-[#0F172A] hover:border-slate-300'
+            : 'bg-white text-[#09090B] border-[#E4E4E7] hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-blue-50/40'
         }`}
         title="Upvote discussion"
       >
-        <ChevronUp className={`w-4 h-4 transition-transform ${post.userUpvoted ? 'text-[#2563EB] stroke-[3]' : 'text-[#475569]'}`} />
-        <span className="text-xs sm:text-sm font-bold leading-none mt-1 text-[#0F172A]">
+        <ChevronUp className={`w-4 h-4 transition-transform ${post.userUpvoted ? 'text-[#2563EB] stroke-[3]' : 'text-[#52525B]'}`} />
+        <span className="text-xs sm:text-sm font-bold leading-none mt-1 text-[#09090B]">
           {post.upvotesCount}
         </span>
-        <span className="text-[9px] uppercase tracking-wider text-[#475569]/80 mt-0.5 hidden sm:block">
+        <span className="text-[9px] uppercase tracking-wider text-[#52525B]/80 mt-0.5 hidden sm:block">
           votes
         </span>
       </button>
@@ -130,7 +130,7 @@ export function ForumPostCard({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-[#475569]/70 font-mono">
+          <div className="flex items-center gap-1.5 text-xs text-[#52525B]/70 font-mono">
             <Clock className="w-3.5 h-3.5" />
             <span>{formatDate(post.createdAt)}</span>
           </div>
@@ -140,22 +140,22 @@ export function ForumPostCard({
         <div className="mb-2.5">
           <h2
             onClick={() => onSelect(post.id)}
-            className="text-base sm:text-lg font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors cursor-pointer leading-snug font-display"
+            className="text-base sm:text-lg font-bold text-[#09090B] group-hover:text-[#2563EB] transition-colors cursor-pointer leading-snug font-display"
           >
             {post.title}
           </h2>
           <p
             onClick={() => onSelect(post.id)}
-            className="text-xs sm:text-sm text-[#475569] mt-1 line-clamp-2 cursor-pointer leading-relaxed font-sans"
+            className="text-xs text-[#52525B] mt-1 line-clamp-1 cursor-pointer leading-relaxed font-sans"
           >
             {post.content}
           </p>
         </div>
 
-        {/* Tags */}
+        {/* Tags - max 2 */}
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {post.tags.map((tag) => (
+            {post.tags.slice(0, 2).map((tag) => (
               <button
                 key={tag}
                 type="button"
@@ -163,10 +163,10 @@ export function ForumPostCard({
                   e.stopPropagation();
                   onSelectTag?.(tag);
                 }}
-                className="inline-flex items-center gap-1 text-[11px] font-mono text-[#475569] bg-slate-50 hover:bg-slate-100 hover:text-[#0F172A] border border-[#E2E8F0] px-2 py-0.5 rounded cursor-pointer transition-colors"
+                className="inline-flex items-center gap-1 text-[11px] font-mono text-[#52525B] bg-zinc-50 hover:bg-blue-50 hover:text-[#2563EB] hover:border-blue-200 border border-[#E4E4E7] px-2 py-0.5 rounded cursor-pointer transition-colors"
                 title={`Filter by tag: ${tag}`}
               >
-                <Tag className="w-2.5 h-2.5 text-[#475569]/60" />
+                <Tag className="w-2.5 h-2.5 text-[#52525B]/60" />
                 <span>{tag.startsWith('#') ? tag : `#${tag}`}</span>
               </button>
             ))}
@@ -174,29 +174,29 @@ export function ForumPostCard({
         )}
 
         {/* Bottom Bar: Replies & Author Details */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-[#E2E8F0]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-[#E4E4E7]">
           <button
             type="button"
             onClick={() => onSelect(post.id)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-[#475569] bg-slate-50 border border-[#E2E8F0] hover:bg-slate-100 hover:text-[#0F172A] transition-colors cursor-pointer font-sans w-fit"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-[#52525B] bg-zinc-50 border border-[#E4E4E7] hover:bg-zinc-100 hover:text-[#09090B] transition-colors cursor-pointer font-sans w-fit"
           >
-            <MessageSquare className="w-3.5 h-3.5 text-[#475569]" />
-            <span className="font-semibold text-[#0F172A]">{repliesCount}</span>
-            <span className="text-[#475569]">
+            <MessageSquare className="w-3.5 h-3.5 text-[#52525B]" />
+            <span className="font-semibold text-[#09090B]">{repliesCount}</span>
+            <span className="text-[#52525B]">
               {repliesCount === 1 ? 'Reply' : 'Replies'}
             </span>
           </button>
 
           {/* Author Credit */}
-          <div className="flex items-center gap-2 text-xs text-[#475569]">
-            <div className="w-5 h-5 rounded-full bg-slate-100 border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] shrink-0 font-mono text-[10px] font-bold">
+          <div className="flex items-center gap-2 text-xs text-[#52525B]">
+            <div className="w-5 h-5 rounded-full bg-blue-50 border border-blue-200/60 flex items-center justify-center text-[#2563EB] shrink-0 font-mono text-[10px] font-bold">
               {post.authorName.charAt(0)}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="font-medium text-[#0F172A] font-sans">{post.authorName}</span>
+              <span className="font-medium text-[#09090B] font-sans">{post.authorName}</span>
               {getRoleBadge(post.authorRole)}
               {post.authorDepartment && (
-                <span className="hidden md:inline text-[11px] text-[#475569]/70 font-mono">
+                <span className="hidden md:inline text-[11px] text-[#52525B]/70 font-mono">
                   • {post.authorDepartment}
                 </span>
               )}

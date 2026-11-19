@@ -48,19 +48,19 @@ export function ForumCategoryFilter({
         <button
           type="button"
           onClick={() => onSelectCategory('All')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border font-sans transition-colors ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border font-sans transition-colors cursor-pointer ${
             selectedCategory === 'All'
-              ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
-              : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-slate-300 hover:bg-slate-50 hover:text-[#0F172A]'
+              ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs'
+              : 'bg-white text-[#52525B] border-[#E4E4E7] hover:border-zinc-300 hover:bg-zinc-50 hover:text-[#09090B]'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>All Categories</span>
+          <span>All</span>
           <span
             className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'All'
-                ? 'bg-slate-800 text-slate-200'
-                : 'bg-slate-100 text-[#475569]'
+                ? 'bg-blue-700 text-white'
+                : 'bg-zinc-100 text-[#52525B]'
             }`}
           >
             {totalCount}
@@ -78,19 +78,19 @@ export function ForumCategoryFilter({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border font-sans transition-colors ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border font-sans transition-colors cursor-pointer ${
                 isSelected
-                  ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
-                  : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-slate-300 hover:bg-slate-50 hover:text-[#0F172A]'
+                  ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs'
+                  : 'bg-white text-[#52525B] border-[#E4E4E7] hover:border-zinc-300 hover:bg-zinc-50 hover:text-[#09090B]'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
-              <span>{cat.id}</span>
+              <span>{cat.id === 'Campus Life' ? 'Campus' : cat.id === 'TechFest' ? 'Coding & Tech' : cat.id}</span>
               <span
                 className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                   isSelected
-                    ? 'bg-slate-800 text-slate-200'
-                    : 'bg-slate-100 text-[#475569]'
+                    ? 'bg-blue-700 text-white'
+                    : 'bg-zinc-100 text-[#52525B]'
                 }`}
               >
                 {count}

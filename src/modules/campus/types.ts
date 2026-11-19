@@ -8,8 +8,9 @@ import {
 } from '@/types';
 
 export type CampusTab = 
-  | 'overview' 
   | '3d-map' 
+  | 'directory'
+  | 'overview' 
   | 'departments' 
   | 'faculty' 
   | 'hostels' 

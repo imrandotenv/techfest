@@ -462,51 +462,32 @@ export function ForumMainView({
             categoryCounts={categoryCounts}
           />
 
-          {/* Interactive Popular Topics / Tags Filter Bar */}
-          {allTags.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-mono text-[#475569] uppercase tracking-wider mr-1">
-                Topics:
-              </span>
-              {allTags.map((tag) => {
-                const isSelected = selectedTag?.toLowerCase() === tag.toLowerCase();
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setSelectedTag(isSelected ? null : tag)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer border ${
-                      isSelected
-                        ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-2xs font-semibold'
-                        : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-slate-300 hover:text-[#0F172A]'
-                    }`}
-                  >
-                    <Tag className="w-2.5 h-2.5 opacity-70" />
-                    <span>#{tag}</span>
-                    {isSelected && <X className="w-3 h-3 ml-0.5" />}
-                  </button>
-                );
-              })}
-              {selectedTag && (
+          {/* Active Tag Filter Pill (if selected from card) */}
+          {selectedTag && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#52525B]">Filtered by topic:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-blue-50 text-[#2563EB] border border-blue-200">
+                #{selectedTag}
                 <button
                   type="button"
                   onClick={() => setSelectedTag(null)}
-                  className="text-xs text-[#2563EB] hover:underline ml-1 font-sans cursor-pointer"
+                  className="hover:text-blue-900 cursor-pointer ml-1"
+                  title="Remove topic filter"
                 >
-                  Clear topic
+                  <X className="w-3 h-3" />
                 </button>
-              )}
+              </span>
             </div>
           )}
 
           {/* Posts List */}
           {filteredPosts.length === 0 ? (
-            <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center shadow-xs">
-              <MessageSquare className="w-10 h-10 text-[#475569]/40 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-[#0F172A] font-display">
+            <div className="bg-white border border-[#E4E4E7] rounded-xl p-12 text-center shadow-xs">
+              <MessageSquare className="w-10 h-10 text-[#52525B]/40 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-[#09090B] font-display">
                 No discussion threads found
               </h3>
-              <p className="text-xs text-[#475569] mt-1 max-w-sm mx-auto font-sans">
+              <p className="text-xs text-[#52525B] mt-1 max-w-sm mx-auto font-sans">
                 {searchQuery || selectedTag
                   ? `No questions matching your active filters. Try clearing the topic or searching another keyword.`
                   : `No threads in category "${selectedCategory}" yet. Be the first to start the discussion!`}
@@ -519,15 +500,15 @@ export function ForumMainView({
                       setSearchQuery('');
                       setSelectedTag(null);
                     }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-[#0F172A] hover:bg-slate-200 transition-colors font-sans cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-full text-xs font-medium bg-zinc-100 text-[#09090B] hover:bg-zinc-200 transition-colors font-sans cursor-pointer border border-[#E4E4E7]"
                   >
                     Reset Filters
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors font-sans shadow-2xs cursor-pointer"
+                  onClick={handleOpenCreateModal}
+                  className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#2563EB] text-white hover:bg-blue-700 transition-colors font-sans shadow-xs cursor-pointer"
                 >
                   Ask a Question
                 </button>

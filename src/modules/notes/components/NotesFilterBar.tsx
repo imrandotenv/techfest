@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, X, Upload } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 import { NoteFilterState, BranchCode } from '../types';
 import { NoteCategory } from '@/types';
 
@@ -41,29 +41,29 @@ export function NotesFilterBar({
   onOpenUpload,
 }: NotesFilterBarProps) {
   return (
-    <div className="sticky top-20 z-30 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-[#E2E8F0] py-3 shadow-2xs">
+    <div className="relative bg-white border-b border-[#E4E4E7] py-3.5 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Single-Line Clean Filter Bar with Mobile Wrap Protection */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        {/* Single-Line Clean Horizontal Toolbar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           
           {/* Search Input */}
           <div className="relative w-full sm:flex-1 sm:min-w-[240px]">
-            <Search className="w-4 h-4 text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#52525B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={filters.searchQuery}
               onChange={(e) =>
                 onFilterChange({ ...filters, searchQuery: e.target.value })
               }
-              placeholder="Search PCC-CS301, topic, or faculty..."
+              placeholder="Search course code, topic, or faculty..."
               aria-label="Search lecture notes, PYQs, and syllabus"
-              className="w-full h-9 pl-9 pr-8 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A]/10 transition-colors shadow-2xs font-sans"
+              className="w-full h-9 pl-9 pr-8 bg-slate-50/70 border border-[#E4E4E7] rounded-full text-xs sm:text-sm text-[#09090B] placeholder:text-[#52525B]/70 focus:outline-hidden focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/20 transition-colors shadow-2xs font-sans"
             />
             {filters.searchQuery && (
               <button
                 type="button"
                 onClick={() => onFilterChange({ ...filters, searchQuery: '' })}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#0F172A]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52525B] hover:text-[#09090B]"
                 title="Clear search"
                 aria-label="Clear search input"
               >
@@ -72,8 +72,8 @@ export function NotesFilterBar({
             )}
           </div>
 
-          {/* Controls: Branch + Semester + Category Dropdowns + + Upload */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
+          {/* Controls: Branch + Semester + Category Dropdowns + + Upload Blue Pill */}
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             {/* Branch Dropdown */}
             <select
               value={filters.branch}
@@ -81,7 +81,7 @@ export function NotesFilterBar({
                 onFilterChange({ ...filters, branch: e.target.value as any })
               }
               aria-label="Filter by engineering branch"
-              className="flex-1 sm:flex-none h-9 px-2.5 sm:px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-0"
+              className="flex-1 sm:flex-none h-9 px-3 bg-white border border-[#E4E4E7] rounded-full text-xs font-mono text-[#09090B] focus:outline-hidden focus:border-[#2563EB] cursor-pointer shadow-2xs min-w-0"
             >
               {BRANCHES.map((b) => (
                 <option key={b.code} value={b.code}>
@@ -100,7 +100,7 @@ export function NotesFilterBar({
                 })
               }
               aria-label="Filter by semester"
-              className="flex-1 sm:flex-none h-9 px-2.5 sm:px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-0"
+              className="flex-1 sm:flex-none h-9 px-3 bg-white border border-[#E4E4E7] rounded-full text-xs font-mono text-[#09090B] focus:outline-hidden focus:border-[#2563EB] cursor-pointer shadow-2xs min-w-0"
             >
               {SEMESTERS.map((s) => (
                 <option key={s} value={s}>
@@ -116,7 +116,7 @@ export function NotesFilterBar({
                 onFilterChange({ ...filters, category: e.target.value as any })
               }
               aria-label="Filter by resource type"
-              className="flex-1 sm:flex-none h-9 px-2.5 sm:px-3 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-0"
+              className="flex-1 sm:flex-none h-9 px-3 bg-white border border-[#E4E4E7] rounded-full text-xs font-mono text-[#09090B] focus:outline-hidden focus:border-[#2563EB] cursor-pointer shadow-2xs min-w-0"
             >
               {CATEGORIES.map((c) => (
                 <option key={c.key} value={c.key}>
@@ -125,21 +125,21 @@ export function NotesFilterBar({
               ))}
             </select>
 
-            {/* + Upload Button */}
+            {/* + Upload Blue Pill Button */}
             {onOpenUpload && (
               <button
                 type="button"
                 onClick={onOpenUpload}
                 aria-label="Upload lecture notes or PYQ"
-                className="h-9 inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 text-xs font-medium tracking-wide shadow-2xs transition-colors shrink-0 font-sans cursor-pointer"
+                className="h-9 inline-flex items-center justify-center gap-1.5 px-4 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold tracking-wide shadow-sm transition-colors shrink-0 font-sans cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5 text-slate-300" />
-                <span>+ Upload</span>
+                <Plus className="w-3.5 h-3.5 text-white" />
+                <span>Upload</span>
               </button>
             )}
 
             {/* Results count pill */}
-            <span className="hidden md:inline-flex text-xs font-mono text-[#475569]/80 pl-1">
+            <span className="hidden md:inline-flex text-xs font-mono text-[#52525B] pl-1">
               ({resultCount} {resultCount === 1 ? 'file' : 'files'})
             </span>
           </div>

@@ -144,10 +144,10 @@ export function AcademicVaultGrid() {
             </p>
             <div className="mt-3 flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white font-mono text-xs flex items-center justify-center font-bold">
-                LB
+                AC
               </div>
               <div>
-                <div className="font-sans font-semibold text-[#0F172A]">Liam Basil</div>
+                <div className="font-sans font-semibold text-[#0F172A]">Arjun Chatterjee</div>
                 <div className="text-[11px] text-[#475569] font-mono">CSE Class Representative, SETGOI</div>
               </div>
             </div>

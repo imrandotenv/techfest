@@ -37,7 +37,7 @@ import { EmergencySosSection } from './EmergencySosSection';
 import { CampusDetailDrawer, CampusDrawerType } from './CampusDetailDrawer';
 
 export function CampusDirectoryView() {
-  const [activeTab, setActiveTab] = useState<CampusTab>('overview');
+  const [activeTab, setActiveTab] = useState<CampusTab>('3d-map');
   const [globalSearch, setGlobalSearch] = useState('');
   const [selectedDeptForFaculty, setSelectedDeptForFaculty] = useState<string | undefined>(undefined);
   const [activeDrawer, setActiveDrawer] = useState<CampusDrawerType>(null);
@@ -258,33 +258,33 @@ export function CampusDirectoryView() {
         </div>
 
         {/* Dynamic Tab Content */}
-        {activeTab === 'overview' && (
-          <div className="space-y-8">
+        {activeTab === '3d-map' && (
+          <div className="space-y-6">
             {/* Architectural Grid 3D Map Preview Banner */}
-            <div className="relative overflow-hidden bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-7 shadow-xs">
+            <div className="relative overflow-hidden bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-7 shadow-xs">
               {/* Blueprint Grid Watermark Background */}
               <div 
-                className="absolute inset-0 opacity-[0.035] pointer-events-none bg-[radial-gradient(#0F172A_1px,transparent_1px)] [background-size:16px_16px]" 
+                className="absolute inset-0 opacity-[0.035] pointer-events-none bg-[radial-gradient(#09090B_1px,transparent_1px)] [background-size:16px_16px]" 
                 aria-hidden="true" 
               />
 
               <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200 font-semibold tracking-wider inline-flex items-center gap-1.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200/60 font-semibold tracking-wider inline-flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
                       LOD-300 Architectural Grid
                     </span>
-                    <span className="text-[11px] font-mono text-[#475569] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                    <span className="text-[11px] font-mono text-[#52525B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-[#E4E4E7]">
                       23°31&apos;48.2&quot;N 87°18&apos;22.1&quot;E • 74m ASL
                     </span>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] tracking-tight font-display">
+                  <h3 className="text-lg sm:text-xl font-bold text-[#09090B] tracking-tight font-display">
                     SETGOI 3D Digital Twin &amp; Campus Explorer
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-[#475569] leading-relaxed max-w-2xl font-sans">
+                  <p className="text-xs sm:text-sm text-[#52525B] leading-relaxed max-w-2xl font-sans">
                     Spatial multi-level visualizer modeled directly on SETGOI Durgapur infrastructure: 
                     6-level U-shaped academic core, departmental lab wings (CSE, ECE, EE, ME, CE), central portico, and transit corridors.
                   </p>
@@ -293,7 +293,7 @@ export function CampusDirectoryView() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => setIsFull3DModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-mono font-medium transition-colors shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-medium transition-colors shadow-xs cursor-pointer"
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
                     <span>Launch Full 3D Map</span>
@@ -302,21 +302,26 @@ export function CampusDirectoryView() {
               </div>
             </div>
 
-            {/* Embedded 3D Map in Overview */}
+            {/* Embedded 3D Map */}
             <CampusVisualizer3D onSelectDepartment={handleSelectDeptFaculty} />
+          </div>
+        )}
+
+        {(activeTab === 'directory' || activeTab === 'overview') && (
+          <div className="space-y-8">
 
             {/* 6 Equal-Height Directory Cards in 3x2 Grid */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-bold text-[#0F172A] font-display">
+                  <h3 className="text-base font-bold text-[#09090B] font-display">
                     Campus Directory &amp; Fast Resource Desks
                   </h3>
-                  <p className="text-xs text-[#475569] font-mono mt-0.5">
+                  <p className="text-xs text-[#52525B] font-mono mt-0.5">
                     Click any resource card below to open its dedicated quick-access drawer
                   </p>
                 </div>
-                <span className="text-xs font-mono text-[#475569] hidden sm:inline-block">
+                <span className="text-xs font-mono text-[#52525B] hidden sm:inline-block">
                   6 Desks Verified
                 </span>
               </div>
@@ -325,25 +330,25 @@ export function CampusDirectoryView() {
                 {/* 1. Academic Departments */}
                 <div 
                   onClick={() => setActiveDrawer('departments')}
-                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
                         <Building2 className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
                         {DEPARTMENTS.length} Depts
                       </span>
                     </div>
-                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                    <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
                       Academic Departments
                     </h4>
-                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                    <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
                       CSE, ECE, Electrical, Mechanical, Civil Engineering, and Sanaka Institute of Pharmacy.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
                     <span>View All Departments</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -352,25 +357,25 @@ export function CampusDirectoryView() {
                 {/* 2. Faculty Directory */}
                 <div 
                   onClick={() => setActiveDrawer('faculty')}
-                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
                         <Users className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
                         {ALL_FACULTY.length} Faculty
                       </span>
                     </div>
-                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                    <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
                       Faculty Directory
                     </h4>
-                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                    <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
                       Office cabins, consultation hours, research domains, email contacts, and phone extensions.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
                     <span>Search Faculty Profiles</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -379,25 +384,25 @@ export function CampusDirectoryView() {
                 {/* 3. Hostels & Mess Timings */}
                 <div 
                   onClick={() => setActiveDrawer('hostels')}
-                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
                         <Home className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
                         {HOSTELS.length} Halls
                       </span>
                     </div>
-                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                    <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
                       Hostels &amp; Mess Timings
                     </h4>
-                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                    <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
                       Aryabhatta (Boys) &amp; Kalpana Chawla (Girls) halls, biometric curfews, warden numbers, and meal tables.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
                     <span>View Hostel &amp; Mess Rules</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -406,25 +411,25 @@ export function CampusDirectoryView() {
                 {/* 4. Bus Transit Schedule */}
                 <div 
                   onClick={() => setActiveDrawer('buses')}
-                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
                         <Bus className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
                         {BUS_ROUTES.length} Routes
                       </span>
                     </div>
-                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                    <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
                       Bus Transit Schedule
                     </h4>
-                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                    <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
                       Daily shuttle routes covering Asansol, Raniganj, Andal, and Durgapur Station to campus.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
                     <span>Check Bus Timetable</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -444,10 +449,10 @@ export function CampusDirectoryView() {
                         Immediate SOS
                       </span>
                     </div>
-                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-rose-600 transition-colors">
+                    <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-rose-600 transition-colors">
                       Emergency SOS &amp; Security
                     </h4>
-                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                    <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
                       Campus Medical Centre ambulance (+91 94340 00001), Main Gate Security (+91 94340 00002), and hospital link.
                     </p>
                   </div>
@@ -460,25 +465,25 @@ export function CampusDirectoryView() {
                 {/* 6. 24/7 Helplines */}
                 <div 
                   onClick={() => setActiveDrawer('helplines')}
-                  className="group bg-white border border-[#E2E8F0] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-slate-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E2E8F0] text-[#0F172A] transition-colors">
+                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
                         <PhoneCall className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#0F172A] bg-slate-50 px-2 py-0.5 rounded border border-[#E2E8F0]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
                         24/7 Toll-Free
                       </span>
                     </div>
-                    <h4 className="text-base font-semibold text-[#0F172A] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
+                    <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
                       24/7 Helplines &amp; Support
                     </h4>
-                    <p className="text-xs text-[#475569] leading-relaxed mb-4 font-sans">
+                    <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
                       UGC Anti-Ragging toll-free desk (1800-180-5522), Women&apos;s Safety Cell, and Student Grievance desks.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E2E8F0]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
                     <span>View 24/7 Helplines</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -486,10 +491,6 @@ export function CampusDirectoryView() {
               </div>
             </div>
           </div>
-        )}
-
-        {activeTab === '3d-map' && (
-          <CampusVisualizer3D onSelectDepartment={handleSelectDeptFaculty} />
         )}
 
         {activeTab === 'departments' && (

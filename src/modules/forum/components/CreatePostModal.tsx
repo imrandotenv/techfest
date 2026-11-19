@@ -248,17 +248,17 @@ export function CreatePostModal({
           </div>
 
           {/* Sticky Drawer Footer */}
-          <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-end gap-2.5">
+          <div className="pt-4 border-t border-[#E4E4E7] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[#E2E8F0] text-[#475569] hover:text-[#0F172A] hover:bg-slate-50 transition-colors text-xs font-medium cursor-pointer font-sans"
+              className="px-4 py-2 rounded-full border border-[#E4E4E7] text-[#52525B] hover:text-[#09090B] hover:bg-zinc-50 transition-colors text-xs font-medium cursor-pointer font-sans"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 transition-colors text-xs font-medium inline-flex items-center gap-1.5 shadow-2xs cursor-pointer font-sans"
+              className="px-5 py-2 rounded-full bg-[#2563EB] text-white hover:bg-blue-700 transition-colors text-xs font-medium inline-flex items-center gap-1.5 shadow-xs cursor-pointer font-sans"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Publish Question</span>

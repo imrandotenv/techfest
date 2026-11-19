@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { SignUp } from '@clerk/nextjs';
 import { GraduationCap, ArrowLeft } from 'lucide-react';
-import { RoleSelector } from '@/components/auth/RoleSelector';
 
 export default function SignUpPage() {
   return (
@@ -40,9 +39,6 @@ export default function SignUpPage() {
                 Join the centralized academic portal for SETGOI students and faculty.
               </p>
             </div>
-
-            {/* Interactive Role Selector for Clerk Onboarding */}
-            <RoleSelector />
 
             {/* Clerk SignUp Component with Clean Appearance */}
             <div className="w-full pt-1">

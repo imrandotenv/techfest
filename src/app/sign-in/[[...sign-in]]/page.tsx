@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { SignIn } from '@clerk/nextjs';
 import { GraduationCap, ArrowLeft } from 'lucide-react';
-import { RoleSelector } from '@/components/auth/RoleSelector';
 
 export default function SignInPage() {
   return (
@@ -40,9 +39,6 @@ export default function SignInPage() {
                 Access MAKAUT notes, 10-point SGPA tools, and campus utilities.
               </p>
             </div>
-
-            {/* Interactive Role Selector for Clerk Onboarding */}
-            <RoleSelector />
 
             {/* Clerk SignIn Component with Clean Appearance */}
             <div className="w-full pt-1">
@@ -99,11 +95,11 @@ export default function SignInPage() {
             </blockquote>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-xs">
-                LB
+              <div className="w-10 h-10 rounded-full bg-[#2563EB] text-white font-mono font-bold flex items-center justify-center text-sm shadow-xs">
+                AC
               </div>
               <div>
-                <div className="text-sm font-sans font-bold text-[#0F172A]">Liam Basil</div>
+                <div className="text-sm font-sans font-bold text-[#0F172A]">Arjun Chatterjee</div>
                 <div className="text-xs text-[#475569] font-mono">
                   CSE Class Representative • SETGOI
                 </div>

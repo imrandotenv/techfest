@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function NoticesPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAFAFA] pt-4 sm:pt-6 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <Suspense
           fallback={

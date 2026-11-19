@@ -237,64 +237,7 @@ export function NotesVaultView() {
         currentRole={activeRole}
       />
 
-      {/* Vault Tabs */}
-      <div className="bg-white border-b border-[#E2E8F0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-6 text-xs sm:text-sm font-medium">
-            <button
-              type="button"
-              onClick={() => handleTabSelect('all')}
-              className={`py-3.5 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
-                activeTab === 'all'
-                  ? 'border-[#0F172A] text-[#0F172A] font-bold'
-                  : 'border-transparent text-[#475569] hover:text-[#0F172A]'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>All Vault Resources</span>
-              <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-100 text-[#0F172A] font-mono">
-                {stats.approvedCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect('pyq')}
-              className={`py-3.5 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
-                activeTab === 'pyq'
-                  ? 'border-[#2563EB] text-[#2563EB] font-bold'
-                  : 'border-transparent text-[#475569] hover:text-[#0F172A]'
-              }`}
-            >
-              <BookOpen className="w-4 h-4 text-[#2563EB]" />
-              <span>MAKAUT Solved PYQs</span>
-              <span className="text-[11px] px-1.5 py-0.2 rounded bg-blue-50 text-[#2563EB] font-mono font-medium">
-                {stats.makautPyqs}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect('pending')}
-              className={`py-3.5 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
-                activeTab === 'pending'
-                  ? 'border-amber-500 text-amber-900 font-bold'
-                  : 'border-transparent text-[#475569] hover:text-[#0F172A]'
-              }`}
-            >
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span>Pending Review Queue</span>
-              {stats.pendingCount > 0 && (
-                <span className="text-[11px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold font-mono">
-                  {stats.pendingCount}
-                </span>
-              )}
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
+      {/* Filter Bar (Normal Flow, No Sticky Collision) */}
       <NotesFilterBar
         filters={filters}
         onFilterChange={setFilters}

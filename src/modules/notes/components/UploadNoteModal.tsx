@@ -362,9 +362,9 @@ export function UploadNoteModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-medium text-xs transition-colors inline-flex items-center gap-1.5 shadow-2xs font-sans cursor-pointer"
+              className="px-5 py-2 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs transition-colors inline-flex items-center gap-1.5 shadow-sm font-sans cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5 text-slate-300" />
+              <Upload className="w-3.5 h-3.5 text-white" />
               <span>{isFacultyOrAdmin ? 'Publish Resource' : 'Submit for Review'}</span>
             </button>
           </div>
