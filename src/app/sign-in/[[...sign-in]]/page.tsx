@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { SignIn } from '@clerk/nextjs';
-import { GraduationCap, ArrowLeft, Shield, ArrowRight, CheckCircle2, User, Building, ShieldAlert } from 'lucide-react';
+import { GraduationCap, ArrowLeft } from 'lucide-react';
+import { RoleSelector } from '@/components/auth/RoleSelector';
 
 export default function SignInPage() {
-  const [emailInput, setEmailInput] = useState('');
-  const [isSent, setIsSent] = useState(false);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#EEF2FF] via-[#FAFAFA] to-white flex flex-col justify-center items-center py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Subtle Ambient Glow */}
@@ -43,22 +41,28 @@ export default function SignInPage() {
               </p>
             </div>
 
+            {/* Interactive Role Selector for Clerk Onboarding */}
+            <RoleSelector />
+
             {/* Clerk SignIn Component with Clean Appearance */}
-            <div className="w-full">
+            <div className="w-full pt-1">
               <SignIn
+                routing="path"
+                path="/sign-in"
+                signUpUrl="/sign-up"
                 appearance={{
                   elements: {
                     rootBox: 'w-full',
-                    card: 'shadow-none p-0 border-0 bg-transparent',
+                    card: 'shadow-none p-0 border-0 bg-transparent w-full',
                     headerTitle: 'hidden',
                     headerSubtitle: 'hidden',
                     formButtonPrimary:
-                      'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-xs font-sans',
+                      'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-2xs font-sans',
                     footerActionLink: 'text-[#2563EB] hover:underline font-medium text-xs font-sans',
                     formFieldInput:
                       'border-[#E2E8F0] focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] text-xs rounded-xl py-2.5 px-3 font-sans',
                     socialButtonsBlockButton:
-                      'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans',
+                      'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans text-[#0F172A]',
                     dividerLine: 'bg-[#E2E8F0]',
                     dividerText: 'text-[#475569] text-[11px] font-mono',
                   },
@@ -66,52 +70,10 @@ export default function SignInPage() {
               />
             </div>
 
-            {/* Quick 3-Role Access (Student | College | Admin) */}
-            <div className="pt-4 border-t border-[#E2E8F0] space-y-3">
-              <div className="flex items-center justify-between text-[11px] font-mono text-[#475569]">
-                <span>QUICK 3-ROLE RBAC ACCESS</span>
-                <span className="text-emerald-600 flex items-center gap-1 font-semibold">
-                  <Shield className="w-3 h-3" /> Enabled
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <Link
-                  href="/notes"
-                  className="px-2 py-2 rounded-xl border border-[#E2E8F0] hover:border-slate-400 hover:bg-slate-50 text-center transition-all group"
-                >
-                  <div className="text-[11px] font-sans font-semibold text-[#0F172A] group-hover:text-[#2563EB]">
-                    Student
-                  </div>
-                  <div className="text-[9px] font-mono text-[#475569]">Notes Vault</div>
-                </Link>
-
-                <Link
-                  href="/dashboard/college"
-                  className="px-2 py-2 rounded-xl border border-[#E2E8F0] hover:border-blue-300 hover:bg-blue-50/50 text-center transition-all group"
-                >
-                  <div className="text-[11px] font-sans font-semibold text-[#0F172A] group-hover:text-[#2563EB]">
-                    Faculty
-                  </div>
-                  <div className="text-[9px] font-mono text-[#2563EB]">Upload Notes</div>
-                </Link>
-
-                <Link
-                  href="/dashboard/admin"
-                  className="px-2 py-2 rounded-xl border border-[#E2E8F0] hover:border-purple-300 hover:bg-purple-50/50 text-center transition-all group"
-                >
-                  <div className="text-[11px] font-sans font-semibold text-[#0F172A] group-hover:text-purple-600">
-                    Admin
-                  </div>
-                  <div className="text-[9px] font-mono text-purple-600">Super Desk</div>
-                </Link>
-              </div>
-            </div>
-
             {/* Terms Disclaimer */}
-            <p className="text-[11px] font-sans text-[#475569] text-center leading-relaxed">
+            <p className="text-[11px] font-sans text-[#475569] text-center leading-relaxed pt-2 border-t border-[#E2E8F0]">
               By logging in or signing up using the options above, you agree to SanakaHub&apos;s{' '}
-              <span className="underline cursor-pointer text-[#0F172A]">Terms & Conditions</span> and{' '}
+              <span className="underline cursor-pointer text-[#0F172A]">Terms &amp; Conditions</span> and{' '}
               <span className="underline cursor-pointer text-[#0F172A]">Privacy Policy</span>.
             </p>
           </div>
@@ -137,7 +99,7 @@ export default function SignInPage() {
             </blockquote>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-xs">
                 LB
               </div>
               <div>

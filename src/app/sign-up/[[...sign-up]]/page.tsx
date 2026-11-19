@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { SignUp } from '@clerk/nextjs';
-import { GraduationCap, ArrowLeft, Shield, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, ArrowLeft } from 'lucide-react';
+import { RoleSelector } from '@/components/auth/RoleSelector';
 
 export default function SignUpPage() {
   return (
@@ -40,22 +41,28 @@ export default function SignUpPage() {
               </p>
             </div>
 
+            {/* Interactive Role Selector for Clerk Onboarding */}
+            <RoleSelector />
+
             {/* Clerk SignUp Component with Clean Appearance */}
-            <div className="w-full">
+            <div className="w-full pt-1">
               <SignUp
+                routing="path"
+                path="/sign-up"
+                signInUrl="/sign-in"
                 appearance={{
                   elements: {
                     rootBox: 'w-full',
-                    card: 'shadow-none p-0 border-0 bg-transparent',
+                    card: 'shadow-none p-0 border-0 bg-transparent w-full',
                     headerTitle: 'hidden',
                     headerSubtitle: 'hidden',
                     formButtonPrimary:
-                      'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-xs font-sans',
+                      'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-2xs font-sans',
                     footerActionLink: 'text-[#2563EB] hover:underline font-medium text-xs font-sans',
                     formFieldInput:
                       'border-[#E2E8F0] focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] text-xs rounded-xl py-2.5 px-3 font-sans',
                     socialButtonsBlockButton:
-                      'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans',
+                      'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans text-[#0F172A]',
                     dividerLine: 'bg-[#E2E8F0]',
                     dividerText: 'text-[#475569] text-[11px] font-mono',
                   },
@@ -63,26 +70,10 @@ export default function SignUpPage() {
               />
             </div>
 
-            {/* 3-Role Automatic Provisioning Notice */}
-            <div className="pt-4 border-t border-[#E2E8F0] space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-mono text-[#475569]">
-                <span className="flex items-center gap-1.5 text-[#0F172A] font-semibold">
-                  <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>3-Role RBAC Bootstrap</span>
-                </span>
-                <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200">
-                  Instant Access
-                </span>
-              </div>
-              <p className="text-[11px] font-sans text-[#475569] leading-relaxed">
-                New accounts automatically default to the <strong className="text-[#0F172A]">Student</strong> role. Whitelisted administration emails are automatically assigned <strong className="text-[#0F172A]">Admin</strong> privileges.
-              </p>
-            </div>
-
             {/* Terms Disclaimer */}
-            <p className="text-[11px] font-sans text-[#475569] text-center leading-relaxed">
+            <p className="text-[11px] font-sans text-[#475569] text-center leading-relaxed pt-2 border-t border-[#E2E8F0]">
               By continuing, you agree to SanakaHub&apos;s{' '}
-              <span className="underline cursor-pointer text-[#0F172A]">Terms & Conditions</span> and{' '}
+              <span className="underline cursor-pointer text-[#0F172A]">Terms &amp; Conditions</span> and{' '}
               <span className="underline cursor-pointer text-[#0F172A]">Privacy Policy</span>.
             </p>
           </div>
@@ -108,13 +99,13 @@ export default function SignUpPage() {
             </blockquote>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-xs">
                 SC
               </div>
               <div>
                 <div className="text-sm font-sans font-bold text-[#0F172A]">SETGOI Student Council</div>
                 <div className="text-xs text-[#475569] font-mono">
-                  Academic Affairs & Student Welfare
+                  Academic Affairs &amp; Student Welfare
                 </div>
               </div>
             </div>

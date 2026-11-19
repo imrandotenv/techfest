@@ -15,19 +15,22 @@ import {
   ShieldCheck, 
   PhoneCall 
 } from 'lucide-react';
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs';
+import { UserButton, useUser } from '@clerk/nextjs';
+import { getResolvedRole, getDisplayRole, ROLE_CONFIGS } from '@/lib/auth-client';
 
 export function MobileBottomDock() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const role = (user?.publicMetadata?.role as string) || 'student';
+  const role = getResolvedRole(user);
+  const displayRole = getDisplayRole(role);
+  const roleBadgeClass = ROLE_CONFIGS[role]?.badgeClass || 'bg-slate-100 text-[#0F172A] border-[#E2E8F0]';
   const hasConsoleAccess = role === 'college' || role === 'admin';
   const consoleHref = role === 'admin' ? '/dashboard/admin' : '/dashboard/college';
 
@@ -140,27 +143,37 @@ export function MobileBottomDock() {
             </div>
 
             {/* Auth in Mobile Drawer */}
-            <div className="pt-4 border-t border-zinc-100 flex items-center justify-between mb-4">
-              <span className="text-xs font-mono text-zinc-500">Account</span>
+            <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between mb-4">
+              <span className="text-xs font-mono text-[#475569]">Account</span>
               {mounted ? (
                 isLoaded ? (
-                  <>
-                    <SignedIn>
-                      <UserButton />
-                    </SignedIn>
-                    <SignedOut>
-                      <SignInButton mode="modal">
-                        <button className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#09090B] text-white">
-                          Sign In
-                        </button>
-                      </SignInButton>
-                    </SignedOut>
-                  </>
+                  isSignedIn && user ? (
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border font-semibold ${roleBadgeClass}`}>
+                        {displayRole}
+                      </span>
+                      <UserButton
+                        appearance={{
+                          elements: {
+                            userButtonAvatarBox: 'w-7 h-7 border border-[#E2E8F0]',
+                          },
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setDrawerOpen(false)}
+                      className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors shadow-2xs"
+                    >
+                      Sign In
+                    </Link>
+                  )
                 ) : (
                   <Link
                     href="/sign-in"
                     onClick={() => setDrawerOpen(false)}
-                    className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#09090B] text-white"
+                    className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors shadow-2xs"
                   >
                     Sign In
                   </Link>

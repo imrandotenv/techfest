@@ -11,6 +11,8 @@ import { ForumPostCard } from './ForumPostCard';
 import { ForumPostDetail } from './ForumPostDetail';
 import { CreatePostModal } from './CreatePostModal';
 import { MessageSquare, RefreshCw, AlertCircle, Sparkles, Tag, X } from 'lucide-react';
+import { getResolvedRole } from '@/lib/auth-client';
+import { AuthPromptModal, AuthPromptReason } from '@/components/auth/AuthPromptModal';
 
 interface ForumMainViewProps {
   initialPosts?: ForumPost[];
@@ -21,10 +23,10 @@ export function ForumMainView({
   initialPosts,
   initialPostId,
 }: ForumMainViewProps) {
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
 
   // Active Role and User State derived directly from Clerk
-  const currentRole = (user?.publicMetadata?.role as CustomUserRole) || 'student';
+  const currentRole = getResolvedRole(user);
   const userName = user?.fullName || user?.firstName || 'SETGOI Student';
   const userDepartment =
     currentRole === 'college'
@@ -53,11 +55,20 @@ export function ForumMainView({
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [authPromptReason, setAuthPromptReason] = useState<AuthPromptReason | null>(null);
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const triggerToast = (message: string, type: 'success' | 'error' = 'success') => {
     setFeedbackToast({ message, type });
     setTimeout(() => setFeedbackToast(null), 3500);
+  };
+
+  const handleOpenCreateModal = () => {
+    if (!isSignedIn) {
+      setAuthPromptReason('create_forum_post');
+      return;
+    }
+    setIsCreateModalOpen(true);
   };
 
   // Upvote Post
@@ -128,6 +139,10 @@ export function ForumMainView({
     parentId?: string | null;
     isOfficialAnswer?: boolean;
   }) => {
+    if (!isSignedIn) {
+      setAuthPromptReason('reply_forum');
+      return;
+    }
     const isOfficial = Boolean(data.isOfficialAnswer) && (currentRole === 'college' || currentRole === 'admin');
     
     const newReply = {
@@ -436,7 +451,7 @@ export function ForumMainView({
             onSearchChange={setSearchQuery}
             sortOption={sortOption}
             onSortChange={setSortOption}
-            onOpenCreateModal={() => setIsCreateModalOpen(true)}
+            onOpenCreateModal={handleOpenCreateModal}
             totalPosts={filteredPosts.length}
           />
 
@@ -545,6 +560,13 @@ export function ForumMainView({
           department: userDepartment,
         }}
         onSubmit={handleCreatePost}
+      />
+
+      {/* Auth Guard Prompt Modal */}
+      <AuthPromptModal
+        isOpen={authPromptReason !== null}
+        onClose={() => setAuthPromptReason(null)}
+        reason={authPromptReason || 'create_forum_post'}
       />
     </div>
   );

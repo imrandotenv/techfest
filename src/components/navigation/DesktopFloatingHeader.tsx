@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs';
-import { Menu, X, BookOpen, MessageSquare, Compass, Calculator, Home, Shield, Phone, ArrowRight } from 'lucide-react';
+import { UserButton, useUser } from '@clerk/nextjs';
+import { Menu, X, BookOpen, MessageSquare, Compass, Calculator, Home, Shield, Phone, ArrowRight, User } from 'lucide-react';
+import { getResolvedRole, getDisplayRole, ROLE_CONFIGS } from '@/lib/auth-client';
 
 interface NavItem {
   href: string;
@@ -16,7 +17,7 @@ export function DesktopFloatingHeader() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
     setMounted(true);
@@ -34,7 +35,9 @@ export function DesktopFloatingHeader() {
     };
   }, [mobileMenuOpen]);
 
-  const role = (user?.publicMetadata?.role as string) || 'student';
+  const role = getResolvedRole(user);
+  const displayRole = getDisplayRole(role);
+  const roleBadgeClass = ROLE_CONFIGS[role]?.badgeClass || 'bg-slate-100 text-[#0F172A] border-[#E2E8F0]';
   const hasConsoleAccess = role === 'college' || role === 'admin';
   const consoleHref = role === 'admin' ? '/dashboard/admin' : '/dashboard/college';
 
@@ -105,27 +108,30 @@ export function DesktopFloatingHeader() {
               </Link>
             )}
 
-            {/* Clerk User Button / Sign In Button */}
+            {/* Clerk User Button with Role Badge / Sign In Link */}
             {mounted ? (
               isLoaded ? (
-                <>
-                  <SignedIn>
+                isSignedIn && user ? (
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border font-semibold tracking-wider ${roleBadgeClass}`}>
+                      {displayRole}
+                    </span>
                     <UserButton
                       appearance={{
                         elements: {
-                          userButtonAvatarBox: 'w-6 h-6 border border-[#E2E8F0]',
+                          userButtonAvatarBox: 'w-6 h-6 sm:w-7 sm:h-7 border border-[#E2E8F0]',
                         },
                       }}
                     />
-                  </SignedIn>
-                  <SignedOut>
-                    <SignInButton mode="modal">
-                      <button className="px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-sans font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors shadow-xs">
-                        Sign In
-                      </button>
-                    </SignInButton>
-                  </SignedOut>
-                </>
+                  </div>
+                ) : (
+                  <Link
+                    href="/sign-in"
+                    className="px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-sans font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors shadow-xs"
+                  >
+                    Sign In
+                  </Link>
+                )
               ) : (
                 <Link
                   href="/sign-in"
@@ -171,7 +177,7 @@ export function DesktopFloatingHeader() {
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
 
             {/* Drawer Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-5">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
                 <span className="font-display font-bold text-base text-[#0F172A]">
@@ -188,6 +194,42 @@ export function DesktopFloatingHeader() {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* User Profile / Auth State in Mobile Drawer */}
+            <div className="mb-5 p-3 bg-slate-50 border border-[#E2E8F0] rounded-xl flex items-center justify-between">
+              {isLoaded && isSignedIn && user ? (
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          userButtonAvatarBox: 'w-7 h-7 border border-[#E2E8F0]',
+                        },
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-[#0F172A] truncate">
+                        {user.fullName || user.primaryEmailAddress?.emailAddress}
+                      </div>
+                      <span className={`text-[9px] font-mono uppercase px-1.5 py-0.2 rounded font-semibold ${roleBadgeClass}`}>
+                        {displayRole}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs text-[#475569] font-sans">SanakaHub Account</span>
+                  <Link
+                    href="/sign-in"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3.5 py-1 bg-[#0F172A] text-white text-xs font-medium rounded-full shadow-2xs hover:bg-slate-800 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Navigation Links */}

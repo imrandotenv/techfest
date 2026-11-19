@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { NoteItem, CustomUserRole } from '@/types';
 import { NoteFilterState, UploadNoteFormData } from '../types';
+import { getResolvedRole } from '@/lib/auth-client';
+import { AuthPromptModal, AuthPromptReason } from '@/components/auth/AuthPromptModal';
 import { 
   getInitialNotes, 
   filterNotes, 
@@ -28,10 +30,10 @@ import {
 } from 'lucide-react';
 
 export function NotesVaultView() {
-  const { user } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
 
-  // Role resolution: derive from Clerk metadata, default to student
-  const activeRole = (user?.publicMetadata?.role as CustomUserRole) || 'student';
+  // Role resolution: derive from Clerk metadata (checking unsafeMetadata & publicMetadata)
+  const activeRole = getResolvedRole(user);
   const userName = user?.fullName || (activeRole === 'college' ? 'SETGOI Faculty' : activeRole === 'admin' ? 'SETGOI Admin' : 'Sanaka Student');
 
   const searchParams = useSearchParams();
@@ -82,12 +84,21 @@ export function NotesVaultView() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewNote, setPreviewNote] = useState<NoteItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [authPromptReason, setAuthPromptReason] = useState<AuthPromptReason | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  };
+
+  const handleOpenUpload = () => {
+    if (!isSignedIn) {
+      setAuthPromptReason('upload_notes');
+      return;
+    }
+    setIsUploadOpen(true);
   };
 
   // Compute live stats
@@ -144,6 +155,15 @@ export function NotesVaultView() {
   };
 
   const handleApprove = (noteId: string) => {
+    if (!isSignedIn) {
+      setAuthPromptReason('verify_notes');
+      return;
+    }
+    if (activeRole !== 'college' && activeRole !== 'admin') {
+      showToast('Faculty or Admin privileges required to verify or reject lecture notes.');
+      setAuthPromptReason('verify_notes');
+      return;
+    }
     const verifier = {
       id: user?.id || `verifier-${activeRole}`,
       name: userName,
@@ -155,6 +175,15 @@ export function NotesVaultView() {
   };
 
   const handleReject = (noteId: string) => {
+    if (!isSignedIn) {
+      setAuthPromptReason('verify_notes');
+      return;
+    }
+    if (activeRole !== 'college' && activeRole !== 'admin') {
+      showToast('Faculty or Admin privileges required to verify or reject lecture notes.');
+      setAuthPromptReason('verify_notes');
+      return;
+    }
     const verifier = {
       id: user?.id || `verifier-${activeRole}`,
       name: userName,
@@ -190,7 +219,7 @@ export function NotesVaultView() {
       {/* Hero Header with Metrics */}
       <NotesHero
         stats={stats}
-        onOpenUpload={() => setIsUploadOpen(true)}
+        onOpenUpload={handleOpenUpload}
         onFilterPending={() => handleTabSelect('pending')}
         currentRole={activeRole}
       />
@@ -259,7 +288,7 @@ export function NotesVaultView() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         resultCount={filteredNotes.length}
-        onOpenUpload={() => setIsUploadOpen(true)}
+        onOpenUpload={handleOpenUpload}
       />
 
       {/* Toast Notification */}
@@ -347,6 +376,20 @@ export function NotesVaultView() {
         onDownload={handleDownload}
       />
 
+      {/* Auth Guard Prompt Modal */}
+      <AuthPromptModal
+        isOpen={authPromptReason !== null}
+        onClose={() => setAuthPromptReason(null)}
+        reason={authPromptReason || 'upload_notes'}
+      />
+
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-[#0F172A] text-white text-xs font-mono rounded-xl shadow-xl border border-slate-700 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-medium">{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

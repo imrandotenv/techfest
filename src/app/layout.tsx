@@ -26,7 +26,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: '#0F172A',
+          colorForeground: '#0F172A',
+          colorMutedForeground: '#475569',
+          colorBackground: '#FFFFFF',
+          colorInput: '#FFFFFF',
+          colorInputForeground: '#0F172A',
+          colorBorder: '#E2E8F0',
+          borderRadius: '0.75rem',
+          fontFamily: 'Inter, var(--font-geist-sans), sans-serif',
+        },
+        elements: {
+          card: 'shadow-sm border border-[#E2E8F0] rounded-2xl bg-white',
+          formButtonPrimary:
+            'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-2xs font-sans',
+          socialButtonsBlockButton:
+            'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans text-[#0F172A]',
+          footerActionLink: 'text-[#2563EB] hover:text-blue-700 font-medium text-xs font-sans',
+          formFieldInput:
+            'border-[#E2E8F0] focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] text-xs rounded-xl py-2.5 px-3 font-sans',
+          userButtonAvatarBox: 'w-7 h-7 border border-[#E2E8F0] rounded-full',
+          userButtonPopoverCard: 'shadow-xl border border-[#E2E8F0] rounded-xl',
+        },
+      }}
+    >
       <html
         lang="en"
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
@@ -37,90 +63,6 @@ export default function RootLayout({
           <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
             rel="stylesheet"
-          />
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function() {
-                  if (typeof window === 'undefined') return;
-
-                  function isClerkNoise(val) {
-                    if (!val) return false;
-                    var str = '';
-                    try {
-                      if (typeof val === 'string') str = val;
-                      else if (val.message || val.stack || val.code) str = (val.code || '') + ' ' + (val.message || '') + ' ' + (val.stack || '');
-                      else str = String(val);
-                    } catch(e) {}
-                    return (
-                      str.indexOf('failed_to_load_clerk') !== -1 ||
-                      str.indexOf('Failed to load Clerk') !== -1 ||
-                      str.indexOf('clerk.sanakahub.durgapur.dev') !== -1 ||
-                      str.indexOf('ClerkRuntimeError') !== -1 ||
-                      str.indexOf('ERR_NAME_NOT_RESOLVED') !== -1
-                    );
-                  }
-
-                  var activeConsoleError = console.error;
-                  try {
-                    Object.defineProperty(console, 'error', {
-                      configurable: true,
-                      enumerable: true,
-                      get: function() {
-                        return function() {
-                          var args = Array.prototype.slice.call(arguments);
-                          for (var i = 0; i < args.length; i++) {
-                            if (isClerkNoise(args[i])) return;
-                          }
-                          if (activeConsoleError) {
-                            return activeConsoleError.apply(console, arguments);
-                          }
-                        };
-                      },
-                      set: function(fn) {
-                        activeConsoleError = fn;
-                      }
-                    });
-                  } catch(e) {
-                    console.error = function() {
-                      var args = Array.prototype.slice.call(arguments);
-                      for (var i = 0; i < args.length; i++) {
-                        if (isClerkNoise(args[i])) return;
-                      }
-                      return activeConsoleError.apply(console, arguments);
-                    };
-                  }
-
-                  var origAddEventListener = window.addEventListener;
-                  window.addEventListener = function(type, listener, options) {
-                    if (type === 'unhandledrejection' || type === 'error') {
-                      var wrapped = function(event) {
-                        var r = event && (event.reason || event.error);
-                        if (isClerkNoise(r) || isClerkNoise(event && event.message)) {
-                          if (event.preventDefault) event.preventDefault();
-                          if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-                          return;
-                        }
-                        return typeof listener === 'function' ? listener.call(this, event) : (listener && listener.handleEvent && listener.handleEvent(event));
-                      };
-                      return origAddEventListener.call(window, type, wrapped, options);
-                    }
-                    return origAddEventListener.apply(window, arguments);
-                  };
-
-                  function suppressEvent(e) {
-                    var r = e && (e.reason || e.error);
-                    if (isClerkNoise(r) || isClerkNoise(e && e.message)) {
-                      if (e.preventDefault) e.preventDefault();
-                      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-                      return true;
-                    }
-                  }
-                  window.addEventListener('unhandledrejection', suppressEvent, true);
-                  window.addEventListener('error', suppressEvent, true);
-                })();
-              `,
-            }}
           />
         </head>
         <body className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#0F172A] selection:bg-[#0F172A] selection:text-white">
