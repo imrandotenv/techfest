@@ -6,8 +6,8 @@ import { GraduationCap, ArrowRight, Sparkles } from 'lucide-react';
 
 export function GradientCtaBanner() {
   return (
-    <section className="max-w-6xl mx-auto px-6 w-full py-16">
-      <div className="relative rounded-3xl bg-gradient-to-br from-[#7B96FF] via-[#B4C5FF] to-[#F4F6FF] p-10 sm:p-16 text-center text-zinc-950 shadow-[0_20px_60px_rgba(123,150,255,0.18)] overflow-hidden">
+    <section className="max-w-6xl mx-auto px-6 w-full py-10 sm:py-14 pb-16">
+      <div className="relative rounded-3xl bg-gradient-to-br from-[#7B96FF] via-[#B4C5FF] to-[#F4F6FF] p-8 sm:p-14 text-center text-zinc-950 shadow-[0_20px_60px_rgba(123,150,255,0.18)] overflow-hidden">
         {/* Subtle Decorative Background Circles */}
         <div 
           className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/30 blur-2xl pointer-events-none" 
@@ -20,38 +20,38 @@ export function GradientCtaBanner() {
 
         <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
           {/* Central Stylized Emblem matching Hashnode reference */}
-          <div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center text-blue-600 mb-6 border border-white/80">
-            <GraduationCap className="w-7 h-7" />
+          <div className="w-12 h-12 rounded-2xl bg-white shadow-md flex items-center justify-center text-blue-600 mb-4 border border-white/80">
+            <GraduationCap className="w-6 h-6" />
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-[-0.02em] text-[#0F172A] leading-[1.14]">
-            Give your B.Tech journey a modern academic cockpit.
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-display font-bold tracking-[-0.02em] text-[#0F172A] leading-[1.14]">
+            Ready to elevate your B.Tech semester grades?
           </h2>
 
-          <p className="mt-4 text-[#475569] font-sans text-sm sm:text-base max-w-lg leading-relaxed">
+          <p className="mt-3.5 text-[#475569] font-sans text-xs sm:text-sm lg:text-base max-w-lg leading-relaxed">
             Join thousands of SETGOI students accessing verified MAKAUT notes, solved past papers, and instant SGPA calculations.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-sans font-semibold bg-[#0F172A] text-white hover:bg-slate-800 transition-all shadow-md hover:scale-[1.02]"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-semibold bg-[#0F172A] text-white hover:bg-slate-800 transition-all shadow-md hover:scale-[1.02]"
             >
               <Sparkles className="w-4 h-4 text-blue-400" />
               <span>Start in 30 seconds</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
 
             <Link
               href="/notes"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-sans font-medium bg-white/95 text-[#0F172A] hover:bg-white border border-[#E2E8F0] transition-all shadow-2xs"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-sans font-medium bg-white/95 text-[#0F172A] hover:bg-white border border-[#E2E8F0] transition-all shadow-2xs"
             >
               <span>Explore Vault (No Login Required)</span>
             </Link>
           </div>
 
-          <div className="mt-4 text-[11px] font-mono text-[#475569]">
-            MAKAUT affiliated • 100% Free for SETGOI students
+          <div className="mt-3.5 text-[11px] font-mono text-[#475569]">
+            MAKAUT affiliated • 100% Free for SETGOI students • No credit card required
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { NoteItem, CustomUserRole } from '@/types';
 import { NoteFilterState, UploadNoteFormData } from '../types';
@@ -33,19 +34,49 @@ export function NotesVaultView() {
   const activeRole = (user?.publicMetadata?.role as CustomUserRole) || 'student';
   const userName = user?.fullName || (activeRole === 'college' ? 'SETGOI Faculty' : activeRole === 'admin' ? 'SETGOI Admin' : 'Sanaka Student');
 
+  const searchParams = useSearchParams();
+  const initialQ = searchParams?.get('q') || searchParams?.get('search') || '';
+  const initialBranch = (searchParams?.get('branch') as any) || 'ALL';
+  const initialSem = searchParams?.get('sem') || searchParams?.get('semester');
+  const initialCat = (searchParams?.get('category') as any) || 'ALL';
+
   // Notes state initialized lazily to avoid setState in effect
   const [notes, setNotes] = useState<NoteItem[]>(() => getInitialNotes());
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [activeTab, setActiveTab] = useState<'all' | 'pyq' | 'pending'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pyq' | 'pending'>(
+    initialCat === 'MAKAUT_PYQ' ? 'pyq' : 'all'
+  );
 
   // Filter state
-  const [filters, setFilters] = useState<NoteFilterState>({
-    searchQuery: '',
-    branch: 'ALL',
-    semester: 'ALL',
-    category: 'ALL',
+  const [filters, setFilters] = useState<NoteFilterState>(() => ({
+    searchQuery: initialQ,
+    branch: initialBranch,
+    semester: initialSem && initialSem !== 'ALL' ? Number(initialSem) : 'ALL',
+    category: initialCat,
     status: 'ALL',
-  });
+  }));
+
+  // Sync state if searchParams change dynamically
+  useEffect(() => {
+    if (!searchParams) return;
+    const q = searchParams.get('q') || searchParams.get('search');
+    const b = searchParams.get('branch');
+    const s = searchParams.get('sem') || searchParams.get('semester');
+    const c = searchParams.get('category');
+
+    if (q !== null || b !== null || s !== null || c !== null) {
+      setFilters((prev) => ({
+        ...prev,
+        ...(q !== null ? { searchQuery: q } : {}),
+        ...(b !== null ? { branch: (b as any) || 'ALL' } : {}),
+        ...(s !== null ? { semester: s !== 'ALL' ? Number(s) : 'ALL' } : {}),
+        ...(c !== null ? { category: (c as any) || 'ALL' } : {}),
+      }));
+      if (c === 'MAKAUT_PYQ') {
+        setActiveTab('pyq');
+      }
+    }
+  }, [searchParams]);
 
   // Modal states
   const [isUploadOpen, setIsUploadOpen] = useState(false);

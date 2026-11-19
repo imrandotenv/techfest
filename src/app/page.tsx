@@ -1,10 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
-import { Compass, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Compass, BookOpen, ArrowRight, Sparkles } from 'lucide-react';
 import { AppWindowPreview } from '@/components/landing/AppWindowPreview';
 import { AcademicVaultGrid } from '@/components/landing/AcademicVaultGrid';
 import { DarkBentoSection } from '@/components/landing/DarkBentoSection';
 import { GradientCtaBanner } from '@/components/landing/GradientCtaBanner';
+import { HeroQuickSearch } from '@/components/landing/HeroQuickSearch';
 
 export const metadata = {
   title: 'SanakaHub | Centralized SETGOI Student Utility & Academic Vault',
@@ -13,12 +14,12 @@ export const metadata = {
 };
 
 const DEPARTMENTS = [
-  'MAKAUT WB',
-  'Computer Science (CSE)',
-  'Electronics & Comm (ECE)',
-  'Electrical Engg (EE)',
-  'Mechanical Engg (ME)',
-  'Civil Engg (CE)',
+  { name: 'MAKAUT WB', href: '/notes?category=MAKAUT_PYQ' },
+  { name: 'Computer Science (CSE)', href: '/notes?branch=CSE' },
+  { name: 'Electronics & Comm (ECE)', href: '/notes?branch=ECE' },
+  { name: 'Electrical Engg (EE)', href: '/notes?branch=EE' },
+  { name: 'Mechanical Engg (ME)', href: '/notes?branch=ME' },
+  { name: 'Civil Engg (CE)', href: '/notes?branch=CE' },
 ];
 
 export default function HomePage() {
@@ -30,42 +31,47 @@ export default function HomePage() {
         aria-hidden="true"
       />
 
-      {/* Section 1: Hashnode-style Centered Bold Hero */}
-      <section className="relative z-10 pt-32 sm:pt-40 pb-16 px-6 text-center max-w-6xl mx-auto w-full">
+      {/* Section 1: Above-the-Fold Hero & Live Vault Preview */}
+      <section className="relative z-10 pt-20 sm:pt-24 pb-12 sm:pb-14 px-6 text-center max-w-6xl mx-auto w-full">
         {/* Eyebrow Pill */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs mb-6">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs mb-3.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs font-mono uppercase tracking-wider text-[#475569] font-medium">
             SETGOI DURGAPUR • STUDENT PORTAL
           </span>
         </div>
 
-        {/* Display Headline with tight letter spacing -0.03em and line-height 1.15 */}
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold tracking-[-0.03em] text-[#0F172A] max-w-4xl mx-auto leading-[1.12]">
-          Create, collaborate, and excel across your B.Tech semesters.
+        {/* Display Headline */}
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-bold tracking-[-0.03em] text-[#0F172A] max-w-4xl mx-auto leading-[1.12]">
+          Give your B.Tech journey a modern academic cockpit.
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-6 text-base sm:text-xl font-sans text-[#475569] max-w-2xl mx-auto leading-relaxed">
-          Effortlessly access MAKAUT syllabus notes, solved PYQs, 10-point SGPA calculators, and 3D campus navigation with zero bloat.
+        <p className="mt-3.5 text-sm sm:text-base lg:text-lg font-sans text-[#475569] max-w-2xl mx-auto leading-relaxed">
+          Join thousands of SETGOI students accessing verified MAKAUT notes, solved past papers, and instant SGPA calculations.
         </p>
 
-        {/* CTA Buttons */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Dual CTAs */}
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href="/sign-up"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-semibold bg-[#0F172A] text-white hover:bg-slate-800 transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span>Start in 30 seconds</span>
+            <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
+          </Link>
           <Link
             href="/notes"
-            className="w-full sm:w-auto px-7 py-3 rounded-full text-sm font-sans font-semibold bg-[#0F172A] text-white hover:bg-slate-800 transition-all shadow-sm"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-medium bg-white text-[#0F172A] border border-[#E2E8F0] hover:bg-slate-50 transition-all shadow-2xs flex items-center justify-center gap-2"
           >
-            Explore Notes Vault
-          </Link>
-          <Link
-            href="/campus"
-            className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-sans font-medium bg-white text-[#0F172A] border border-[#E2E8F0] hover:bg-slate-50 transition-all shadow-2xs flex items-center justify-center gap-2"
-          >
-            <Compass className="w-4 h-4 text-[#2563EB]" />
-            <span>Launch 3D Campus Tour</span>
+            <BookOpen className="w-4 h-4 text-[#2563EB]" />
+            <span>Explore Vault</span>
           </Link>
         </div>
+
+        {/* Inline Quick Course / Subject Search Bar */}
+        <HeroQuickSearch />
 
         {/* Sub-CTA Trust Note */}
         <p className="mt-3 text-xs font-mono text-[#475569]/80">
@@ -73,23 +79,25 @@ export default function HomePage() {
         </p>
 
         {/* Elevated SanakaHub App Window Preview */}
-        <div className="mt-12 sm:mt-16">
+        <div className="mt-8 sm:mt-10">
           <AppWindowPreview />
         </div>
 
-        {/* Affiliation / Department Logos Ticker */}
-        <div className="mt-16 pt-10 border-t border-[#E2E8F0]">
-          <p className="text-xs font-mono uppercase tracking-widest text-[#475569] mb-6">
-            Trusted by students & faculty across SETGOI departments
+        {/* Affiliation / Department Logos Ticker with Interactive Links */}
+        <div className="mt-12 sm:mt-14 pt-8 border-t border-[#E2E8F0]">
+          <p className="text-xs font-mono uppercase tracking-widest text-[#475569] mb-4">
+            Trusted by students &amp; faculty across SETGOI departments
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
             {DEPARTMENTS.map((dept) => (
-              <span
-                key={dept}
-                className="px-3.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs font-mono text-[#0F172A] shadow-2xs font-medium"
+              <Link
+                key={dept.name}
+                href={dept.href}
+                className="group px-3.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs font-mono text-[#0F172A] hover:border-[#0F172A] hover:bg-slate-50 transition-all shadow-2xs font-medium inline-flex items-center gap-1.5 cursor-pointer"
               >
-                {dept}
-              </span>
+                <span>{dept.name}</span>
+                <span className="text-[10px] text-[#475569]/60 group-hover:text-[#2563EB] transition-colors">→</span>
+              </Link>
             ))}
           </div>
         </div>
@@ -98,7 +106,7 @@ export default function HomePage() {
       {/* Section 2: Split "Academic Vault" Feature with 2x2 Hairline Grid */}
       <AcademicVaultGrid />
 
-      {/* Section 3: High-Contrast Dark Bento Band (#09090B + Indigo Radial Glow) */}
+      {/* Section 3: Refined Contained Dark-Ink Bento Showcase (#0F172A rounded-3xl) */}
       <DarkBentoSection />
 
       {/* Section 4: Soft Periwinkle-Blue Gradient CTA Banner */}

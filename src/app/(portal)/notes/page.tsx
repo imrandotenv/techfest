@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import { Metadata } from 'next';
 import { NotesVaultView } from '@/modules/notes';
 
@@ -8,5 +9,15 @@ export const metadata: Metadata = {
 };
 
 export default function NotesPage() {
-  return <NotesVaultView />;
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 py-16 text-center text-xs text-[#475569] font-mono">
+          Loading MAKAUT Notes Vault...
+        </div>
+      }
+    >
+      <NotesVaultView />
+    </Suspense>
+  );
 }
