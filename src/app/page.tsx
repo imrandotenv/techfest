@@ -32,7 +32,7 @@ export default function HomePage() {
       />
 
       {/* Section 1: Above-the-Fold Hero & Live Vault Preview */}
-      <section className="relative z-10 pt-4 sm:pt-6 pb-12 sm:pb-14 px-6 text-center max-w-6xl mx-auto w-full">
+      <section className="relative z-10 pt-24 sm:pt-28 pb-12 sm:pb-14 px-6 text-center max-w-6xl mx-auto w-full">
         {/* Eyebrow Pill */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs mb-3.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

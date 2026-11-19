@@ -5,7 +5,9 @@ import {
   X, 
   Download, 
   CheckCircle2, 
-  Clock 
+  Clock,
+  ArrowUpRight,
+  ExternalLink
 } from 'lucide-react';
 import { NoteItem } from '@/types';
 
@@ -51,14 +53,27 @@ export function NotePreviewModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onDownload(note)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-medium transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download ({note.downloadsCount} dl)</span>
-            </button>
+            {note.fileUrl.startsWith('http') ? (
+              <a
+                href={note.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => onDownload(note)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563EB] text-white hover:bg-blue-700 text-xs font-medium transition-colors"
+              >
+                <span>Open Resource</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onDownload(note)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-medium transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download ({note.downloadsCount} dl)</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

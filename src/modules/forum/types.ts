@@ -1,6 +1,18 @@
-import { CustomUserRole, ForumCategory } from '@/types';
+import { CustomUserRole } from '@/types';
 
-export type { CustomUserRole, ForumCategory };
+export type { CustomUserRole };
+
+export type ForumCategory =
+  | 'Academics & Syllabus'
+  | 'Coding & DSA'
+  | 'Labs & Viva'
+  | 'Placements & Internships'
+  | 'Campus & Hostel'
+  | 'Academic'
+  | 'TechFest'
+  | 'Campus Life'
+  | 'Placements'
+  | 'Hostel';
 
 export interface ForumReply {
   id: string;
@@ -40,6 +52,7 @@ export interface ForumPost {
 }
 
 export type ForumSortOption = 'upvotes' | 'recent' | 'official' | 'unanswered';
+export type ForumStatusFilter = 'all' | 'open' | 'solved' | 'verified';
 
 export interface ForumCategoryMeta {
   id: ForumCategory;
@@ -51,38 +64,38 @@ export interface ForumCategoryMeta {
 
 export const FORUM_CATEGORIES: ForumCategoryMeta[] = [
   {
-    id: 'Academic',
-    label: 'Academic & Exams',
-    description: 'MAKAUT syllabus, CA1/CA2 tests, PCC/ESC course codes, grading, and faculty guidance.',
+    id: 'Academics & Syllabus',
+    label: 'Academics & Syllabus',
+    description: 'MAKAUT curriculum, subject codes, semester exam questions, and study resources.',
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
-    iconName: 'GraduationCap',
+    iconName: 'BookOpen',
   },
   {
-    id: 'TechFest',
-    label: 'TechFest 2026',
-    description: 'Annual Innovation Hackathon, robotics tracks, gaming tournaments, rules, and team building.',
+    id: 'Coding & DSA',
+    label: 'Coding & DSA',
+    description: 'Data structures, algorithms, hackathon prep, LeetCode, and code debugging.',
     badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
-    iconName: 'Zap',
+    iconName: 'Code2',
   },
   {
-    id: 'Campus Life',
-    label: 'Campus Life & Clubs',
-    description: 'Central library, canteen updates, cultural clubs, bus schedules, sports, and student activities.',
+    id: 'Labs & Viva',
+    label: 'Labs & Viva',
+    description: 'Hardware experiments, software lab assignments, viva voices, and project files.',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    iconName: 'Building2',
+    iconName: 'FlaskConical',
   },
   {
-    id: 'Placements',
-    label: 'Placements & T&P',
-    description: 'TCS NQT, Cognizant, Wipro drives, mock GDs, internship NOCs, and off-campus referrals.',
+    id: 'Placements & Internships',
+    label: 'Placements & Internships',
+    description: 'T&P updates, campus interview experiences, off-campus drives, and resume reviews.',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
     iconName: 'Briefcase',
   },
   {
-    id: 'Hostel',
-    label: 'Hostel & Wardens',
-    description: 'Boys/Girls hostel curfew hours, Wi-Fi speed, mess committee menu, and warden queries.',
+    id: 'Campus & Hostel',
+    label: 'Campus & Hostel',
+    description: 'College bus routes, library hours, hostel amenities, and campus life.',
     badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
-    iconName: 'Home',
+    iconName: 'Building2',
   },
 ];

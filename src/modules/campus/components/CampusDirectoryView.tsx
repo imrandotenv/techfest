@@ -259,47 +259,21 @@ export function CampusDirectoryView() {
 
         {/* Dynamic Tab Content */}
         {activeTab === '3d-map' && (
-          <div className="space-y-6">
-            {/* Architectural Grid 3D Map Preview Banner */}
-            <div className="relative overflow-hidden bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-7 shadow-xs">
-              {/* Blueprint Grid Watermark Background */}
-              <div 
-                className="absolute inset-0 opacity-[0.035] pointer-events-none bg-[radial-gradient(#09090B_1px,transparent_1px)] [background-size:16px_16px]" 
-                aria-hidden="true" 
-              />
-
-              <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-blue-50 text-[#2563EB] border border-blue-200/60 font-semibold tracking-wider inline-flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
-                      LOD-300 Architectural Grid
-                    </span>
-                    <span className="text-[11px] font-mono text-[#52525B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-[#E4E4E7]">
-                      23°31&apos;48.2&quot;N 87°18&apos;22.1&quot;E • 74m ASL
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg sm:text-xl font-bold text-[#09090B] tracking-tight font-display">
-                    SETGOI 3D Digital Twin &amp; Campus Explorer
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-[#52525B] leading-relaxed max-w-2xl font-sans">
-                    Spatial multi-level visualizer modeled directly on SETGOI Durgapur infrastructure: 
-                    6-level U-shaped academic core, departmental lab wings (CSE, ECE, EE, ME, CE), central portico, and transit corridors.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setIsFull3DModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-medium transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Maximize2 className="w-3.5 h-3.5" />
-                    <span>Launch Full 3D Map</span>
-                  </button>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
+                <span className="text-xs font-mono font-medium text-zinc-700">
+                  Interactive Architectural Digital Twin • 6 Levels • Academic Core &amp; Lab Wings
+                </span>
               </div>
+              <button
+                onClick={() => setIsFull3DModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-mono font-medium transition-colors shadow-xs cursor-pointer"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Full Screen</span>
+              </button>
             </div>
 
             {/* Embedded 3D Map */}
@@ -308,7 +282,30 @@ export function CampusDirectoryView() {
         )}
 
         {(activeTab === 'directory' || activeTab === 'overview') && (
-          <div className="space-y-8">
+          <div className="space-y-6">
+            {/* Prominent Official College ERP Card: iCampus */}
+            <div className="bg-gradient-to-r from-blue-50/80 via-white to-blue-50/30 border border-blue-200/90 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-[#2563EB] text-[10px] font-mono font-bold tracking-wider uppercase">
+                  <span>Official College ERP</span>
+                </div>
+                <h3 className="text-base font-bold text-zinc-900 font-display">
+                  SETGOI iCampus Institutional Portal
+                </h3>
+                <p className="text-xs text-zinc-600 font-sans max-w-xl leading-relaxed">
+                  Direct administrative gateway for semester exam fees, MAKAUT registration forms, fee challans, official attendance logs, and student records.
+                </p>
+              </div>
+              <a
+                href="https://icampus.setgoi.ac.in/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-medium transition-colors shadow-xs shrink-0 cursor-pointer"
+              >
+                <span>Launch iCampus Portal</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
 
             {/* 6 Equal-Height Directory Cards in 3x2 Grid */}
             <div>
@@ -345,7 +342,7 @@ export function CampusDirectoryView() {
                       Academic Departments
                     </h4>
                     <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
-                      CSE, ECE, Electrical, Mechanical, Civil Engineering, and Sanaka Institute of Pharmacy.
+                      B.Tech Engineering: Computer Science (CSE), ECE, Electrical (EE), Mechanical (ME), and Civil (CE).
                     </p>
                   </div>
                   <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">

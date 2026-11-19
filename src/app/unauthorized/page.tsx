@@ -28,7 +28,7 @@ export default async function UnauthorizedPage() {
   const superAdminEmails = getSuperAdminEmails();
 
   return (
-    <div className="min-h-[85vh] bg-[#FAFAFA] text-[#0F172A] py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+    <div className="min-h-[85vh] bg-[#FAFAFA] text-[#0F172A] pt-24 md:pt-28 pb-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
       <div className="max-w-3xl mx-auto w-full">
         
         {/* Breadcrumb */}

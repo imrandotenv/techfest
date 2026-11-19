@@ -27,7 +27,7 @@ interface CampusHeaderProps {
 export function CampusHeader({ activeTab, onTabChange, stats }: CampusHeaderProps) {
   const tabs: { id: CampusTab; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: '3d-map', label: '3D Campus Map', icon: MapPin, badge: 'Interactive' },
-    { id: 'directory', label: 'Directory & Timings', icon: Building2, badge: '6 Desks' },
+    { id: 'directory', label: 'Engineering Directory & Contacts', icon: Building2, badge: 'B.Tech SETGOI' },
   ];
 
   return (
@@ -38,22 +38,21 @@ export function CampusHeader({ activeTab, onTabChange, stats }: CampusHeaderProp
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#E4E4E7] bg-zinc-50 text-[11px] font-mono uppercase tracking-wider text-[#52525B] font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              SETGOI Durgapur • MAKAUT
+              SETGOI Durgapur • Affiliated with MAKAUT
             </span>
             <span className="text-zinc-300">/</span>
-            <span className="text-xs font-mono text-[#52525B]">Campus Directory &amp; Spatial Guide</span>
+            <span className="text-xs font-mono text-[#52525B]">Malandighi, Durgapur 713212</span>
           </div>
         </div>
 
         {/* Title & Description */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#09090B] font-display">
-            Campus Infrastructure &amp; Directory
+            Engineering Campus &amp; Directory
           </h1>
           <p className="mt-1.5 text-sm text-[#52525B] max-w-3xl leading-relaxed font-sans">
-            Centralized index of Sanaka Educational Trust&apos;s Group of Institutions (SETGOI).
-            Explore academic departments, faculty office consultation hours, hostel regulations, bus schedules, 
-            24/7 SOS hotlines, and the spatial 3D zone visualizer.
+            Official B.Tech academic directory for Sanaka Educational Trust&apos;s Group of Institutions.
+            Access Principal &amp; HOD consultation hours, laboratory complexes, transit schedules, emergency contacts, and the 3D campus visualizer.
           </p>
         </div>
 

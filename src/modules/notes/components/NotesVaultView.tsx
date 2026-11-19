@@ -379,7 +379,7 @@ export function NotesVaultView() {
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-medium font-sans transition-colors shadow-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Upload Note</span>
+              <span>+ Contribute Note</span>
             </button>
           </div>
 
@@ -706,7 +706,7 @@ export function NotesVaultView() {
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-medium font-sans transition-colors shadow-xs shrink-0 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Upload Note</span>
+              <span>+ Contribute Note</span>
             </button>
           </div>
 

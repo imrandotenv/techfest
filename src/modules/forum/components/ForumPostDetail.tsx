@@ -16,8 +16,12 @@ import {
   ShieldCheck, 
   Pin,
   Sparkles,
-  Award
+  Award,
+  Code2,
+  Bold,
+  List
 } from 'lucide-react';
+import { ForumMarkdownContent } from './ForumMarkdownContent';
 
 interface ForumPostDetailProps {
   post: ForumPost;
@@ -174,8 +178,8 @@ export function ForumPostDetail({
         </div>
 
         {/* Post Content */}
-        <div className="text-zinc-800 text-sm sm:text-base leading-relaxed whitespace-pre-line mb-6">
-          {post.content}
+        <div className="mb-6">
+          <ForumMarkdownContent content={post.content} />
         </div>
 
         {/* Tags */}
@@ -259,9 +263,9 @@ export function ForumPostDetail({
                     {formatDate(official.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-zinc-800 whitespace-pre-line leading-relaxed">
-                  {official.content}
-                </p>
+                <div className="text-sm">
+                  <ForumMarkdownContent content={official.content} />
+                </div>
               </div>
             ))}
           </div>
@@ -286,15 +290,45 @@ export function ForumPostDetail({
 
         {/* Top-Level Reply Composer */}
         <form onSubmit={handleTopLevelSubmit} className="mb-6 p-4 rounded-lg bg-zinc-50 border border-zinc-200">
-          <label className="block text-xs font-medium text-zinc-700 mb-1.5 font-mono">
-            Post an answer or response as <strong>{currentUser.name}</strong>:
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-medium text-zinc-700 font-mono">
+              Post response as <strong>{currentUser.name}</strong>:
+            </label>
+            {/* Quick Markdown Helpers */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setNewReplyContent((prev) => prev + '\n```c\n// Enter code\n```\n')}
+                className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-white border border-zinc-200 hover:bg-zinc-100 text-zinc-700 cursor-pointer"
+                title="Insert code block"
+              >
+                <Code2 className="w-3 h-3 text-[#2563EB]" />
+                <span>Code</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewReplyContent((prev) => prev + '**bold text**')}
+                className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-white border border-zinc-200 hover:bg-zinc-100 text-zinc-700 cursor-pointer"
+                title="Insert bold text"
+              >
+                <Bold className="w-3 h-3 text-zinc-600" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewReplyContent((prev) => prev + '\n- Item ')}
+                className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-white border border-zinc-200 hover:bg-zinc-100 text-zinc-700 cursor-pointer"
+                title="Insert bullet item"
+              >
+                <List className="w-3 h-3 text-zinc-600" />
+              </button>
+            </div>
+          </div>
           <textarea
             rows={3}
             value={newReplyContent}
             onChange={(e) => setNewReplyContent(e.target.value)}
-            placeholder="Share verified MAKAUT exam tips, event details, or your constructive response..."
-            className="w-full p-3 bg-white border border-zinc-200 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 transition-all"
+            placeholder="Share verified MAKAUT exam tips, code implementations (using ```), or solution..."
+            className="w-full p-3 bg-white border border-zinc-200 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 transition-all font-sans"
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 mt-3">

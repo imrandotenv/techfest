@@ -71,9 +71,9 @@ export function CampusDetailDrawer({
       case 'departments':
         return {
           title: 'Academic Departments',
-          subtitle: '6 MAKAUT accredited engineering and pharmaceutical degree programs',
+          subtitle: '5 MAKAUT accredited B.Tech engineering degree programs (CSE, ECE, EE, ME, CE)',
           icon: Building2,
-          badge: `${DEPARTMENTS.length} Departments`,
+          badge: `${DEPARTMENTS.length} B.Tech Depts`,
           badgeColor: 'bg-blue-50 text-[#2563EB] border-blue-200',
         };
       case 'faculty':
@@ -308,27 +308,38 @@ export function CampusDetailDrawer({
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-[#E2E8F0] flex items-center justify-between gap-2 text-xs">
-                    <span className="font-mono text-[#475569] text-[11px] truncate">
-                      {fac.email}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(fac.email, fac.id)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-[#E2E8F0] text-[#0F172A] text-[11px] font-mono cursor-pointer transition-colors"
-                    >
-                      {copiedKey === fac.id ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          <span className="text-emerald-700">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3 text-[#475569]" />
-                          <span>Copy Email</span>
-                        </>
-                      )}
-                    </button>
+                  <div className="pt-2 border-t border-[#E2E8F0] space-y-2">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-mono text-[#475569] text-[11px] truncate">
+                        {fac.email}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(fac.email, fac.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-[#E2E8F0] text-[#0F172A] text-[11px] font-mono cursor-pointer transition-colors"
+                      >
+                        {copiedKey === fac.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-700">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 text-[#475569]" />
+                            <span>Copy Email</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-mono text-[#52525B] bg-zinc-50 p-2 rounded-lg border border-zinc-200/80">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-zinc-400" />
+                        <span className="text-zinc-500">Phone:</span>
+                        <span className="text-zinc-700 font-medium">{fac.phone || 'Contact via Dept. Office / Admin Editable'}</span>
+                      </div>
+                      <span className="text-[10px] text-zinc-400 font-sans">Official Record</span>
+                    </div>
                   </div>
                 </div>
               ))}

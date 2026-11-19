@@ -3,115 +3,163 @@
 import React from 'react';
 import Link from 'next/link';
 import { SignUp } from '@clerk/nextjs';
-import { GraduationCap, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, BookCheck, Calculator, MessageSquareCode, ExternalLink, ShieldCheck } from 'lucide-react';
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EEF2FF] via-[#FAFAFA] to-white flex flex-col justify-center items-center py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Subtle Ambient Glow */}
-      <div 
-        className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-200/40 blur-3xl pointer-events-none" 
-        aria-hidden="true" 
-      />
+    <div className="min-h-screen bg-white grid grid-cols-1 lg:grid-cols-12 font-sans selection:bg-blue-100 selection:text-blue-900">
+      {/* Left Column: Form & Back Navigation */}
+      <div className="lg:col-span-6 xl:col-span-7 flex flex-col justify-between p-6 sm:p-10 lg:p-14 min-h-screen">
+        {/* Top Navigation */}
+        <div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-mono font-medium text-zinc-500 hover:text-zinc-900 transition-colors group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Back to SanakaHub</span>
+          </Link>
+        </div>
 
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-        {/* Left Column: Focused Onboarding Card (7 cols on lg) */}
-        <div className="lg:col-span-7 flex justify-center">
-          <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#E2E8F0] shadow-[0_20px_60px_rgba(15,23,42,0.06)] space-y-6">
-            {/* Brand Header matching Hashnode */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#0F172A] text-white flex items-center justify-center shadow-xs">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-display font-bold text-xl tracking-tight text-[#0F172A]">
+        {/* Center: Clerk Card Container */}
+        <div className="w-full max-w-md mx-auto my-auto py-8">
+          {/* Brand Header */}
+          <div className="mb-6 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
+              <span className="font-display font-bold text-lg text-zinc-900">
                 SanakaHub
               </span>
-              <span className="ml-auto px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 text-[#475569] border border-[#E2E8F0]">
-                SETGOI
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
+                SETGOI Durgapur
               </span>
             </div>
-
-            <div className="space-y-1">
-              <h1 className="text-2xl font-display font-bold tracking-tight text-[#0F172A]">
-                Create your account
-              </h1>
-              <p className="text-xs font-sans text-[#475569]">
-                Join the centralized academic portal for SETGOI students and faculty.
-              </p>
-            </div>
-
-            {/* Clerk SignUp Component with Clean Appearance */}
-            <div className="w-full pt-1">
-              <SignUp
-                routing="path"
-                path="/sign-up"
-                signInUrl="/sign-in"
-                appearance={{
-                  elements: {
-                    rootBox: 'w-full',
-                    card: 'shadow-none p-0 border-0 bg-transparent w-full',
-                    headerTitle: 'hidden',
-                    headerSubtitle: 'hidden',
-                    formButtonPrimary:
-                      'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-2xs font-sans',
-                    footerActionLink: 'text-[#2563EB] hover:underline font-medium text-xs font-sans',
-                    formFieldInput:
-                      'border-[#E2E8F0] focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] text-xs rounded-xl py-2.5 px-3 font-sans',
-                    socialButtonsBlockButton:
-                      'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans text-[#0F172A]',
-                    dividerLine: 'bg-[#E2E8F0]',
-                    dividerText: 'text-[#475569] text-[11px] font-mono',
-                  },
-                }}
-              />
-            </div>
-
-            {/* Terms Disclaimer */}
-            <p className="text-[11px] font-sans text-[#475569] text-center leading-relaxed pt-2 border-t border-[#E2E8F0]">
-              By continuing, you agree to SanakaHub&apos;s{' '}
-              <span className="underline cursor-pointer text-[#0F172A]">Terms &amp; Conditions</span> and{' '}
-              <span className="underline cursor-pointer text-[#0F172A]">Privacy Policy</span>.
+            <h1 className="text-2xl font-display font-bold tracking-tight text-zinc-900">
+              Create Engineering Account
+            </h1>
+            <p className="text-xs text-zinc-600 font-sans">
+              Join your B.Tech peers at SETGOI for MAKAUT notes, calculators, and verified solutions.
             </p>
+          </div>
+
+          {/* Clerk SignUp Component */}
+          <div className="w-full bg-white rounded-2xl border border-zinc-200 p-6 shadow-xs">
+            <SignUp
+              routing="path"
+              path="/sign-up"
+              signInUrl="/sign-in"
+              appearance={{
+                elements: {
+                  rootBox: 'w-full',
+                  card: 'shadow-none p-0 border-0 bg-transparent w-full',
+                  headerTitle: 'hidden',
+                  headerSubtitle: 'hidden',
+                  formButtonPrimary:
+                    'bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-medium rounded-lg py-2.5 transition-colors shadow-2xs font-sans',
+                  footerActionLink: 'text-[#2563EB] hover:underline font-medium text-xs font-sans',
+                  formFieldInput:
+                    'border-zinc-200 focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] text-xs rounded-lg py-2.5 px-3 font-sans',
+                  socialButtonsBlockButton:
+                    'border border-zinc-200 hover:bg-zinc-50 text-xs font-medium rounded-lg py-2.5 transition-colors font-sans text-zinc-800',
+                  dividerLine: 'bg-zinc-200',
+                  dividerText: 'text-zinc-500 text-[11px] font-mono',
+                },
+              }}
+            />
+          </div>
+
+          {/* Institutional note */}
+          <p className="mt-4 text-center text-[11px] font-mono text-zinc-400">
+            Sanaka Educational Trust&apos;s Group of Institutions • Affiliated to MAKAUT
+          </p>
+        </div>
+
+        {/* Footer Disclaimer */}
+        <div className="text-center pt-4">
+          <p className="text-[11px] text-zinc-500">
+            By registering, you agree to SanakaHub&apos;s{' '}
+            <Link href="/terms" className="underline hover:text-zinc-900">Terms of Service</Link> and{' '}
+            <Link href="/privacy" className="underline hover:text-zinc-900">Privacy Policy</Link>.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Column: SETGOI Engineering Branding & Quick Info */}
+      <div 
+        className="hidden lg:flex lg:col-span-6 xl:col-span-5 bg-[#F4F6FF] border-l border-zinc-200 flex-col justify-between p-8 xl:p-12 relative overflow-hidden"
+        style={{
+          backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
+      >
+        {/* Top Identity Block */}
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-[#2563EB] text-[11px] font-mono font-medium border border-blue-200/60 mb-4">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Official B.Tech Academic Suite</span>
+          </div>
+          <h2 className="text-xl font-display font-bold text-zinc-900 tracking-tight">
+            Sanaka Educational Trust&apos;s Group of Institutions
+          </h2>
+          <p className="text-xs font-mono text-zinc-600 mt-1">
+            Malandighi, Durgapur, WB 713212 • Approved by AICTE
+          </p>
+        </div>
+
+        {/* Middle Feature Bullets */}
+        <div className="space-y-4 my-8">
+          <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white border border-zinc-200/80 shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-100">
+              <BookCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-zinc-900 font-sans">Verified MAKAUT Vault</div>
+              <div className="text-[11px] text-zinc-600 font-sans mt-0.5 leading-relaxed">
+                Direct links to NPTEL lectures, GeeksforGeeks modules, syllabus PDFs, and verified past year questions.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white border border-zinc-200/80 shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+              <Calculator className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-zinc-900 font-sans">Academic Utilities &amp; 75% Tracker</div>
+              <div className="text-[11px] text-zinc-600 font-sans mt-0.5 leading-relaxed">
+                MAKAUT 10-point SGPA/CGPA grade calculation alongside mandatory 75% class attendance &amp; safe bunk analysis.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white border border-zinc-200/80 shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+              <MessageSquareCode className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-zinc-900 font-sans">Engineer-to-Engineer Discussions</div>
+              <div className="text-[11px] text-zinc-600 font-sans mt-0.5 leading-relaxed">
+                Ask doubts, share code snippets with syntax highlighting, and get official verified solutions from faculty.
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Column: Reference Endorsement & Navigation (5 cols on lg) */}
-        <div className="hidden lg:flex lg:col-span-5 flex-col justify-between py-6 space-y-12">
-          {/* Top Right "Go back" link matching Hashnode */}
-          <div className="flex justify-end">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-sans font-medium text-[#475569] hover:text-[#0F172A] transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Go back to home</span>
-            </Link>
+        {/* Bottom Quick Access: iCampus College ERP */}
+        <div className="p-4 rounded-xl bg-white border border-zinc-200 flex items-center justify-between shadow-xs">
+          <div>
+            <div className="text-xs font-semibold text-zinc-900 font-sans">SETGOI iCampus Portal</div>
+            <div className="text-[11px] text-zinc-500 font-sans">Official institutional ERP &amp; attendance desk</div>
           </div>
-
-          {/* Testimonial Quote matching Hashnode reference */}
-          <div className="space-y-6 max-w-sm">
-            <blockquote className="text-base text-slate-800 font-sans font-medium leading-relaxed italic">
-              &ldquo;The fastest way to get verified MAKAUT PYQs and check campus transit schedules without asking around.&rdquo;
-            </blockquote>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-xs">
-                SC
-              </div>
-              <div>
-                <div className="text-sm font-sans font-bold text-[#0F172A]">SETGOI Student Council</div>
-                <div className="text-xs text-[#475569] font-mono">
-                  Academic Affairs &amp; Student Welfare
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Accreditation Note */}
-          <div className="text-xs font-mono text-[#475569] space-y-1">
-            <div>Sanaka Educational Trust&apos;s Group of Institutions</div>
-            <div>Durgapur, West Bengal • Affiliated with MAKAUT</div>
-          </div>
+          <a
+            href="https://icampus.setgoi.ac.in/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-[#2563EB] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
+          >
+            <span>Launch</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       </div>
     </div>

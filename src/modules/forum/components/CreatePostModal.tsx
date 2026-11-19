@@ -32,7 +32,7 @@ export function CreatePostModal({
 }: CreatePostModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState<ForumCategory>('Academic');
+  const [category, setCategory] = useState<ForumCategory>('Academics & Syllabus');
   const [department, setDepartment] = useState('CSE • 3rd Sem');
   const [tagInput, setTagInput] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

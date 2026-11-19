@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ArrowDown, Eye } from 'lucide-react';
+import { ArrowDown, Eye, ArrowUpRight } from 'lucide-react';
 import { NoteItem, CustomUserRole } from '@/types';
 
 interface NoteCardProps {
@@ -90,14 +90,28 @@ export function NoteCard({
             <Eye className="w-3.5 h-3.5" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => onDownload(note)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#E4E4E7] text-[#09090B] hover:border-[#2563EB] hover:text-[#2563EB] bg-white text-xs font-sans font-medium transition-colors shadow-2xs cursor-pointer group/btn"
-          >
-            <span>Download</span>
-            <ArrowDown className="w-3.5 h-3.5 text-[#52525B] group-hover/btn:text-[#2563EB] transition-colors" />
-          </button>
+          {note.fileUrl.startsWith('http') ? (
+            <a
+              href={note.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onDownload(note)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-blue-200 text-[#2563EB] hover:bg-blue-50 bg-white text-xs font-sans font-medium transition-colors shadow-2xs cursor-pointer group/btn"
+              title="Open verified study resource in new tab"
+            >
+              <span>Open Resource</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#2563EB] group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onDownload(note)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#E4E4E7] text-[#09090B] hover:border-[#2563EB] hover:text-[#2563EB] bg-white text-xs font-sans font-medium transition-colors shadow-2xs cursor-pointer group/btn"
+            >
+              <span>Download</span>
+              <ArrowDown className="w-3.5 h-3.5 text-[#52525B] group-hover/btn:text-[#2563EB] transition-colors" />
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,16 +1,28 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { ForumPost, CustomUserRole, ForumSortOption, ForumCategory } from '../types';
+import { ForumPost, CustomUserRole, ForumSortOption, ForumCategory, ForumStatusFilter } from '../types';
 import { INITIAL_FORUM_DATA } from '../mock-data';
-import { forumStore } from '../forum-service';
 import { ForumHeader } from './ForumHeader';
-import { ForumCategoryFilter } from './ForumCategoryFilter';
 import { ForumPostCard } from './ForumPostCard';
 import { ForumPostDetail } from './ForumPostDetail';
 import { CreatePostModal } from './CreatePostModal';
-import { MessageSquare, RefreshCw, AlertCircle, Sparkles, Tag, X } from 'lucide-react';
+import { 
+  MessageSquare, 
+  AlertCircle, 
+  Sparkles, 
+  X, 
+  BookOpen, 
+  Code2, 
+  FlaskConical, 
+  Briefcase, 
+  Building2, 
+  CheckCircle2, 
+  Circle, 
+  Award,
+  Filter
+} from 'lucide-react';
 import { getResolvedRole } from '@/lib/auth-client';
 import { AuthPromptModal, AuthPromptReason } from '@/components/auth/AuthPromptModal';
 
@@ -19,13 +31,28 @@ interface ForumMainViewProps {
   initialPostId?: string;
 }
 
+const CATEGORIES = [
+  { id: 'All', label: 'All Discussions', icon: MessageSquare },
+  { id: 'Academics & Syllabus', label: 'Academics & Syllabus', icon: BookOpen },
+  { id: 'Coding & DSA', label: 'Coding & DSA', icon: Code2 },
+  { id: 'Labs & Viva', label: 'Labs & Viva', icon: FlaskConical },
+  { id: 'Placements & Internships', label: 'Placements & Internships', icon: Briefcase },
+  { id: 'Campus & Hostel', label: 'Campus & Hostel', icon: Building2 },
+];
+
+const STATUS_FILTERS: { id: ForumStatusFilter; label: string; icon: React.ElementType }[] = [
+  { id: 'all', label: 'All Statuses', icon: Filter },
+  { id: 'open', label: 'Open', icon: Circle },
+  { id: 'solved', label: 'Solved', icon: CheckCircle2 },
+  { id: 'verified', label: 'Faculty Verified', icon: Award },
+];
+
 export function ForumMainView({
   initialPosts,
   initialPostId,
 }: ForumMainViewProps) {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isSignedIn } = useUser();
 
-  // Active Role and User State derived directly from Clerk
   const currentRole = getResolvedRole(user);
   const userName = user?.fullName || user?.firstName || 'SETGOI Student';
   const userDepartment =
@@ -35,25 +62,22 @@ export function ForumMainView({
       ? 'Platform Admin'
       : 'SETGOI Student';
 
-  // Posts State
   const [posts, setPosts] = useState<ForumPost[]>(() => {
     return initialPosts && initialPosts.length > 0
       ? initialPosts
       : JSON.parse(JSON.stringify(INITIAL_FORUM_DATA));
   });
 
-  // Selected Post for detailed view
   const [selectedPostId, setSelectedPostId] = useState<string | null>(
     initialPostId || null
   );
 
-  // Filters & Sorting
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedStatus, setSelectedStatus] = useState<ForumStatusFilter>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortOption, setSortOption] = useState<ForumSortOption>('recent');
 
-  // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [authPromptReason, setAuthPromptReason] = useState<AuthPromptReason | null>(null);
   const [feedbackToast, setFeedbackToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -71,7 +95,6 @@ export function ForumMainView({
     setIsCreateModalOpen(true);
   };
 
-  // Upvote Post
   const handleUpvotePost = async (postId: string) => {
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
@@ -87,7 +110,6 @@ export function ForumMainView({
       })
     );
 
-    // Call API in background
     try {
       await fetch('/api/forum/upvote', {
         method: 'POST',
@@ -95,11 +117,10 @@ export function ForumMainView({
         body: JSON.stringify({ postId }),
       });
     } catch {
-      // In-memory update was already made
+      // In-memory update already done
     }
   };
 
-  // Upvote Reply
   const handleUpvoteReply = async (postId: string, replyId: string) => {
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
@@ -128,11 +149,10 @@ export function ForumMainView({
         body: JSON.stringify({ postId, replyId }),
       });
     } catch {
-      // In-memory update was already made
+      // In-memory update already done
     }
   };
 
-  // Add Reply (Top-level or nested)
   const handleAddReply = async (data: {
     postId: string;
     content: string;
@@ -199,11 +219,10 @@ export function ForumMainView({
         }),
       });
     } catch {
-      // in-memory state updated
+      // In-memory update already done
     }
   };
 
-  // Toggle Official Faculty Answer (RESTRICTED TO COLLEGE / ADMIN)
   const handleToggleOfficialAnswer = async (postId: string, replyId: string) => {
     if (currentRole !== 'college' && currentRole !== 'admin') {
       triggerToast(
@@ -258,11 +277,10 @@ export function ForumMainView({
         }),
       });
     } catch {
-      // in-memory state updated
+      // In-memory update already done
     }
   };
 
-  // Create New Post
   const handleCreatePost = async (data: {
     title: string;
     content: string;
@@ -310,7 +328,7 @@ export function ForumMainView({
         }),
       });
     } catch {
-      // in-memory state updated
+      // In-memory update already done
     }
   };
 
@@ -318,11 +336,35 @@ export function ForumMainView({
   const filteredPosts = useMemo(() => {
     let result = [...posts];
 
-    // Category filter
+    // Category filter with alias normalizer
     if (selectedCategory !== 'All') {
-      result = result.filter(
-        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
+      result = result.filter((p) => {
+        if (selectedCategory === 'Academics & Syllabus') {
+          return p.category === 'Academics & Syllabus' || p.category === 'Academic';
+        }
+        if (selectedCategory === 'Coding & DSA') {
+          return p.category === 'Coding & DSA' || p.category === 'TechFest';
+        }
+        if (selectedCategory === 'Labs & Viva') {
+          return p.category === 'Labs & Viva';
+        }
+        if (selectedCategory === 'Placements & Internships') {
+          return p.category === 'Placements & Internships' || p.category === 'Placements';
+        }
+        if (selectedCategory === 'Campus & Hostel') {
+          return p.category === 'Campus & Hostel' || p.category === 'Campus Life' || p.category === 'Hostel';
+        }
+        return p.category.toLowerCase() === selectedCategory.toLowerCase();
+      });
+    }
+
+    // Status filter
+    if (selectedStatus === 'open') {
+      result = result.filter((p) => p.replies.length === 0);
+    } else if (selectedStatus === 'solved') {
+      result = result.filter((p) => p.replies.length > 0);
+    } else if (selectedStatus === 'verified') {
+      result = result.filter((p) => p.hasOfficialAnswer || p.replies.some((r) => r.isOfficialAnswer));
     }
 
     // Tag filter
@@ -369,35 +411,32 @@ export function ForumMainView({
     });
 
     return result;
-  }, [posts, selectedCategory, selectedTag, searchQuery, sortOption]);
+  }, [posts, selectedCategory, selectedStatus, selectedTag, searchQuery, sortOption]);
 
   // Compute category counts
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {
-      Academic: 0,
-      TechFest: 0,
-      'Campus Life': 0,
-      Placements: 0,
-      Hostel: 0,
+      All: posts.length,
+      'Academics & Syllabus': 0,
+      'Coding & DSA': 0,
+      'Labs & Viva': 0,
+      'Placements & Internships': 0,
+      'Campus & Hostel': 0,
     };
     posts.forEach((p) => {
-      if (counts[p.category] !== undefined) {
-        counts[p.category]++;
+      if (p.category === 'Academic' || p.category === 'Academics & Syllabus') {
+        counts['Academics & Syllabus']++;
+      } else if (p.category === 'TechFest' || p.category === 'Coding & DSA') {
+        counts['Coding & DSA']++;
+      } else if (p.category === 'Labs & Viva') {
+        counts['Labs & Viva']++;
+      } else if (p.category === 'Placements' || p.category === 'Placements & Internships') {
+        counts['Placements & Internships']++;
+      } else if (p.category === 'Campus Life' || p.category === 'Hostel' || p.category === 'Campus & Hostel') {
+        counts['Campus & Hostel']++;
       }
     });
     return counts;
-  }, [posts]);
-
-  // Extract all unique tags across all posts
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
-    posts.forEach((p) => {
-      p.tags?.forEach((t) => {
-        const clean = t.trim().replace(/^#/, '');
-        if (clean) set.add(clean);
-      });
-    });
-    return Array.from(set);
   }, [posts]);
 
   // Currently selected post
@@ -407,7 +446,7 @@ export function ForumMainView({
   }, [posts, selectedPostId]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Toast Notification */}
       {feedbackToast && (
         <div
@@ -426,8 +465,7 @@ export function ForumMainView({
         </div>
       )}
 
-
-      {/* Render Post Detail OR List */}
+      {/* Render Post Detail OR 2-Column List View */}
       {activePost ? (
         <ForumPostDetail
           post={activePost}
@@ -444,7 +482,7 @@ export function ForumMainView({
           onToggleOfficialAnswer={handleToggleOfficialAnswer}
         />
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="space-y-6">
           {/* Header */}
           <ForumHeader
             searchQuery={searchQuery}
@@ -455,78 +493,187 @@ export function ForumMainView({
             totalPosts={filteredPosts.length}
           />
 
-          {/* Category Tabs Filter */}
-          <ForumCategoryFilter
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            categoryCounts={categoryCounts}
-          />
-
-          {/* Active Tag Filter Pill (if selected from card) */}
-          {selectedTag && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[#52525B]">Filtered by topic:</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono bg-blue-50 text-[#2563EB] border border-blue-200">
-                #{selectedTag}
-                <button
-                  type="button"
-                  onClick={() => setSelectedTag(null)}
-                  className="hover:text-blue-900 cursor-pointer ml-1"
-                  title="Remove topic filter"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            </div>
-          )}
-
-          {/* Posts List */}
-          {filteredPosts.length === 0 ? (
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-12 text-center shadow-xs">
-              <MessageSquare className="w-10 h-10 text-[#52525B]/40 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-[#09090B] font-display">
-                No discussion threads found
-              </h3>
-              <p className="text-xs text-[#52525B] mt-1 max-w-sm mx-auto font-sans">
-                {searchQuery || selectedTag
-                  ? `No questions matching your active filters. Try clearing the topic or searching another keyword.`
-                  : `No threads in category "${selectedCategory}" yet. Be the first to start the discussion!`}
-              </p>
-              <div className="flex items-center justify-center gap-3 mt-4">
-                {(searchQuery || selectedTag) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setSelectedTag(null);
-                    }}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-medium bg-zinc-100 text-[#09090B] hover:bg-zinc-200 transition-colors font-sans cursor-pointer border border-[#E4E4E7]"
-                  >
-                    Reset Filters
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={handleOpenCreateModal}
-                  className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#2563EB] text-white hover:bg-blue-700 transition-colors font-sans shadow-xs cursor-pointer"
-                >
-                  Ask a Question
-                </button>
+          {/* 2-Column Engineering Layout: Sidebar (w-56) + Main Feed */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Sidebar: Categories & Status Filter */}
+            <aside className="lg:col-span-3 space-y-6">
+              {/* Category Nav Links */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-3 shadow-xs">
+                <div className="px-2.5 py-1.5 text-[11px] font-mono uppercase tracking-wider text-zinc-500 font-bold">
+                  Categories
+                </div>
+                <nav className="space-y-1 mt-1">
+                  {CATEGORIES.map((cat) => {
+                    const Icon = cat.icon;
+                    const isSelected = selectedCategory === cat.id;
+                    const count = categoryCounts[cat.id] ?? 0;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-sans font-medium transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-50 text-[#2563EB] font-semibold'
+                            : 'text-zinc-700 hover:bg-zinc-100/70 hover:text-zinc-900'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-[#2563EB]' : 'text-zinc-400'}`} />
+                          <span className="truncate">{cat.label}</span>
+                        </div>
+                        <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                          isSelected ? 'bg-blue-100 text-[#2563EB]' : 'bg-zinc-100 text-zinc-500'
+                        }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredPosts.map((post) => (
-                <ForumPostCard
-                  key={post.id}
-                  post={post}
-                  onSelect={(id) => setSelectedPostId(id)}
-                  onUpvote={handleUpvotePost}
-                  onSelectTag={(tag) => setSelectedTag(tag.replace(/^#/, ''))}
-                />
-              ))}
-            </div>
-          )}
+
+              {/* Status Filter */}
+              <div className="bg-white border border-zinc-200 rounded-xl p-3 shadow-xs">
+                <div className="px-2.5 py-1.5 text-[11px] font-mono uppercase tracking-wider text-zinc-500 font-bold">
+                  Discussion Status
+                </div>
+                <div className="space-y-1 mt-1">
+                  {STATUS_FILTERS.map((status) => {
+                    const Icon = status.icon;
+                    const isSelected = selectedStatus === status.id;
+                    return (
+                      <button
+                        key={status.id}
+                        type="button"
+                        onClick={() => setSelectedStatus(status.id)}
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-sans transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-zinc-100 text-zinc-900 font-bold'
+                            : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
+                        }`}
+                      >
+                        <Icon className={`w-3.5 h-3.5 ${
+                          status.id === 'verified' ? 'text-purple-600' :
+                          status.id === 'solved' ? 'text-emerald-600' :
+                          status.id === 'open' ? 'text-zinc-400' : 'text-zinc-500'
+                        }`} />
+                        <span>{status.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Engineering Guidelines Notice */}
+              <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] font-sans text-blue-900 leading-relaxed">
+                <div className="font-bold flex items-center gap-1.5 mb-1 font-mono text-xs text-[#2563EB]">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Verified Q&amp;A Hub</span>
+                </div>
+                <span>Faculty verified answers are marked with a purple award. Questions with code snippets get answered 3x faster by senior batchmates.</span>
+              </div>
+            </aside>
+
+            {/* Right Main Feed: GitHub Discussions style */}
+            <main className="lg:col-span-9 space-y-4">
+              {/* Active Filter Pills Bar */}
+              {(selectedTag || selectedStatus !== 'all' || selectedCategory !== 'All' || searchQuery) && (
+                <div className="flex flex-wrap items-center gap-2 pb-1">
+                  <span className="text-xs font-mono text-zinc-500">Active filters:</span>
+                  {selectedCategory !== 'All' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-zinc-100 text-zinc-800 border border-zinc-200">
+                      {selectedCategory}
+                      <button onClick={() => setSelectedCategory('All')} className="hover:text-red-600 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedStatus !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-zinc-100 text-zinc-800 border border-zinc-200 capitalize">
+                      Status: {selectedStatus}
+                      <button onClick={() => setSelectedStatus('all')} className="hover:text-red-600 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedTag && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-blue-50 text-[#2563EB] border border-blue-200">
+                      #{selectedTag}
+                      <button onClick={() => setSelectedTag(null)} className="hover:text-blue-900 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-amber-50 text-amber-800 border border-amber-200">
+                      Search: &ldquo;{searchQuery}&rdquo;
+                      <button onClick={() => setSearchQuery('')} className="hover:text-amber-950 cursor-pointer">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('All');
+                      setSelectedStatus('all');
+                      setSelectedTag(null);
+                      setSearchQuery('');
+                    }}
+                    className="text-[11px] font-mono text-zinc-500 hover:text-zinc-900 underline ml-2 cursor-pointer"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+
+              {/* Feed Container */}
+              {filteredPosts.length === 0 ? (
+                <div className="bg-white border border-zinc-200 rounded-xl p-12 text-center shadow-xs">
+                  <MessageSquare className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+                  <h3 className="text-base font-bold text-zinc-900 font-display">
+                    No discussions found
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto font-sans">
+                    No threads match your active filters or keyword search. Reset your filters or start a new discussion.
+                  </p>
+                  <div className="flex items-center justify-center gap-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory('All');
+                        setSelectedStatus('all');
+                        setSelectedTag(null);
+                        setSearchQuery('');
+                      }}
+                      className="px-3.5 py-1.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 hover:bg-zinc-200 transition-colors font-sans cursor-pointer border border-zinc-200"
+                    >
+                      Reset Filters
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateModal}
+                      className="px-4 py-1.5 rounded-full text-xs font-medium bg-[#2563EB] text-white hover:bg-blue-700 transition-colors font-sans shadow-xs cursor-pointer"
+                    >
+                      Ask Question
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white border border-zinc-200 rounded-xl shadow-xs divide-y divide-zinc-200 overflow-hidden">
+                  {filteredPosts.map((post) => (
+                    <ForumPostCard
+                      key={post.id}
+                      post={post}
+                      onSelect={(id) => setSelectedPostId(id)}
+                      onUpvote={handleUpvotePost}
+                      onSelectTag={(tag) => setSelectedTag(tag.replace(/^#/, ''))}
+                    />
+                  ))}
+                </div>
+              )}
+            </main>
+          </div>
         </div>
       )}
 

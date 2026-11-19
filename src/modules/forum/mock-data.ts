@@ -4,8 +4,20 @@ export const INITIAL_FORUM_DATA: ForumPost[] = [
   {
     id: 'post-01',
     title: 'Tips for scoring high in PCC-CS301 (Data Structures) CA2 examination?',
-    content: 'Our CA2 test is scheduled according to the official MAKAUT calendar. Which topics carry the highest weightage between Trees (AVL/BST rotations) and Graph Traversals (Dijkstra/Prim algorithm proofs)? Any suggested reference problems from previous semester papers?',
-    category: 'Academic',
+    content: `Our CA2 test is scheduled according to the official MAKAUT calendar. Which topics carry the highest weightage between Trees (AVL/BST rotations) and Graph Traversals (Dijkstra/Prim algorithm proofs)?
+
+Here is the C structure we're implementing in our lab:
+\`\`\`c
+struct Node {
+    int key;
+    struct Node *left;
+    struct Node *right;
+    int height;
+};
+\`\`\`
+
+Any suggested reference problems from previous semester papers?`,
+    category: 'Academics & Syllabus',
     authorId: 'user-student-05',
     authorName: 'Aniket Mukherjee',
     authorRole: 'student',
@@ -20,7 +32,21 @@ export const INITIAL_FORUM_DATA: ForumPost[] = [
       {
         id: 'reply-01',
         postId: 'post-01',
-        content: 'Focus heavily on AVL Tree rotations (Single LL/RR and Double LR/RL) and recursive dry-runs for BFS vs DFS graph traversals. In MAKAUT grading rubrics, students often lose marks for not showing stack and queue frames step-by-step. Refer to module 3 & 4 lecture notes uploaded in SanakaHub Notes Vault.',
+        content: `Focus heavily on AVL Tree rotations (Single LL/RR and Double LR/RL) and recursive dry-runs for BFS vs DFS graph traversals. In MAKAUT grading rubrics, students often lose marks for not showing stack and queue frames step-by-step.
+
+Here is the standard rightRotate implementation expected in MAKAUT answer keys:
+\`\`\`c
+struct Node* rightRotate(struct Node *y) {
+    struct Node *x = y->left;
+    struct Node *T2 = x->right;
+    x->right = y;
+    y->left = T2;
+    y->height = max(height(y->left), height(y->right)) + 1;
+    x->height = max(height(x->left), height(x->right)) + 1;
+    return x;
+}
+\`\`\`
+Refer to module 3 & 4 lecture notes uploaded in SanakaHub Notes Vault under PCC-CS301.`,
         authorId: 'user-faculty-01',
         authorName: 'Dr. Sourav Sengupta',
         authorRole: 'college',

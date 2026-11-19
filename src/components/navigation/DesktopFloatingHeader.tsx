@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton, useUser } from '@clerk/nextjs';
-import { Menu, X, BookOpen, MessageSquare, Compass, Calculator, Home, Shield, Phone, ArrowRight, User } from 'lucide-react';
+import { Menu, X, BookOpen, MessageSquare, Compass, Calculator, Home, Shield, Phone, ArrowRight, User, Search } from 'lucide-react';
 import { getResolvedRole, getDisplayRole, ROLE_CONFIGS } from '@/lib/auth-client';
+import { CommandPalette } from './CommandPalette';
 
 interface NavItem {
   href: string;
@@ -17,10 +18,23 @@ export function DesktopFloatingHeader() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const { user, isLoaded, isSignedIn } = useUser();
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Keyboard shortcut for Command Palette (Ctrl+K or ⌘K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Lock body scroll when mobile menu is open
@@ -34,6 +48,11 @@ export function DesktopFloatingHeader() {
       document.body.style.overflow = 'unset';
     };
   }, [mobileMenuOpen]);
+
+  // Hide floating navbar on auth screens
+  if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
+    return null;
+  }
 
   const role = getResolvedRole(user);
   const displayRole = getDisplayRole(role);
@@ -92,8 +111,27 @@ export function DesktopFloatingHeader() {
             })}
           </nav>
 
+          {/* Quick Switcher ⌘K Trigger (Desktop) */}
+          <button
+            onClick={() => setCommandPaletteOpen(true)}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono text-[#52525B] bg-zinc-100 hover:bg-zinc-200/80 hover:text-zinc-900 border border-zinc-200 transition-colors"
+            title="Quick Switcher (⌘K / Ctrl+K)"
+          >
+            <Search className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="hidden lg:inline text-[11px] font-sans text-zinc-600">Search</span>
+            <kbd className="text-[10px] bg-white border border-zinc-300 rounded px-1 text-zinc-500 font-mono">⌘K</kbd>
+          </button>
+
           {/* Right Actions: Console link + Clerk Auth + Mobile Menu Toggle */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Quick Switcher Trigger (Mobile) */}
+            <button
+              onClick={() => setCommandPaletteOpen(true)}
+              className="sm:hidden p-1.5 rounded-full text-[#475569] hover:text-[#0F172A] hover:bg-slate-100 transition-colors"
+              aria-label="Quick search (⌘K)"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             {/* Elevated Console Link */}
             {hasConsoleAccess && (
               <Link
@@ -309,6 +347,9 @@ export function DesktopFloatingHeader() {
           </div>
         </div>
       )}
+
+      {/* Global ⌘K Command Palette */}
+      <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
     </>
   );
 }

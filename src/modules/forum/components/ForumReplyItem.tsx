@@ -13,6 +13,7 @@ import {
   Award, 
   AlertCircle 
 } from 'lucide-react';
+import { ForumMarkdownContent } from './ForumMarkdownContent';
 
 interface ForumReplyItemProps {
   reply: ForumReply;
@@ -165,8 +166,8 @@ export function ForumReplyItem({
         </div>
 
         {/* Reply Body Content */}
-        <div className="text-sm text-zinc-800 whitespace-pre-line leading-relaxed mb-3">
-          {reply.content}
+        <div className="mb-3">
+          <ForumMarkdownContent content={reply.content} />
         </div>
 
         {/* Permission warning alert if student tries to verify */}

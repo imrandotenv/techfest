@@ -4,31 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   Calculator, 
-  Calendar, 
-  FileSpreadsheet, 
-  Sparkles, 
+  ShieldCheck, 
   Bot, 
-  Layers,
-  Wrench,
-  CheckCircle2,
-  Ticket,
-  Bell
+  Bell,
+  Sparkles
 } from 'lucide-react';
 import { SgpaCgpaCalculator } from './SgpaCgpaCalculator';
-import { AcademicCalendarTimeline } from './AcademicCalendarTimeline';
-import { PdfMerger } from './PdfMerger';
-import { TechFestBoard } from './TechFestBoard';
-import { AiStudyCompanion } from './AiStudyCompanion';
+import { AttendanceTracker } from './AttendanceTracker';
 import { NoticeBoard } from './NoticeBoard';
+import { AiStudyCompanion } from './AiStudyCompanion';
 
-export type ToolTab = 'calculator' | 'notices' | 'calendar' | 'pdf-merger' | 'techfest' | 'ai-companion';
+export type ToolTab = 'calculator' | 'attendance' | 'notices' | 'ai-companion';
 
 export function ToolsDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const tabParam = searchParams.get('tab') as ToolTab | null;
-  const validTabs = ['calculator', 'notices', 'calendar', 'pdf-merger', 'techfest', 'ai-companion'];
+  const validTabs: ToolTab[] = ['calculator', 'attendance', 'notices', 'ai-companion'];
   const [activeTab, setActiveTab] = useState<ToolTab>(
     tabParam && validTabs.includes(tabParam)
       ? tabParam
@@ -49,11 +42,10 @@ export function ToolsDashboard() {
   };
 
   const pillTabs = [
-    { id: 'calculator' as ToolTab, label: 'SGPA Calculator', icon: Calculator },
-    { id: 'notices' as ToolTab, label: 'Notice Board', icon: Bell },
-    { id: 'calendar' as ToolTab, label: 'Academic Calendar', icon: Calendar },
-    { id: 'pdf-merger' as ToolTab, label: 'PDF Merger', icon: FileSpreadsheet },
-    { id: 'ai-companion' as ToolTab, label: 'AI Helper', icon: Bot },
+    { id: 'calculator' as ToolTab, label: 'SGPA / CGPA Calculator', icon: Calculator },
+    { id: 'attendance' as ToolTab, label: '75% Attendance Tracker', icon: ShieldCheck },
+    { id: 'notices' as ToolTab, label: 'Notice Board & Exam Dates', icon: Bell },
+    { id: 'ai-companion' as ToolTab, label: 'AI Syllabus Helper', icon: Bot },
   ];
 
   return (
@@ -62,17 +54,17 @@ export function ToolsDashboard() {
       <div>
         <div className="flex items-center gap-2">
           <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-mono text-xs font-bold">
-            UTILITIES
+            ACADEMIC SUITE
           </span>
           <span className="text-xs font-mono uppercase text-[#52525B] tracking-wider">
-            SETGOI Academic &amp; Student Tools Suite
+            SETGOI Engineering Utilities
           </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#09090B] font-display mt-2">
           Student Utilities &amp; Academic Calculators
         </h1>
         <p className="text-sm text-[#52525B] mt-1 max-w-3xl font-sans leading-relaxed">
-          Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, track assessment schedules, merge study documents securely, and interact with the campus AI companion.
+          Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, audit mandatory 75% attendance and safe bunks, track priority notices, and get real-time AI syllabus guidance.
         </p>
       </div>
 
@@ -101,10 +93,8 @@ export function ToolsDashboard() {
       {/* Tab Content Panes */}
       <div className="animate-in fade-in duration-150">
         {activeTab === 'calculator' && <SgpaCgpaCalculator />}
+        {activeTab === 'attendance' && <AttendanceTracker />}
         {activeTab === 'notices' && <NoticeBoard />}
-        {activeTab === 'calendar' && <AcademicCalendarTimeline />}
-        {activeTab === 'pdf-merger' && <PdfMerger />}
-        {activeTab === 'techfest' && <TechFestBoard />}
         {activeTab === 'ai-companion' && <AiStudyCompanion />}
       </div>
     </div>
