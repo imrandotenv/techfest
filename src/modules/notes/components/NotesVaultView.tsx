@@ -153,7 +153,7 @@ export function NotesVaultView() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 flex flex-col">
+    <div className="min-h-screen bg-[#FAFAFA] text-[#0F172A] flex flex-col">
       
 
       {/* Hero Header with Metrics */}
@@ -165,7 +165,7 @@ export function NotesVaultView() {
       />
 
       {/* Vault Tabs */}
-      <div className="bg-white border-b border-zinc-200">
+      <div className="bg-white border-b border-[#E2E8F0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-6 text-xs sm:text-sm font-medium">
             <button
@@ -173,13 +173,13 @@ export function NotesVaultView() {
               onClick={() => handleTabSelect('all')}
               className={`py-3.5 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
                 activeTab === 'all'
-                  ? 'border-zinc-900 text-zinc-900 font-bold'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+                  ? 'border-[#0F172A] text-[#0F172A] font-bold'
+                  : 'border-transparent text-[#475569] hover:text-[#0F172A]'
               }`}
             >
               <FileText className="w-4 h-4" />
               <span>All Vault Resources</span>
-              <span className="text-[11px] px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-600 font-mono">
+              <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-100 text-[#0F172A] font-mono">
                 {stats.approvedCount}
               </span>
             </button>
@@ -189,13 +189,13 @@ export function NotesVaultView() {
               onClick={() => handleTabSelect('pyq')}
               className={`py-3.5 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
                 activeTab === 'pyq'
-                  ? 'border-violet-600 text-violet-900 font-bold'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+                  ? 'border-[#2563EB] text-[#2563EB] font-bold'
+                  : 'border-transparent text-[#475569] hover:text-[#0F172A]'
               }`}
             >
-              <BookOpen className="w-4 h-4 text-violet-600" />
+              <BookOpen className="w-4 h-4 text-[#2563EB]" />
               <span>MAKAUT Solved PYQs</span>
-              <span className="text-[11px] px-1.5 py-0.2 rounded bg-violet-100 text-violet-700 font-mono">
+              <span className="text-[11px] px-1.5 py-0.2 rounded bg-blue-50 text-[#2563EB] font-mono font-medium">
                 {stats.makautPyqs}
               </span>
             </button>
@@ -206,7 +206,7 @@ export function NotesVaultView() {
               className={`py-3.5 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
                 activeTab === 'pending'
                   ? 'border-amber-500 text-amber-900 font-bold'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-800'
+                  : 'border-transparent text-[#475569] hover:text-[#0F172A]'
               }`}
             >
               <Clock className="w-4 h-4 text-amber-600" />
@@ -233,9 +233,9 @@ export function NotesVaultView() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-20 right-6 z-50 max-w-md bg-zinc-900 text-white px-4 py-3 rounded-lg shadow-xl border border-zinc-700 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-20 right-6 z-50 max-w-md bg-[#0F172A] text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="flex-1">{toastMessage}</span>
+          <span className="flex-1 font-sans">{toastMessage}</span>
         </div>
       )}
 
@@ -255,18 +255,18 @@ export function NotesVaultView() {
         ) : (
           <>
             {filteredNotes.length === 0 ? (
-              <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center my-6">
-                <FileText className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-zinc-900">
+              <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center my-6 shadow-xs">
+                <FileText className="w-10 h-10 text-[#475569]/40 mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-[#0F172A] font-display">
                   No matching MAKAUT notes found
                 </h3>
-                <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                <p className="text-xs text-[#475569] mt-1 max-w-sm mx-auto font-sans">
                   Try clearing your search query or choosing another branch/semester. You can also upload notes for this subject code.
                 </p>
                 <button
                   type="button"
                   onClick={() => setIsUploadOpen(true)}
-                  className="mt-4 px-4 py-2 rounded bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800 transition-colors inline-flex items-center gap-1.5"
+                  className="mt-4 px-4 py-2 rounded-lg bg-[#0F172A] text-white text-xs font-medium hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 font-sans shadow-2xs"
                 >
                   Upload First Note for this Subject
                 </button>

@@ -29,13 +29,13 @@ export function NoteCard({
   const isApproved = note.status === 'approved';
 
   return (
-    <div className="group bg-white rounded-xl border border-zinc-200/90 hover:border-zinc-300 hover:shadow-xs transition-all flex flex-col justify-between p-4 sm:p-5">
+    <div className="group bg-white rounded-xl border border-[#E2E8F0] hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between p-4 sm:p-5">
       <div className="space-y-2.5">
         
         {/* Top Header: Subject Code badge + Verified dot + Academic Year */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-zinc-950 text-white tracking-wide">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-[#0F172A] text-white tracking-wide">
               {note.subjectCode}
             </span>
             
@@ -52,7 +52,7 @@ export function NoteCard({
             )}
           </div>
 
-          <span className="text-[11px] font-mono text-zinc-400">
+          <span className="text-[11px] font-mono text-[#475569]/70">
             {note.academicYear}
           </span>
         </div>
@@ -60,22 +60,22 @@ export function NoteCard({
         {/* Title */}
         <h3
           onClick={() => onPreview(note)}
-          className="text-sm sm:text-base font-semibold text-zinc-900 group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-2 leading-snug"
+          className="text-sm sm:text-base font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors cursor-pointer line-clamp-2 leading-snug font-display"
           title={note.title}
         >
           {note.title}
         </h3>
 
         {/* 1-Line Metadata */}
-        <p className="text-xs text-zinc-500 font-mono truncate">
+        <p className="text-xs text-[#475569] font-mono truncate">
           Sem {note.semester} • {note.departmentCode} • {note.subjectName}
         </p>
 
       </div>
 
       {/* Bottom Bar: Metadata & Compact Download Button on Right */}
-      <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
-        <div className="text-[11px] text-zinc-400 font-mono">
+      <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between gap-2">
+        <div className="text-[11px] text-[#475569]/80 font-mono">
           <span>{formatBytes(note.fileSize)}</span>
           <span className="mx-1.5">•</span>
           <span>{note.downloadsCount} dl</span>
@@ -85,7 +85,7 @@ export function NoteCard({
           <button
             type="button"
             onClick={() => onPreview(note)}
-            className="p-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+            className="p-1.5 rounded-lg border border-[#E2E8F0] bg-white text-[#475569] hover:text-[#0F172A] hover:bg-slate-50 transition-colors"
             title="Preview note"
           >
             <Eye className="w-3.5 h-3.5" />
@@ -94,10 +94,10 @@ export function NoteCard({
           <button
             type="button"
             onClick={() => onDownload(note)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-950 text-white hover:bg-zinc-800 text-xs font-medium transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 text-xs font-medium transition-colors shadow-2xs font-sans"
           >
             <span>Download</span>
-            <Download className="w-3.5 h-3.5 text-zinc-300" />
+            <Download className="w-3.5 h-3.5 text-slate-300" />
           </button>
         </div>
       </div>

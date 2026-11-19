@@ -40,14 +40,14 @@ export function NotesFilterBar({
   onOpenUpload,
 }: NotesFilterBarProps) {
   return (
-    <div className="sticky top-20 z-30 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-zinc-200/80 py-3 shadow-2xs">
+    <div className="sticky top-20 z-30 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-[#E2E8F0] py-3 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Single-Line Clean Filter Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           
           {/* Search Input */}
           <div className="relative flex-1 min-w-[200px] sm:min-w-[280px]">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#475569] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={filters.searchQuery}
@@ -55,13 +55,13 @@ export function NotesFilterBar({
                 onFilterChange({ ...filters, searchQuery: e.target.value })
               }
               placeholder="Search PCC-CS301, topic, or faculty..."
-              className="w-full pl-9 pr-8 py-2 bg-white border border-zinc-200 rounded-lg text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-hidden focus:border-zinc-900 transition-colors shadow-2xs"
+              className="w-full pl-9 pr-8 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs sm:text-sm text-[#0F172A] placeholder:text-[#475569]/60 focus:outline-hidden focus:border-[#0F172A] transition-colors shadow-2xs font-sans"
             />
             {filters.searchQuery && (
               <button
                 type="button"
                 onClick={() => onFilterChange({ ...filters, searchQuery: '' })}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#0F172A]"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -76,7 +76,7 @@ export function NotesFilterBar({
               onChange={(e) =>
                 onFilterChange({ ...filters, branch: e.target.value as any })
               }
-              className="px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-mono text-zinc-800 focus:outline-hidden focus:border-zinc-900 cursor-pointer shadow-2xs"
+              className="px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs"
             >
               {BRANCHES.map((b) => (
                 <option key={b.code} value={b.code}>
@@ -94,7 +94,7 @@ export function NotesFilterBar({
                   semester: e.target.value === 'ALL' ? 'ALL' : Number(e.target.value),
                 })
               }
-              className="px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-mono text-zinc-800 focus:outline-hidden focus:border-zinc-900 cursor-pointer shadow-2xs"
+              className="px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs"
             >
               {SEMESTERS.map((s) => (
                 <option key={s} value={s}>
@@ -109,7 +109,7 @@ export function NotesFilterBar({
               onChange={(e) =>
                 onFilterChange({ ...filters, category: e.target.value as any })
               }
-              className="px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-mono text-zinc-800 focus:outline-hidden focus:border-zinc-900 cursor-pointer shadow-2xs"
+              className="px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg text-xs font-mono text-[#0F172A] focus:outline-hidden focus:border-[#0F172A] cursor-pointer shadow-2xs"
             >
               {CATEGORIES.map((c) => (
                 <option key={c.key} value={c.key}>
@@ -123,7 +123,7 @@ export function NotesFilterBar({
               <button
                 type="button"
                 onClick={onOpenUpload}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-zinc-950 text-white hover:bg-zinc-800 text-xs font-medium tracking-wide shadow-2xs transition-colors shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0F172A] text-white hover:bg-slate-800 text-xs font-medium tracking-wide shadow-2xs transition-colors shrink-0 font-sans"
               >
                 <Upload className="w-3.5 h-3.5" />
                 <span>+ Upload</span>
@@ -131,7 +131,7 @@ export function NotesFilterBar({
             )}
 
             {/* Results count pill */}
-            <span className="hidden md:inline-flex text-[11px] font-mono text-zinc-400 pl-1">
+            <span className="hidden md:inline-flex text-[11px] font-mono text-[#475569]/80 pl-1">
               ({resultCount} files)
             </span>
           </div>

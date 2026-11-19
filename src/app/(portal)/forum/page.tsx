@@ -28,7 +28,7 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
   });
 
   return (
-    <div className="w-full min-h-[calc(100vh-4rem)] bg-zinc-50 pb-20 md:pb-12">
+    <div className="w-full min-h-[calc(100vh-4rem)] bg-[#FAFAFA] text-[#0F172A] pb-20 md:pb-12">
       <ForumMainView 
         initialPosts={initialPosts}
         initialPostId={initialPostId}

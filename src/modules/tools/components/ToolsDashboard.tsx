@@ -104,23 +104,23 @@ export function ToolsDashboard() {
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="p-1.5 rounded bg-zinc-900 text-white font-mono text-xs font-bold">
+          <span className="p-1.5 rounded-md bg-[#0F172A] text-white font-mono text-xs font-bold">
             UTILITIES
           </span>
-          <span className="text-xs font-mono uppercase text-zinc-500 tracking-wider">
-            SETGOI Academic & Student Tools Suite
+          <span className="text-xs font-mono uppercase text-[#475569] tracking-wider">
+            SETGOI Academic &amp; Student Tools Suite
           </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 mt-2">
-          Student Utilities & Academic Calculators
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] font-display mt-2">
+          Student Utilities &amp; Academic Calculators
         </h1>
-        <p className="text-sm text-zinc-600 mt-1 max-w-3xl">
+        <p className="text-sm text-[#475569] mt-1 max-w-3xl font-sans leading-relaxed">
           Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, track assessment schedules, merge study documents securely, and interact with the campus AI companion.
         </p>
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 border-b border-zinc-200 pb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 border-b border-[#E2E8F0] pb-3">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -130,16 +130,16 @@ export function ToolsDashboard() {
               onClick={() => handleTabChange(tab.id)}
               className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
                 isActive
-                  ? 'bg-white border-zinc-900 shadow-sm ring-1 ring-zinc-900'
-                  : 'bg-zinc-50/60 border-zinc-200 hover:bg-white hover:border-zinc-300'
+                  ? 'bg-white border-[#0F172A] shadow-xs ring-1 ring-[#0F172A]'
+                  : 'bg-white border-[#E2E8F0] hover:border-slate-300 hover:shadow-2xs'
               }`}
             >
               <div className="flex items-center justify-between gap-1">
                 <div
                   className={`p-1.5 rounded-lg border ${
                     isActive
-                      ? 'bg-zinc-900 text-white border-zinc-900'
-                      : 'bg-white text-zinc-600 border-zinc-200'
+                      ? 'bg-[#0F172A] text-white border-[#0F172A]'
+                      : 'bg-slate-50 text-[#475569] border-[#E2E8F0]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -147,8 +147,8 @@ export function ToolsDashboard() {
                 <span
                   className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-semibold ${
                     isActive
-                      ? 'bg-zinc-100 text-zinc-900'
-                      : 'bg-zinc-100 text-zinc-500'
+                      ? 'bg-slate-100 text-[#0F172A]'
+                      : 'bg-slate-100 text-[#475569]'
                   }`}
                 >
                   {tab.badge}
@@ -156,10 +156,10 @@ export function ToolsDashboard() {
               </div>
 
               <div className="mt-3">
-                <p className="text-xs font-bold text-zinc-900 tracking-tight leading-tight">
+                <p className="text-xs font-bold text-[#0F172A] tracking-tight leading-tight font-display">
                   {tab.label}
                 </p>
-                <p className="text-[10px] text-zinc-500 mt-0.5 truncate hidden sm:block">
+                <p className="text-[10px] text-[#475569] mt-0.5 truncate hidden sm:block font-sans">
                   {tab.description}
                 </p>
               </div>

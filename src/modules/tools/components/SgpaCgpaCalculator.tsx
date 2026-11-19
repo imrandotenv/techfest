@@ -173,29 +173,29 @@ export function SgpaCgpaCalculator() {
   return (
     <div className="space-y-6">
       {/* Top Banner & Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
               <Calculator className="w-4 h-4" />
             </span>
-            <h2 className="text-xl font-bold tracking-tight text-zinc-900">
+            <h2 className="text-xl font-bold tracking-tight text-[#0F172A]">
               MAKAUT 10-Point Credit Index Calculator
             </h2>
           </div>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-[#475569] mt-1">
             Compliant with MAKAUT official Academic Regulations: Credit Index = SGPA × Credits, YGPA, and % = (CGPA − 0.75) × 10
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-lg border border-zinc-200 text-xs font-medium self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-lg border border-[#E2E8F0] text-xs font-medium self-start sm:self-auto">
           <button
             onClick={() => setActiveTab('cumulative')}
             className={`px-3 py-1.5 rounded-md transition-all ${
               activeTab === 'cumulative'
-                ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200 font-semibold'
-                : 'text-zinc-600 hover:text-zinc-900'
+                ? 'bg-white text-[#0F172A] shadow-sm border border-[#E2E8F0] font-semibold'
+                : 'text-zinc-600 hover:text-[#0F172A]'
             }`}
           >
             Cumulative CGPA & YGPA
@@ -204,8 +204,8 @@ export function SgpaCgpaCalculator() {
             onClick={() => setActiveTab('subject')}
             className={`px-3 py-1.5 rounded-md transition-all ${
               activeTab === 'subject'
-                ? 'bg-white text-zinc-900 shadow-sm border border-zinc-200 font-semibold'
-                : 'text-zinc-600 hover:text-zinc-900'
+                ? 'bg-white text-[#0F172A] shadow-sm border border-[#E2E8F0] font-semibold'
+                : 'text-zinc-600 hover:text-[#0F172A]'
             }`}
           >
             Subject-wise SGPA
@@ -214,26 +214,26 @@ export function SgpaCgpaCalculator() {
       </div>
 
       {/* Collapsible Grade Scale Reference Card */}
-      <div className="border border-zinc-200 rounded-lg bg-zinc-50/70 p-3 text-xs">
+      <div className="border border-[#E2E8F0] rounded-lg bg-zinc-50/70 p-3 text-xs">
         <button
           onClick={() => setShowGradeInfo(!showGradeInfo)}
-          className="flex items-center justify-between w-full text-zinc-700 font-medium hover:text-zinc-900"
+          className="flex items-center justify-between w-full text-zinc-700 font-medium hover:text-[#0F172A]"
         >
           <span className="flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5 text-sky-600" />
+            <Info className="w-3.5 h-3.5 text-[#2563EB]" />
             <span>MAKAUT 10-Point Letter Grade & Point Matrix</span>
           </span>
-          <span className="flex items-center gap-1 text-zinc-500 text-[11px]">
+          <span className="flex items-center gap-1 text-[#475569] text-[11px]">
             {showGradeInfo ? 'Hide Matrix' : 'View Matrix'}
             {showGradeInfo ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </span>
         </button>
 
         {showGradeInfo && (
-          <div className="mt-3 overflow-x-auto pt-2 border-t border-zinc-200">
+          <div className="mt-3 overflow-x-auto pt-2 border-t border-[#E2E8F0]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-zinc-200 text-zinc-500 font-mono text-[11px] uppercase">
+                <tr className="border-b border-[#E2E8F0] text-[#475569] font-mono text-[11px] uppercase">
                   <th className="py-1 px-2">Letter</th>
                   <th className="py-1 px-2">Points</th>
                   <th className="py-1 px-2">Percentage Band</th>
@@ -261,20 +261,20 @@ export function SgpaCgpaCalculator() {
           {/* Key Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* CGPA */}
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col justify-between">
               <div>
-                <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-[#475569]">
                   Cumulative CGPA
                 </p>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-3xl font-extrabold text-zinc-900 tracking-tight font-mono">
+                  <span className="text-3xl font-extrabold text-[#0F172A] tracking-tight font-mono">
                     {cumulativeSummary.cgpa > 0 ? cumulativeSummary.cgpa.toFixed(2) : '0.00'}
                   </span>
                   <span className="text-xs text-zinc-400 font-mono">/ 10.00</span>
                 </div>
               </div>
               <div className="mt-3 pt-2 border-t border-zinc-100 flex items-center justify-between text-xs">
-                <span className="text-zinc-500">Credit Index:</span>
+                <span className="text-[#475569]">Credit Index:</span>
                 <span className="font-mono font-semibold text-zinc-800">
                   {cumulativeSummary.totalCreditIndex.toFixed(1)}
                 </span>
@@ -282,13 +282,13 @@ export function SgpaCgpaCalculator() {
             </div>
 
             {/* Equivalent Percentage */}
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col justify-between">
               <div>
-                <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-[#475569]">
                   MAKAUT Percentage
                 </p>
                 <div className="mt-1 flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-sky-600 tracking-tight font-mono">
+                  <span className="text-3xl font-extrabold text-[#2563EB] tracking-tight font-mono">
                     {cumulativeSummary.percentage > 0 ? `${cumulativeSummary.percentage}%` : '0%'}
                   </span>
                 </div>
@@ -299,9 +299,9 @@ export function SgpaCgpaCalculator() {
             </div>
 
             {/* Classification */}
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col justify-between">
               <div>
-                <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-[#475569]">
                   Degree Division
                 </p>
                 <div className="mt-1">
@@ -310,15 +310,15 @@ export function SgpaCgpaCalculator() {
                   </span>
                 </div>
               </div>
-              <p className="mt-3 pt-2 border-t border-zinc-100 text-[11px] text-zinc-500">
-                Total Credits: <span className="font-mono font-bold text-zinc-900">{cumulativeSummary.totalCredits}</span>
+              <p className="mt-3 pt-2 border-t border-zinc-100 text-[11px] text-[#475569]">
+                Total Credits: <span className="font-mono font-bold text-[#0F172A]">{cumulativeSummary.totalCredits}</span>
               </p>
             </div>
 
             {/* Honours Pacing */}
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col justify-between">
               <div>
-                <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-[#475569]">
                   Honours Status
                 </p>
                 <div className="mt-1">
@@ -328,7 +328,7 @@ export function SgpaCgpaCalculator() {
                       Eligible (CGPA ≥ 7.50)
                     </span>
                   ) : (
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-[#475569]">
                       Requires CGPA ≥ 7.50 with 0 backlogs
                     </span>
                   )}
@@ -337,7 +337,7 @@ export function SgpaCgpaCalculator() {
               <div className="mt-3 pt-2 border-t border-zinc-100 flex items-center justify-between text-xs">
                 <button
                   onClick={handleCopyReport}
-                  className="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 font-medium"
+                  className="inline-flex items-center gap-1 text-[#2563EB] hover:text-sky-700 font-medium"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Report Copied' : 'Copy Audit'}
@@ -356,7 +356,7 @@ export function SgpaCgpaCalculator() {
 
           {/* 4-Year YGPA Cards */}
           <div>
-            <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3 flex items-center gap-1.5">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#475569] mb-3 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-zinc-600" />
               Yearly Grade Point Average (YGPA) Breakdown
             </h3>
@@ -364,10 +364,10 @@ export function SgpaCgpaCalculator() {
               {cumulativeSummary.yearWiseYgpa.map((y) => (
                 <div
                   key={y.year}
-                  className="p-3.5 rounded-lg border border-zinc-200 bg-white flex flex-col justify-between hover:border-zinc-300 transition-colors"
+                  className="p-3.5 rounded-lg border border-[#E2E8F0] bg-white flex flex-col justify-between hover:border-zinc-300 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-900">{y.yearLabel}</span>
+                    <span className="text-xs font-bold text-[#0F172A]">{y.yearLabel}</span>
                     {y.isHonoursPacing && y.ygpa > 0 && (
                       <span className="text-[10px] bg-amber-50 text-amber-700 font-semibold px-1.5 py-0.5 rounded border border-amber-200">
                         Honours Pace
@@ -375,12 +375,12 @@ export function SgpaCgpaCalculator() {
                     )}
                   </div>
                   <div className="my-2">
-                    <span className="text-2xl font-bold font-mono text-zinc-900">
+                    <span className="text-2xl font-bold font-mono text-[#0F172A]">
                       {y.ygpa > 0 ? y.ygpa.toFixed(2) : '—'}
                     </span>
                     <span className="text-xs text-zinc-400 ml-1 font-mono">YGPA</span>
                   </div>
-                  <div className="text-[11px] text-zinc-500 border-t border-zinc-100 pt-1.5 flex justify-between">
+                  <div className="text-[11px] text-[#475569] border-t border-zinc-100 pt-1.5 flex justify-between">
                     <span>Sem {y.oddSem.semesterNumber}: {y.oddSem.sgpa > 0 ? y.oddSem.sgpa : '0'}</span>
                     <span>Sem {y.evenSem.semesterNumber}: {y.evenSem.sgpa > 0 ? y.evenSem.sgpa : '0'}</span>
                   </div>
@@ -390,8 +390,8 @@ export function SgpaCgpaCalculator() {
           </div>
 
           {/* Semesters Table */}
-          <div className="border border-zinc-200 rounded-xl bg-white overflow-hidden shadow-sm">
-            <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
+          <div className="border border-[#E2E8F0] rounded-xl bg-white overflow-hidden shadow-sm">
+            <div className="px-4 py-3 bg-zinc-50 border-b border-[#E2E8F0] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-zinc-600" />
                 <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-zinc-700">
@@ -406,7 +406,7 @@ export function SgpaCgpaCalculator() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50/50 text-zinc-500 font-mono text-[11px] uppercase">
+                  <tr className="border-b border-[#E2E8F0] bg-zinc-50/50 text-[#475569] font-mono text-[11px] uppercase">
                     <th className="py-2.5 px-4 font-semibold">Semester</th>
                     <th className="py-2.5 px-4 font-semibold">Credits</th>
                     <th className="py-2.5 px-4 font-semibold">SGPA (0.00 – 10.00)</th>
@@ -421,7 +421,7 @@ export function SgpaCgpaCalculator() {
                     const semPct = sem.sgpa > 0 ? calculatePercentageFromGpa(sem.sgpa) : 0;
                     return (
                       <tr key={sem.id} className="hover:bg-zinc-50/80 transition-colors">
-                        <td className="py-2.5 px-4 font-sans font-semibold text-zinc-900">
+                        <td className="py-2.5 px-4 font-sans font-semibold text-[#0F172A]">
                           {sem.semesterName}
                         </td>
                         <td className="py-2 px-4">
@@ -432,7 +432,7 @@ export function SgpaCgpaCalculator() {
                             step="0.5"
                             value={sem.credits || ''}
                             onChange={(e) => handleSemesterChange(sem.id, 'credits', e.target.value)}
-                            className="w-20 px-2 py-1 border border-zinc-200 rounded font-mono text-xs focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-none bg-white"
+                            className="w-20 px-2 py-1 border border-[#E2E8F0] rounded font-mono text-xs focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-none bg-white"
                           />
                         </td>
                         <td className="py-2 px-4">
@@ -443,11 +443,11 @@ export function SgpaCgpaCalculator() {
                             step="0.01"
                             value={sem.sgpa || ''}
                             onChange={(e) => handleSemesterChange(sem.id, 'sgpa', e.target.value)}
-                            className="w-24 px-2 py-1 border border-zinc-200 rounded font-mono text-xs focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-none bg-white font-bold text-sky-700"
+                            className="w-24 px-2 py-1 border border-[#E2E8F0] rounded font-mono text-xs focus:ring-1 focus:ring-sky-500 focus:border-sky-500 outline-none bg-white font-bold text-sky-700"
                           />
                         </td>
                         <td className="py-2.5 px-4 text-zinc-700">{creditIndex}</td>
-                        <td className="py-2.5 px-4 text-zinc-500">
+                        <td className="py-2.5 px-4 text-[#475569]">
                           {semPct > 0 ? `${semPct}%` : '—'}
                         </td>
                         <td className="py-2 px-4 text-right">
@@ -457,7 +457,7 @@ export function SgpaCgpaCalculator() {
                               handleSemesterPresetSelect(sem.semesterNumber);
                               setActiveTab('subject');
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] text-sky-600 hover:text-sky-700 font-sans font-medium"
+                            className="inline-flex items-center gap-1 text-[11px] text-[#2563EB] hover:text-sky-700 font-sans font-medium"
                           >
                             Calculate via Subjects
                             <ArrowRight className="w-3 h-3" />
@@ -477,13 +477,13 @@ export function SgpaCgpaCalculator() {
       {activeTab === 'subject' && (
         <div className="space-y-6">
           {/* Header & Semester Preset Selection */}
-          <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-mono uppercase text-zinc-500">Current Target Semester</p>
-              <h3 className="text-lg font-bold text-zinc-900 mt-0.5">
+              <p className="text-xs font-mono uppercase text-[#475569]">Current Target Semester</p>
+              <h3 className="text-lg font-bold text-[#0F172A] mt-0.5">
                 Semester {selectedSemesterNum} (Computer Science & Engg Curriculum)
               </h3>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-xs text-[#475569] mt-0.5">
                 Official MAKAUT subject codes with pre-loaded credit weighting.
               </p>
             </div>
@@ -496,7 +496,7 @@ export function SgpaCgpaCalculator() {
                   className={`px-2.5 py-1 text-xs font-mono rounded border transition-colors ${
                     selectedSemesterNum === sNum
                       ? 'bg-zinc-900 text-white border-zinc-900 font-bold'
-                      : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50'
+                      : 'bg-white text-zinc-700 border-[#E2E8F0] hover:bg-zinc-50'
                   }`}
                 >
                   Sem {sNum}
@@ -507,10 +507,10 @@ export function SgpaCgpaCalculator() {
 
           {/* Subject Result Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm">
-              <p className="text-[11px] font-mono uppercase text-zinc-500">Semester SGPA</p>
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+              <p className="text-[11px] font-mono uppercase text-[#475569]">Semester SGPA</p>
               <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold font-mono text-zinc-900">
+                <span className="text-3xl font-extrabold font-mono text-[#0F172A]">
                   {subjectSummary.sgpa.toFixed(2)}
                 </span>
                 <span className="text-xs text-zinc-400 font-mono">/ 10.00</span>
@@ -520,10 +520,10 @@ export function SgpaCgpaCalculator() {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm">
-              <p className="text-[11px] font-mono uppercase text-zinc-500">Equivalent Percentage</p>
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm">
+              <p className="text-[11px] font-mono uppercase text-[#475569]">Equivalent Percentage</p>
               <div className="mt-1">
-                <span className="text-3xl font-extrabold font-mono text-sky-600">
+                <span className="text-3xl font-extrabold font-mono text-[#2563EB]">
                   {subjectSummary.percentage}%
                 </span>
               </div>
@@ -532,9 +532,9 @@ export function SgpaCgpaCalculator() {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl border border-zinc-200 bg-white shadow-sm flex flex-col justify-between">
+            <div className="p-4 rounded-xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col justify-between">
               <div>
-                <p className="text-[11px] font-mono uppercase text-zinc-500">Backlog Warning</p>
+                <p className="text-[11px] font-mono uppercase text-[#475569]">Backlog Warning</p>
                 <div className="mt-1">
                   {subjectSummary.hasBacklog ? (
                     <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
@@ -558,14 +558,14 @@ export function SgpaCgpaCalculator() {
           </div>
 
           {/* Subjects Table */}
-          <div className="border border-zinc-200 rounded-xl bg-white overflow-hidden shadow-sm">
-            <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
+          <div className="border border-[#E2E8F0] rounded-xl bg-white overflow-hidden shadow-sm">
+            <div className="px-4 py-3 bg-zinc-50 border-b border-[#E2E8F0] flex items-center justify-between">
               <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-zinc-700">
                 Subjects & Laboratory Assessments
               </h3>
               <button
                 onClick={handleAddSubject}
-                className="inline-flex items-center gap-1 text-xs text-sky-600 hover:text-sky-700 font-medium"
+                className="inline-flex items-center gap-1 text-xs text-[#2563EB] hover:text-sky-700 font-medium"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Custom Paper
@@ -575,7 +575,7 @@ export function SgpaCgpaCalculator() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50/50 text-zinc-500 font-mono text-[11px] uppercase">
+                  <tr className="border-b border-[#E2E8F0] bg-zinc-50/50 text-[#475569] font-mono text-[11px] uppercase">
                     <th className="py-2.5 px-4 font-semibold">Subject Code</th>
                     <th className="py-2.5 px-4 font-semibold">Subject / Paper Name</th>
                     <th className="py-2.5 px-4 font-semibold">Credits</th>
@@ -594,7 +594,7 @@ export function SgpaCgpaCalculator() {
                             type="text"
                             value={sub.code}
                             onChange={(e) => handleSubjectChange(sub.id, 'code', e.target.value)}
-                            className="w-28 px-2 py-1 border border-zinc-200 rounded font-mono text-xs uppercase bg-white focus:ring-1 focus:ring-sky-500 outline-none"
+                            className="w-28 px-2 py-1 border border-[#E2E8F0] rounded font-mono text-xs uppercase bg-white focus:ring-1 focus:ring-sky-500 outline-none"
                           />
                         </td>
                         <td className="py-2 px-4 font-sans">
@@ -602,7 +602,7 @@ export function SgpaCgpaCalculator() {
                             type="text"
                             value={sub.name}
                             onChange={(e) => handleSubjectChange(sub.id, 'name', e.target.value)}
-                            className="w-full px-2 py-1 border border-zinc-200 rounded text-xs bg-white focus:ring-1 focus:ring-sky-500 outline-none"
+                            className="w-full px-2 py-1 border border-[#E2E8F0] rounded text-xs bg-white focus:ring-1 focus:ring-sky-500 outline-none"
                           />
                         </td>
                         <td className="py-2 px-4">
@@ -613,14 +613,14 @@ export function SgpaCgpaCalculator() {
                             step="0.5"
                             value={sub.credits}
                             onChange={(e) => handleSubjectChange(sub.id, 'credits', e.target.value)}
-                            className="w-16 px-2 py-1 border border-zinc-200 rounded font-mono text-xs bg-white focus:ring-1 focus:ring-sky-500 outline-none"
+                            className="w-16 px-2 py-1 border border-[#E2E8F0] rounded font-mono text-xs bg-white focus:ring-1 focus:ring-sky-500 outline-none"
                           />
                         </td>
                         <td className="py-2 px-4">
                           <select
                             value={sub.grade}
                             onChange={(e) => handleSubjectChange(sub.id, 'grade', e.target.value as LetterGrade)}
-                            className="px-2.5 py-1 border border-zinc-200 rounded font-mono font-bold text-xs bg-white text-sky-800 focus:ring-1 focus:ring-sky-500 outline-none cursor-pointer"
+                            className="px-2.5 py-1 border border-[#E2E8F0] rounded font-mono font-bold text-xs bg-white text-sky-800 focus:ring-1 focus:ring-sky-500 outline-none cursor-pointer"
                           >
                             {MAKAUT_GRADE_SYSTEM.map((g) => (
                               <option key={g.letter} value={g.letter}>

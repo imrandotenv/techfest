@@ -24,18 +24,18 @@ export function GradientCtaBanner() {
             <GraduationCap className="w-7 h-7" />
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-zinc-950 leading-[1.14]">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold tracking-[-0.02em] text-[#0F172A] leading-[1.14]">
             Give your B.Tech journey a modern academic cockpit.
           </h2>
 
-          <p className="mt-4 text-zinc-700 text-sm sm:text-base max-w-lg leading-relaxed">
+          <p className="mt-4 text-[#475569] font-sans text-sm sm:text-base max-w-lg leading-relaxed">
             Join thousands of SETGOI students accessing verified MAKAUT notes, solved past papers, and instant SGPA calculations.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-semibold bg-[#09090B] text-white hover:bg-zinc-800 transition-all shadow-md hover:scale-[1.02]"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-sans font-semibold bg-[#0F172A] text-white hover:bg-slate-800 transition-all shadow-md hover:scale-[1.02]"
             >
               <Sparkles className="w-4 h-4 text-blue-400" />
               <span>Start in 30 seconds</span>
@@ -44,13 +44,13 @@ export function GradientCtaBanner() {
 
             <Link
               href="/notes"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium bg-white/90 text-zinc-900 hover:bg-white border border-white/80 transition-all shadow-2xs"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-sans font-medium bg-white/95 text-[#0F172A] hover:bg-white border border-[#E2E8F0] transition-all shadow-2xs"
             >
               <span>Explore Vault (No Login Required)</span>
             </Link>
           </div>
 
-          <div className="mt-4 text-[11px] font-mono text-zinc-600">
+          <div className="mt-4 text-[11px] font-mono text-[#475569]">
             MAKAUT affiliated • 100% Free for SETGOI students
           </div>
         </div>

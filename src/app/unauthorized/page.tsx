@@ -28,7 +28,7 @@ export default async function UnauthorizedPage() {
   const superAdminEmails = getSuperAdminEmails();
 
   return (
-    <div className="min-h-[85vh] bg-zinc-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+    <div className="min-h-[85vh] bg-[#FAFAFA] text-[#0F172A] py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
       <div className="max-w-3xl mx-auto w-full">
         
         {/* Breadcrumb */}
@@ -44,7 +44,7 @@ export default async function UnauthorizedPage() {
         </div>
 
         {/* Main Warning Box */}
-        <div className="bg-white border border-zinc-200 rounded-lg p-6 sm:p-8 shadow-sm">
+        <div className="bg-white border border-[#E2E8F0] rounded-lg p-6 sm:p-8 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-md bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0 text-rose-600">
               <ShieldAlert className="w-6 h-6" />
@@ -55,7 +55,7 @@ export default async function UnauthorizedPage() {
                 <span className="px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-rose-50 text-rose-700 border border-rose-200">
                   HTTP 403 • FORBIDDEN
                 </span>
-                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-zinc-100 text-zinc-600 border border-[#E2E8F0]">
                   POLICY ENFORCED
                 </span>
               </div>
@@ -73,7 +73,7 @@ export default async function UnauthorizedPage() {
           </div>
 
           {/* Current Session Identity Card */}
-          <div className="mt-6 p-4 rounded-md bg-zinc-50 border border-zinc-200">
+          <div className="mt-6 p-4 rounded-md bg-[#FAFAFA] text-[#0F172A] border border-[#E2E8F0]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1">
@@ -104,7 +104,7 @@ export default async function UnauthorizedPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Student */}
-              <div className={`p-4 rounded-md border ${user.role === 'student' ? 'border-zinc-400 bg-zinc-50/50' : 'border-zinc-200 bg-white'}`}>
+              <div className={`p-4 rounded-md border ${user.role === 'student' ? 'border-zinc-400 bg-[#FAFAFA] text-[#0F172A]/50' : 'border-[#E2E8F0] bg-white'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <User className="w-4 h-4 text-zinc-500" />
                   <span className="text-xs font-bold text-zinc-900 font-mono uppercase">Student</span>
@@ -115,7 +115,7 @@ export default async function UnauthorizedPage() {
               </div>
 
               {/* College */}
-              <div className={`p-4 rounded-md border ${user.role === 'college' ? 'border-sky-400 bg-sky-50/20' : 'border-zinc-200 bg-white'}`}>
+              <div className={`p-4 rounded-md border ${user.role === 'college' ? 'border-sky-400 bg-sky-50/20' : 'border-[#E2E8F0] bg-white'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <GraduationCap className="w-4 h-4 text-sky-600" />
                   <span className="text-xs font-bold text-zinc-900 font-mono uppercase">College Faculty</span>
@@ -126,7 +126,7 @@ export default async function UnauthorizedPage() {
               </div>
 
               {/* Admin */}
-              <div className={`p-4 rounded-md border ${user.role === 'admin' ? 'border-indigo-400 bg-indigo-50/20' : 'border-zinc-200 bg-white'}`}>
+              <div className={`p-4 rounded-md border ${user.role === 'admin' ? 'border-indigo-400 bg-indigo-50/20' : 'border-[#E2E8F0] bg-white'}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldCheck className="w-4 h-4 text-indigo-600" />
                   <span className="text-xs font-bold text-zinc-900 font-mono uppercase">Super Admin</span>
@@ -139,7 +139,7 @@ export default async function UnauthorizedPage() {
           </div>
 
           {/* Whitelist Notice */}
-          <div className="mt-6 p-4 rounded-md border border-zinc-200 bg-zinc-50 text-xs">
+          <div className="mt-6 p-4 rounded-md border border-[#E2E8F0] bg-[#FAFAFA] text-[#0F172A] text-xs">
             <div className="flex items-start gap-2.5">
               <HelpCircle className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
               <div>
@@ -159,7 +159,7 @@ export default async function UnauthorizedPage() {
           </div>
 
           {/* Action CTAs */}
-          <div className="mt-8 pt-6 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-8 pt-6 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-3">
             <Link
               href="/"
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
@@ -171,7 +171,7 @@ export default async function UnauthorizedPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/notes"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-medium rounded-md border border-[#E2E8F0] bg-white text-zinc-700 hover:bg-[#FAFAFA] text-[#0F172A] transition-colors"
               >
                 <FileText className="w-3.5 h-3.5 text-zinc-500" />
                 Notes Vault
@@ -179,7 +179,7 @@ export default async function UnauthorizedPage() {
 
               <a
                 href="mailto:principal@setgoi.ac.in?subject=SanakaHub%20Role%20Access%20Request"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-medium rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-mono font-medium rounded-md border border-[#E2E8F0] bg-white text-zinc-700 hover:bg-[#FAFAFA] text-[#0F172A] transition-colors"
               >
                 <Mail className="w-3.5 h-3.5 text-zinc-500" />
                 Request Access

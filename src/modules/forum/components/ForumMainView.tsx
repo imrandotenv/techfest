@@ -428,12 +428,12 @@ export function ForumMainView({
 
           {/* Posts List */}
           {filteredPosts.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center shadow-xs">
-              <MessageSquare className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-zinc-800">
+            <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center shadow-xs">
+              <MessageSquare className="w-10 h-10 text-[#475569]/40 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-[#0F172A] font-display">
                 No discussion threads found
               </h3>
-              <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+              <p className="text-xs text-[#475569] mt-1 max-w-sm mx-auto font-sans">
                 {searchQuery
                   ? `No questions matching "${searchQuery}". Try searching by MAKAUT code or another keyword.`
                   : `No threads in category "${selectedCategory}" yet. Be the first to start the discussion!`}
@@ -443,7 +443,7 @@ export function ForumMainView({
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition-colors"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-[#0F172A] hover:bg-slate-200 transition-colors font-sans"
                   >
                     Clear Search
                   </button>
@@ -451,7 +451,7 @@ export function ForumMainView({
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#0F172A] text-white hover:bg-slate-800 transition-colors font-sans shadow-2xs"
                 >
                   Ask a Question
                 </button>

@@ -17,30 +17,30 @@ export default function SignUpPage() {
       <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
         {/* Left Column: Focused Onboarding Card (7 cols on lg) */}
         <div className="lg:col-span-7 flex justify-center">
-          <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-zinc-200/90 shadow-[0_20px_60px_rgba(0,0,0,0.06)] space-y-6">
+          <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 border border-[#E2E8F0] shadow-[0_20px_60px_rgba(15,23,42,0.06)] space-y-6">
             {/* Brand Header matching Hashnode */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                <GraduationCap className="w-5 h-5" />
+              <div className="w-8 h-8 rounded-xl bg-[#0F172A] text-white flex items-center justify-center shadow-xs">
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-xl tracking-tight text-zinc-950">
+              <span className="font-display font-bold text-xl tracking-tight text-[#0F172A]">
                 SanakaHub
               </span>
-              <span className="ml-auto px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-100 text-zinc-600 border border-zinc-200">
+              <span className="ml-auto px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 text-[#475569] border border-[#E2E8F0]">
                 SETGOI
               </span>
             </div>
 
             <div className="space-y-1">
-              <h1 className="text-2xl font-bold tracking-tight text-zinc-950">
+              <h1 className="text-2xl font-display font-bold tracking-tight text-[#0F172A]">
                 Create your account
               </h1>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs font-sans text-[#475569]">
                 Join the centralized academic portal for SETGOI students and faculty.
               </p>
             </div>
 
-            {/* Clerk SignUp Component with Hashnode-style Appearance */}
+            {/* Clerk SignUp Component with Clean Appearance */}
             <div className="w-full">
               <SignUp
                 appearance={{
@@ -50,23 +50,23 @@ export default function SignUpPage() {
                     headerTitle: 'hidden',
                     headerSubtitle: 'hidden',
                     formButtonPrimary:
-                      'bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-xs',
-                    footerActionLink: 'text-blue-600 hover:underline font-medium text-xs',
+                      'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-xs font-sans',
+                    footerActionLink: 'text-[#2563EB] hover:underline font-medium text-xs font-sans',
                     formFieldInput:
-                      'border-zinc-200 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 text-xs rounded-xl py-2.5 px-3',
+                      'border-[#E2E8F0] focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] text-xs rounded-xl py-2.5 px-3 font-sans',
                     socialButtonsBlockButton:
-                      'border border-zinc-200 hover:bg-zinc-50 text-xs font-medium rounded-xl py-2.5 transition-colors',
-                    dividerLine: 'bg-zinc-200',
-                    dividerText: 'text-zinc-400 text-[11px] font-mono',
+                      'border border-[#E2E8F0] hover:bg-slate-50 text-xs font-medium rounded-xl py-2.5 transition-colors font-sans',
+                    dividerLine: 'bg-[#E2E8F0]',
+                    dividerText: 'text-[#475569] text-[11px] font-mono',
                   },
                 }}
               />
             </div>
 
             {/* 3-Role Automatic Provisioning Notice */}
-            <div className="pt-4 border-t border-zinc-100 space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-500">
-                <span className="flex items-center gap-1.5 text-zinc-700">
+            <div className="pt-4 border-t border-[#E2E8F0] space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono text-[#475569]">
+                <span className="flex items-center gap-1.5 text-[#0F172A] font-semibold">
                   <Shield className="w-3.5 h-3.5 text-emerald-600" />
                   <span>3-Role RBAC Bootstrap</span>
                 </span>
@@ -74,16 +74,16 @@ export default function SignUpPage() {
                   Instant Access
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                New accounts automatically default to the <strong className="text-zinc-600">Student</strong> role. Whitelisted administration emails are automatically assigned <strong className="text-zinc-600">Admin</strong> privileges.
+              <p className="text-[11px] font-sans text-[#475569] leading-relaxed">
+                New accounts automatically default to the <strong className="text-[#0F172A]">Student</strong> role. Whitelisted administration emails are automatically assigned <strong className="text-[#0F172A]">Admin</strong> privileges.
               </p>
             </div>
 
             {/* Terms Disclaimer */}
-            <p className="text-[11px] text-zinc-400 text-center leading-relaxed">
+            <p className="text-[11px] font-sans text-[#475569] text-center leading-relaxed">
               By continuing, you agree to SanakaHub&apos;s{' '}
-              <span className="underline cursor-pointer">Terms & Conditions</span> and{' '}
-              <span className="underline cursor-pointer">Privacy Policy</span>.
+              <span className="underline cursor-pointer text-[#0F172A]">Terms & Conditions</span> and{' '}
+              <span className="underline cursor-pointer text-[#0F172A]">Privacy Policy</span>.
             </p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function SignUpPage() {
           <div className="flex justify-end">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-950 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-sans font-medium text-[#475569] hover:text-[#0F172A] transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Go back to home</span>
@@ -103,17 +103,17 @@ export default function SignUpPage() {
 
           {/* Testimonial Quote matching Hashnode reference */}
           <div className="space-y-6 max-w-sm">
-            <blockquote className="text-base text-zinc-700 font-medium leading-relaxed italic">
+            <blockquote className="text-base text-slate-800 font-sans font-medium leading-relaxed italic">
               &ldquo;The fastest way to get verified MAKAUT PYQs and check campus transit schedules without asking around.&rdquo;
             </blockquote>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-mono font-bold flex items-center justify-center text-sm shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white font-mono font-bold flex items-center justify-center text-sm shadow-sm">
                 SC
               </div>
               <div>
-                <div className="text-sm font-bold text-zinc-950">SETGOI Student Council</div>
-                <div className="text-xs text-zinc-500 font-mono">
+                <div className="text-sm font-sans font-bold text-[#0F172A]">SETGOI Student Council</div>
+                <div className="text-xs text-[#475569] font-mono">
                   Academic Affairs & Student Welfare
                 </div>
               </div>
@@ -121,7 +121,7 @@ export default function SignUpPage() {
           </div>
 
           {/* Accreditation Note */}
-          <div className="text-xs font-mono text-zinc-400 space-y-1">
+          <div className="text-xs font-mono text-[#475569] space-y-1">
             <div>Sanaka Educational Trust&apos;s Group of Institutions</div>
             <div>Durgapur, West Bengal • Affiliated with MAKAUT</div>
           </div>

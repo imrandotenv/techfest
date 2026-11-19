@@ -48,10 +48,10 @@ export function ForumCategoryFilter({
         <button
           type="button"
           onClick={() => onSelectCategory('All')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border font-sans transition-colors ${
             selectedCategory === 'All'
-              ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs'
-              : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+              ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
+              : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-slate-300 hover:bg-slate-50 hover:text-[#0F172A]'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -59,8 +59,8 @@ export function ForumCategoryFilter({
           <span
             className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
               selectedCategory === 'All'
-                ? 'bg-zinc-800 text-zinc-200'
-                : 'bg-zinc-100 text-zinc-600'
+                ? 'bg-slate-800 text-slate-200'
+                : 'bg-slate-100 text-[#475569]'
             }`}
           >
             {totalCount}
@@ -78,10 +78,10 @@ export function ForumCategoryFilter({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium border transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border font-sans transition-colors ${
                 isSelected
-                  ? 'bg-zinc-900 text-white border-zinc-900 shadow-xs'
-                  : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'
+                  ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
+                  : 'bg-white text-[#475569] border-[#E2E8F0] hover:border-slate-300 hover:bg-slate-50 hover:text-[#0F172A]'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -89,8 +89,8 @@ export function ForumCategoryFilter({
               <span
                 className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                   isSelected
-                    ? 'bg-zinc-800 text-zinc-200'
-                    : 'bg-zinc-100 text-zinc-600'
+                    ? 'bg-slate-800 text-slate-200'
+                    : 'bg-slate-100 text-[#475569]'
                 }`}
               >
                 {count}

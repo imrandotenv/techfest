@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Navbar } from "@/components/navigation/Navbar";
-import { MobileDock } from "@/components/navigation/MobileDock";
 import { Footer } from "@/components/navigation/Footer";
 import "./globals.css";
 
@@ -33,6 +32,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
         <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+            rel="stylesheet"
+          />
           <script
             dangerouslySetInnerHTML={{
               __html: `
@@ -118,10 +123,9 @@ export default function RootLayout({
             }}
           />
         </head>
-        <body className="min-h-full flex flex-col bg-[#FAFAFA] text-zinc-900 selection:bg-zinc-900 selection:text-white">
+        <body className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#0F172A] selection:bg-[#0F172A] selection:text-white">
           <Navbar />
           <main className="flex-1 w-full">{children}</main>
-          <MobileDock />
           <Footer />
         </body>
       </html>
