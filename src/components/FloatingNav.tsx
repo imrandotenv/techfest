@@ -59,8 +59,15 @@ export function FloatingNav() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Hide floating navigation on auth screens
-  if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
+  // Hide floating navigation on auth screens and dedicated post-login app workspaces
+  if (
+    pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/sign-up') ||
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/faculty') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/dashboard')
+  ) {
     return null;
   }
 

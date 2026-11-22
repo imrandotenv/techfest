@@ -8,10 +8,13 @@ import { Phone, ArrowUpRight, ShieldCheck, MapPin, ExternalLink } from 'lucide-r
 export function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on auth, console dashboards, and dedicated zero-scroll studios like /viva
+  // Hide footer on auth, console dashboards, dedicated zero-scroll studios like /viva, and authenticated workspace routes
   if (
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up') ||
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/faculty') ||
+    pathname.startsWith('/admin') ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/viva')
   ) {

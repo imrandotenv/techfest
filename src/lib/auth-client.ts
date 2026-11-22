@@ -53,6 +53,18 @@ export function normalizeRole(roleInput?: string | null): CustomUserRole {
  * Resolves the effective role from a Clerk User object checking unsafeMetadata first, then publicMetadata
  */
 export function getResolvedRole(user: any): CustomUserRole {
+  if (typeof window !== 'undefined') {
+    // Check preview cookie / local preference first to allow preview mode & local simulation
+    const cookieRole = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('settech_preview_role='))
+      ?.split('=')[1];
+    if (cookieRole) return normalizeRole(cookieRole);
+
+    const prefRole = localStorage.getItem('settech_preferred_role') || localStorage.getItem('sanakahub_preferred_role');
+    if (!user && prefRole) return normalizeRole(prefRole);
+  }
+
   if (!user) return 'student';
   const roleVal =
     user.unsafeMetadata?.role ||
