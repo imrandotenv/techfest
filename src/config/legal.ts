@@ -60,7 +60,7 @@ export const LEGAL_CONFIG: LegalConfig = {
     desk: 'SanakaHub Engineering Desk',
     address: 'SETGOI Campus, Malandighi, Durgapur, Paschim Bardhaman, West Bengal 713212, India',
   },
-  policyVersion: '1.0.0',
+  policyVersion: '1.1.0',
   lastUpdated: 'November 22, 2026',
   governingLaw: 'Information Technology Act, 2000 & Digital Personal Data Protection (DPDP) Act, 2023 of the Republic of India',
 
@@ -75,6 +75,17 @@ export const LEGAL_CONFIG: LegalConfig = {
       retention: 'Duration of account activity; deleted upon user account deletion request.',
       privacyUrl: 'https://clerk.com/legal/privacy',
       location: 'United States & Global Edge CDN',
+    },
+    {
+      id: 'groq-whisper',
+      name: 'Groq Whisper API (whisper-large-v3-turbo)',
+      provider: 'Groq, Inc.',
+      category: 'Speech Processing',
+      purpose: 'Ultra-accurate voice-to-text transcription of student oral viva answers in English and Hinglish.',
+      dataProcessed: 'Recorded student audio stream sent ephemerally for instant transcription. Zero audio bytes or voice recordings are retained or stored on servers after transcription.',
+      retention: '0-day retention; discarded immediately after returning transcript.',
+      privacyUrl: 'https://groq.com/privacy-policy/',
+      location: 'United States (Ultra-fast LPU Cloud)',
     },
     {
       id: 'groq-ai',

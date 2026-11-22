@@ -39,6 +39,7 @@ const isPublicRoute = createRouteMatcher([
   '/disclaimer',
   '/unauthorized',
   '/api/viva(.*)',
+  '/api/transcribe(.*)',
   '/api/tts(.*)',
   '/api/ai(.*)',
   '/api/notes',

@@ -30,6 +30,7 @@ import {
   X,
   Wrench,
   Zap,
+  Loader2,
 } from 'lucide-react';
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
@@ -199,10 +200,19 @@ export default function VivaStudioPage() {
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Speech Recognition state
-  const [isListening, setIsListening] = useState<boolean>(false);
-  const [speechSupported, setSpeechSupported] = useState<boolean>(false);
-  const recognitionRef = useRef<any>(null);
+  // Groq Whisper Recording & Transcribing state
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
+  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
+  const [audioVolume, setAudioVolume] = useState<number>(0);
+  const [micError, setMicError] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Score stats
@@ -239,58 +249,21 @@ export default function VivaStudioPage() {
     scrollToBottom();
   }, [messages, isEvaluating, scrollToBottom]);
 
-  // High-Quality Speech Player (Sarvam AI TTS with Natural Browser Fallback)
-  const speakVoice = useCallback(
-    async (textToSpeak: string) => {
-      if (!isVoiceEnabled || typeof window === 'undefined') return;
-
-      // Stop any active speech
+  const stopVoice = useCallback(() => {
+    if (typeof window !== 'undefined') {
       if (window.speechSynthesis) window.speechSynthesis.cancel();
-      if (audioRef.current) audioRef.current.pause();
-
-      // Clean text: strip markdown symbols, asterisks, brackets, backticks
-      const cleanText = textToSpeak
-        .replace(/[*_#`~[\]]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (!cleanText) return;
-
-      try {
-        const ttsRes = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText, language }),
-        });
-
-        if (ttsRes.ok) {
-          const ttsData = await ttsRes.json();
-          if (ttsData.audio) {
-            const audioUrl = `data:audio/wav;base64,${ttsData.audio}`;
-            const audio = new Audio(audioUrl);
-            audioRef.current = audio;
-            setIsSpeaking(true);
-            audio.onended = () => setIsSpeaking(false);
-            audio.onerror = () => {
-              setIsSpeaking(false);
-              playBrowserSpeech(cleanText, language);
-            };
-            await audio.play();
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('[TTS] Sarvam audio playback skipped, falling back to browser speech:', e);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
+      setIsSpeaking(false);
+    }
+  }, []);
 
-      playBrowserSpeech(cleanText, language);
-    },
-    [isVoiceEnabled, language]
-  );
+  const playBrowserSpeech = useCallback((text: string, lang: VivaLanguage) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
-  const playBrowserSpeech = (text: string, lang: VivaLanguage) => {
-    if (!window.speechSynthesis) return;
-
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.02;
     utterance.pitch = 1.0;
@@ -305,9 +278,9 @@ export default function VivaStudioPage() {
         voices.find((v) => v.lang.includes('en-IN'));
     } else {
       chosenVoice =
-        voices.find((v) => v.name.includes('Neerja') || v.name.includes('Prabhat')) ||
+        voices.find((v) => v.name.includes('Neerja Online') || v.name.includes('Neerja') || v.name.includes('Prabhat')) ||
         voices.find((v) => v.lang === 'en-IN') ||
-        voices.find((v) => v.name.includes('Natural') || v.name.includes('Google UK English Female')) ||
+        voices.find((v) => v.name.includes('Natural') || v.name.includes('Google UK English Female') || v.name.includes('Google US English')) ||
         voices.find((v) => v.lang.startsWith('en'));
     }
 
@@ -320,15 +293,54 @@ export default function VivaStudioPage() {
     utterance.onerror = () => setIsSpeaking(false);
 
     window.speechSynthesis.speak(utterance);
-  };
-
-  const stopVoice = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      if (audioRef.current) audioRef.current.pause();
-      setIsSpeaking(false);
-    }
   }, []);
+
+  // High-Quality Speech Player (Sarvam AI / Groq TTS with Neural Browser Fallback)
+  const speakVoice = useCallback(
+    async (textToSpeak: string) => {
+      if (!isVoiceEnabled || typeof window === 'undefined') return;
+
+      // Stop any active speech
+      stopVoice();
+
+      try {
+        const ttsRes = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: textToSpeak, language }),
+        });
+
+        if (ttsRes.ok) {
+          const ttsData = await ttsRes.json();
+          const cleanText = ttsData.cleanText || textToSpeak;
+
+          if (ttsData.audio) {
+            const mime = ttsData.format === 'mp3' ? 'audio/mp3' : 'audio/wav';
+            const audioUrl = `data:${mime};base64,${ttsData.audio}`;
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            setIsSpeaking(true);
+            audio.onended = () => setIsSpeaking(false);
+            audio.onerror = () => {
+              setIsSpeaking(false);
+              playBrowserSpeech(cleanText, language);
+            };
+            await audio.play();
+            return;
+          }
+
+          // Fallback to neural browser speech with cleanText
+          playBrowserSpeech(cleanText, language);
+          return;
+        }
+      } catch (e) {
+        console.warn('[TTS] Cloud audio playback skipped, falling back to browser speech:', e);
+      }
+
+      playBrowserSpeech(textToSpeak, language);
+    },
+    [isVoiceEnabled, language, stopVoice, playBrowserSpeech]
+  );
 
   // Pick Initial Question and reset chat for subject/language
   const initializeSubject = useCallback(
@@ -362,230 +374,348 @@ export default function VivaStudioPage() {
     initializeSubject(subject, language);
   }, [subject, language, initializeSubject]);
 
-  // Setup Web Speech Recognition
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        setSpeechSupported(true);
-        const recog = new SpeechRecognition();
-        recog.continuous = false;
-        recog.interimResults = true;
-        recog.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-
-        recog.onstart = () => {
-          setIsListening(true);
-          setEmotion('listening');
-        };
-
-        recog.onresult = (event: any) => {
-          let transcript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
-          }
-          if (transcript) {
-            setStudentAnswer(transcript);
-          }
-        };
-
-        recog.onerror = (err: any) => {
-          console.warn('[Viva Speech] Error:', err);
-          setIsListening(false);
-          setEmotion((prev) => (prev === 'listening' ? 'idle' : prev));
-        };
-
-        recog.onend = () => {
-          setIsListening(false);
-          setEmotion((prev) => (prev === 'listening' ? 'idle' : prev));
-        };
-
-        recognitionRef.current = recog;
+  // Submit Turn (Answer, Hint, Example, Skip, Harder)
+  const handleSendTurn = useCallback(
+    async (
+      overrideText?: string,
+      forcedIntent: 'answer' | 'hint' | 'example' | 'skip' | 'harder' = 'answer'
+    ) => {
+      if (isGuestLocked) {
+        setShowSignInModal(true);
+        return;
       }
-    }
 
-    return () => {
-      if (recognitionRef.current) {
+      const textToSend = (overrideText !== undefined ? overrideText : studentAnswer).trim();
+      if (!textToSend && forcedIntent === 'answer') return;
+
+      if (isRecording && mediaRecorderRef.current) {
         try {
-          recognitionRef.current.abort();
+          mediaRecorderRef.current.stop();
         } catch {}
+        setIsRecording(false);
       }
       stopVoice();
-    };
-  }, [language, stopVoice]);
 
-  // Toggle Microphone
-  const toggleListening = () => {
-    if (!speechSupported) {
-      alert('Speech Recognition is not supported by your current browser. You can type your answer in the box below!');
-      return;
-    }
+      // Append user message to chat stream
+      const userMsg: MessageItem = {
+        id: 'usr-' + Date.now(),
+        role: 'user',
+        content: textToSend,
+        intent: forcedIntent,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
 
-    if (isGuestLocked) {
-      setShowSignInModal(true);
-      return;
-    }
+      const nextMessages = [...messages, userMsg];
+      setMessages(nextMessages);
+      setStudentAnswer('');
+      setIsEvaluating(true);
+      setEmotion('thinking');
 
-    if (isSpeaking) {
-      stopVoice();
-    }
+      // Build recent conversation history for API
+      const historyPayload: ChatMessage[] = nextMessages.slice(-8).map((m) => ({
+        role: m.role,
+        content: m.role === 'user' ? m.content : `${m.reaction || ''} ${m.explanation || ''} ${m.nextQuestion || ''}`.trim(),
+      }));
 
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      setEmotion('idle');
-    } else {
       try {
-        if (recognitionRef.current) {
-          recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-          recognitionRef.current.start();
+        const res = await fetch('/api/viva', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: currentQuestion,
+            answer: textToSend,
+            subject,
+            language,
+            history: historyPayload,
+            intent: forcedIntent,
+          }),
+        });
+
+        const data: VivaResponse = await res.json();
+
+        setEmotion(data.emotion);
+        setActiveProvider(data.provider);
+        if (data.topicTag) setActiveTopicTag(data.topicTag);
+
+        // Track guest count only on real evaluated answers (not hints or examples)
+        if (!isSignedIn && data.isCorrect !== null) {
+          const nextCount = freeCount + 1;
+          setFreeCount(nextCount);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sanakahub_viva_free_count', nextCount.toString());
+          }
+          if (nextCount >= FREE_GUEST_LIMIT) {
+            setTimeout(() => setShowSignInModal(true), 3500);
+          }
+        }
+
+        // Update scorecard if answer was scored
+        if (data.isCorrect !== null) {
+          setScorecard((prev) => ({
+            attempts: prev.attempts + 1,
+            correct: prev.correct + (data.isCorrect ? 1 : 0),
+            streak: data.isCorrect ? prev.streak + 1 : 0,
+          }));
+
+          if (!data.isCorrect) {
+            setWeakTopics((prev) => [
+              ...prev,
+              {
+                topic: data.topicTag || `${subject} Core`,
+                subject,
+                question: currentQuestion,
+              },
+            ]);
+          }
+        }
+
+        // Add examiner response to chat
+        const assistantMsg: MessageItem = {
+          id: 'ast-' + Date.now(),
+          role: 'assistant',
+          content: data.explanation,
+          reaction: data.reaction,
+          explanation: data.explanation,
+          nextQuestion: data.nextQuestion,
+          isCorrect: data.isCorrect,
+          topicTag: data.topicTag,
+          provider: data.provider,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+
+        // Update active question for next turn
+        if (data.nextQuestion) {
+          setCurrentQuestion(data.nextQuestion);
+        }
+
+        // Speak aloud if voice enabled
+        if (isVoiceEnabled) {
+          const voiceScript = `${data.reaction || ''} ${data.explanation || ''} ${
+            data.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + data.nextQuestion : ''
+          }`.trim();
+          speakVoice(voiceScript);
         }
       } catch (err) {
-        console.warn('Speech recognition restart issue:', err);
+        console.error('Viva submission failed:', err);
+        const errorMsg: MessageItem = {
+          id: 'err-' + Date.now(),
+          role: 'assistant',
+          content: 'Server error encountered. Let us proceed with the next question.',
+          reaction: language === 'hi' ? 'Server connect nahi ho paya! Agla try karte hain.' : 'Network error! Let us keep going.',
+          explanation: 'Check server connection or retry your answer.',
+          nextQuestion: 'What is the time complexity of binary search on a sorted array?',
+          isCorrect: null,
+          topicTag: `${subject} Review`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+        setEmotion('shocked');
+      } finally {
+        setIsEvaluating(false);
+      }
+    },
+    [
+      isGuestLocked,
+      studentAnswer,
+      isRecording,
+      stopVoice,
+      messages,
+      currentQuestion,
+      subject,
+      language,
+      isSignedIn,
+      freeCount,
+      isVoiceEnabled,
+      speakVoice,
+    ]
+  );
+
+  // Stop MediaRecorder and clear volume analyser
+  const stopRecording = useCallback(() => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch {}
+      audioContextRef.current = null;
+    }
+    setAudioVolume(0);
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (err) {
+        console.warn('Error stopping media recorder:', err);
       }
     }
-  };
+  }, []);
 
-  // Submit Turn (Answer, Hint, Example, Skip, Harder)
-  const handleSendTurn = async (
-    overrideText?: string,
-    forcedIntent: 'answer' | 'hint' | 'example' | 'skip' | 'harder' = 'answer'
-  ) => {
+  // Start MediaRecorder & stream audio chunks to Groq Whisper
+  const startRecording = useCallback(async () => {
     if (isGuestLocked) {
       setShowSignInModal(true);
       return;
     }
-
-    const textToSend = (overrideText !== undefined ? overrideText : studentAnswer).trim();
-    if (!textToSend && forcedIntent === 'answer') return;
-
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
     stopVoice();
+    setMicError(null);
 
-    // Append user message to chat stream
-    const userMsg: MessageItem = {
-      id: 'usr-' + Date.now(),
-      role: 'user',
-      content: textToSend,
-      intent: forcedIntent,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
-    setStudentAnswer('');
-    setIsEvaluating(true);
-    setEmotion('thinking');
-
-    // Build recent conversation history for API
-    const historyPayload: ChatMessage[] = nextMessages.slice(-8).map((m) => ({
-      role: m.role,
-      content: m.role === 'user' ? m.content : `${m.reaction || ''} ${m.explanation || ''} ${m.nextQuestion || ''}`.trim(),
-    }));
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setMicError('Audio recording is not supported on your browser or device.');
+      return;
+    }
 
     try {
-      const res = await fetch('/api/viva', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: currentQuestion,
-          answer: textToSend,
-          subject,
-          language,
-          history: historyPayload,
-          intent: forcedIntent,
-        }),
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const data: VivaResponse = await res.json();
+      // Audio volume analyser for live pulse ring
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 64;
+          const source = ctx.createMediaStreamSource(stream);
+          source.connect(analyser);
+          audioContextRef.current = ctx;
+          audioAnalyserRef.current = analyser;
 
-      setEmotion(data.emotion);
-      setActiveProvider(data.provider);
-      if (data.topicTag) setActiveTopicTag(data.topicTag);
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
 
-      // Track guest count only on real evaluated answers (not hints or examples)
-      if (!isSignedIn && data.isCorrect !== null) {
-        const nextCount = freeCount + 1;
-        setFreeCount(nextCount);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('sanakahub_viva_free_count', nextCount.toString());
+          const checkVolume = () => {
+            if (!audioAnalyserRef.current) return;
+            audioAnalyserRef.current.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+              sum += dataArray[i];
+            }
+            const avg = sum / bufferLength;
+            setAudioVolume(Math.min(100, Math.round((avg / 128) * 100)));
+            animFrameRef.current = requestAnimationFrame(checkVolume);
+          };
+          checkVolume();
         }
-        if (nextCount >= FREE_GUEST_LIMIT) {
-          setTimeout(() => setShowSignInModal(true), 3500);
-        }
-      }
+      } catch {}
 
-      // Update scorecard if answer was scored
-      if (data.isCorrect !== null) {
-        setScorecard((prev) => ({
-          attempts: prev.attempts + 1,
-          correct: prev.correct + (data.isCorrect ? 1 : 0),
-          streak: data.isCorrect ? prev.streak + 1 : 0,
-        }));
-
-        if (!data.isCorrect) {
-          setWeakTopics((prev) => [
-            ...prev,
-            {
-              topic: data.topicTag || `${subject} Core`,
-              subject,
-              question: currentQuestion,
-            },
-          ]);
+      let mimeType = 'audio/webm;codecs=opus';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          if (MediaRecorder.isTypeSupported('audio/webm')) {
+            mimeType = 'audio/webm';
+          } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+          } else {
+            mimeType = '';
+          }
         }
       }
 
-      // Add examiner response to chat
-      const assistantMsg: MessageItem = {
-        id: 'ast-' + Date.now(),
-        role: 'assistant',
-        content: data.explanation,
-        reaction: data.reaction,
-        explanation: data.explanation,
-        nextQuestion: data.nextQuestion,
-        isCorrect: data.isCorrect,
-        topicTag: data.topicTag,
-        provider: data.provider,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
-      setMessages((prev) => [...prev, assistantMsg]);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
 
-      // Update active question for next turn
-      if (data.nextQuestion) {
-        setCurrentQuestion(data.nextQuestion);
-      }
+        const chunks = audioChunksRef.current;
+        if (chunks.length === 0) {
+          setIsRecording(false);
+          setEmotion('idle');
+          return;
+        }
 
-      // Speak aloud if voice enabled
-      if (isVoiceEnabled) {
-        const voiceScript = `${data.reaction} ${data.explanation} ${
-          data.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + data.nextQuestion : ''
-        }`;
-        speakVoice(voiceScript);
-      }
-    } catch (err) {
-      console.error('Viva submission failed:', err);
-      const errorMsg: MessageItem = {
-        id: 'err-' + Date.now(),
-        role: 'assistant',
-        content: 'Server error encountered. Let us proceed with the next question.',
-        reaction: language === 'hi' ? 'Server connect nahi ho paya! Agla try karte hain.' : 'Network error! Let us keep going.',
-        explanation: 'Check server connection or retry your answer.',
-        nextQuestion: 'What is the time complexity of binary search on a sorted array?',
-        isCorrect: null,
-        topicTag: `${subject} Review`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        const audioBlob = new Blob(chunks, {
+          type: recorder.mimeType || 'audio/webm',
+        });
+
+        if (audioBlob.size < 600) {
+          setIsRecording(false);
+          setEmotion('idle');
+          return;
+        }
+
+        setIsRecording(false);
+        setIsTranscribing(true);
+        setEmotion('thinking');
+
+        try {
+          const formData = new FormData();
+          formData.append('file', audioBlob, 'viva-recording.webm');
+          formData.append('language', language);
+
+          const res = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const transcribed = (data.text || '').trim();
+            if (transcribed) {
+              setStudentAnswer(transcribed);
+              await handleSendTurn(transcribed, 'answer');
+            } else {
+              setMicError('Could not transcribe audio. Please try speaking again or type your answer.');
+              setEmotion('idle');
+            }
+          } else {
+            const errJson = await res.json().catch(() => ({}));
+            setMicError(errJson.error || 'Whisper transcription failed. Please try typing your answer.');
+            setEmotion('idle');
+          }
+        } catch (transcribeErr: any) {
+          setMicError('Audio transcription failed. Please type your answer.');
+          setEmotion('idle');
+        } finally {
+          setIsTranscribing(false);
+        }
       };
-      setMessages((prev) => [...prev, errorMsg]);
-      setEmotion('shocked');
-    } finally {
-      setIsEvaluating(false);
+
+      mediaRecorderRef.current = recorder;
+      recorder.start(250);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      setEmotion('listening');
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err: any) {
+      console.warn('[Viva MediaRecorder] Permission or device error:', err);
+      setMicError('Microphone permission denied or device busy. Please allow mic access or type your answer below.');
+      setIsRecording(false);
+      setEmotion('idle');
+    }
+  }, [isGuestLocked, stopVoice, language, handleSendTurn]);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
+
+  useEffect(() => {
+    return () => {
+      stopRecording();
+      stopVoice();
+    };
+  }, [stopRecording, stopVoice]);
 
   // Quick Action Handlers
   const handleAskHint = () => {
@@ -778,8 +908,10 @@ export default function VivaStudioPage() {
                 className={`w-2 h-2 rounded-full ${
                   isSpeaking
                     ? 'bg-blue-500 animate-pulse'
-                    : isListening
-                    ? 'bg-cyan-500 animate-ping'
+                    : isRecording
+                    ? 'bg-rose-500 animate-ping'
+                    : isTranscribing
+                    ? 'bg-purple-500 animate-pulse'
                     : isEvaluating
                     ? 'bg-amber-500 animate-pulse'
                     : emotion === 'happy'
@@ -792,8 +924,10 @@ export default function VivaStudioPage() {
               <span className="font-semibold text-[#09090B]">
                 {isSpeaking
                   ? 'Speaking...'
-                  : isListening
-                  ? 'Listening to you...'
+                  : isRecording
+                  ? `Recording (${recordingSeconds}s)...`
+                  : isTranscribing
+                  ? 'Whisper Transcribing...'
                   : isEvaluating
                   ? 'Evaluating...'
                   : emotion === 'happy'
@@ -1082,55 +1216,121 @@ export default function VivaStudioPage() {
                 </Link>
               </div>
             ) : (
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-2 sm:p-2.5 shadow-xs flex items-center gap-2 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                {/* Tactile Mic Button */}
-                <button
-                  onClick={toggleListening}
-                  disabled={isEvaluating}
-                  className={`p-3 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${
-                    isListening
-                      ? 'bg-rose-500 text-white animate-pulse shadow-md ring-4 ring-rose-100'
-                      : 'bg-zinc-100 text-[#09090B] hover:bg-zinc-200 border border-[#E4E4E7]'
-                  }`}
-                  title={isListening ? 'Stop listening' : `Speak answer (${language === 'hi' ? 'Hindi/Hinglish' : 'English'})`}
-                >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-[#2563EB]" />}
-                </button>
+              <div className="space-y-2">
+                {/* Inline Microphone Permission / Device Error */}
+                {micError && (
+                  <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-3.5 py-2 rounded-xl flex items-center justify-between gap-2 shadow-2xs animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>{micError}</span>
+                    </div>
+                    <button
+                      onClick={() => setMicError(null)}
+                      className="text-amber-700 hover:text-amber-950 p-0.5 rounded hover:bg-amber-100 transition-colors cursor-pointer"
+                      title="Dismiss"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
-                {/* Answer Text Input */}
-                <input
-                  type="text"
-                  value={studentAnswer}
-                  onChange={(e) => setStudentAnswer(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !isEvaluating) {
-                      handleSendTurn();
+                {/* Transcribing with Whisper Micro-Status */}
+                {isTranscribing && (
+                  <div className="bg-blue-50/90 border border-blue-200 text-blue-800 text-xs px-3.5 py-2 rounded-xl flex items-center gap-2.5 shadow-2xs animate-in fade-in font-mono">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
+                    <span>Transcribing with Groq Whisper (whisper-large-v3-turbo)...</span>
+                  </div>
+                )}
+
+                {/* Main Input Dock */}
+                <div className="bg-white border border-[#E4E4E7] rounded-2xl p-2 sm:p-2.5 shadow-xs flex items-center gap-2 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                  {/* Upgraded Tactile Mic / Stop Button */}
+                  <button
+                    type="button"
+                    onClick={toggleRecording}
+                    disabled={isEvaluating || isTranscribing}
+                    className={`p-3 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer relative ${
+                      isRecording
+                        ? 'bg-rose-600 text-white shadow-md ring-4 ring-rose-200'
+                        : 'bg-zinc-100 text-[#09090B] hover:bg-zinc-200 border border-[#E4E4E7]'
+                    }`}
+                    style={{
+                      transform: isRecording ? `scale(${1 + Math.min(0.12, audioVolume / 500)})` : undefined,
+                    }}
+                    title={
+                      isRecording
+                        ? 'Stop recording & transcribe with Whisper'
+                        : `Speak answer with Groq Whisper (${language === 'hi' ? 'Hindi/Hinglish' : 'English'})`
                     }
-                  }}
-                  disabled={isEvaluating}
-                  placeholder={
-                    isListening
-                      ? language === 'hi' ? 'Bolte rahiye, live sun raha hu...' : 'Listening to speech...'
-                      : language === 'hi'
-                      ? 'Apna jawab yaha likho ya mic daba ke bolo...'
-                      : 'Type your answer or click mic to speak (Press Enter)...'
-                  }
-                  className="flex-1 bg-transparent border-0 px-2 text-xs sm:text-sm text-[#09090B] placeholder:text-[#52525B]/60 focus:outline-hidden font-sans"
-                />
+                  >
+                    {isRecording ? (
+                      <Square className="w-4 h-4 fill-current animate-pulse" />
+                    ) : (
+                      <Mic className="w-4 h-4 text-[#2563EB]" />
+                    )}
+                  </button>
 
-                {/* Submit Button */}
-                <button
-                  onClick={() => handleSendTurn()}
-                  disabled={isEvaluating || !studentAnswer.trim()}
-                  className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-sans text-xs font-semibold transition-all inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
-                    studentAnswer.trim() && !isEvaluating
-                      ? 'bg-[#2563EB] text-white hover:bg-blue-700 shadow-xs'
-                      : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
-                  }`}
-                >
-                  <span className="hidden sm:inline">Answer</span>
-                  <Send className="w-3.5 h-3.5" />
-                </button>
+                  {/* Active Recording Capsule */}
+                  {isRecording ? (
+                    <div className="flex-1 flex items-center justify-between px-3 py-1.5 bg-rose-50/80 border border-rose-200 rounded-xl animate-in fade-in">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping shrink-0" />
+                        <span className="text-xs font-mono font-bold text-rose-800">
+                          0:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}
+                        </span>
+                        <span className="text-xs text-rose-700 hidden sm:inline font-sans">
+                          Listening in {language === 'hi' ? 'Hinglish / Hindi' : 'English'}...
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={stopRecording}
+                        className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold font-mono flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Tap to Send</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Normal Answer Text Input */}
+                      <input
+                        type="text"
+                        value={studentAnswer}
+                        onChange={(e) => setStudentAnswer(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !isEvaluating && !isTranscribing) {
+                            handleSendTurn();
+                          }
+                        }}
+                        disabled={isEvaluating || isTranscribing}
+                        placeholder={
+                          isTranscribing
+                            ? 'Processing speech with Whisper...'
+                            : language === 'hi'
+                            ? 'Apna jawab yaha likho ya mic daba ke bolo...'
+                            : 'Type your answer or click mic to speak (Press Enter)...'
+                        }
+                        className="flex-1 bg-transparent border-0 px-2 text-xs sm:text-sm text-[#09090B] placeholder:text-[#52525B]/60 focus:outline-hidden font-sans"
+                      />
+
+                      {/* Submit Button */}
+                      <button
+                        onClick={() => handleSendTurn()}
+                        disabled={isEvaluating || isTranscribing || !studentAnswer.trim()}
+                        className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-sans text-xs font-semibold transition-all inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
+                          studentAnswer.trim() && !isEvaluating && !isTranscribing
+                            ? 'bg-[#2563EB] text-white hover:bg-blue-700 shadow-xs'
+                            : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <span className="hidden sm:inline">Answer</span>
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
