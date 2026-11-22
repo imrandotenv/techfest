@@ -24,6 +24,7 @@ import { AiStudyCompanion } from './AiStudyCompanion';
 import { TechFestBoard } from './TechFestBoard';
 import { StudentAcademicCockpit } from './StudentAcademicCockpit';
 import { VivaBuddyCharacter } from '@/components/VivaBuddyCharacter';
+import { PageHeader } from '@/components/PageHeader';
 
 export type ToolTab = 'dashboard' | 'viva-buddy' | 'calculator' | 'attendance' | 'events' | 'notices' | 'ai-companion';
 
@@ -64,23 +65,22 @@ export function ToolsDashboard() {
 
   return (
     <div className="w-full space-y-6 sm:space-y-8">
-      {/* Page Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-mono text-xs font-bold">
-            ACADEMIC SUITE
-          </span>
-          <span className="text-xs font-mono uppercase text-[#52525B] tracking-wider">
-            SETGOI Engineering Utilities
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#09090B] font-display mt-2">
-          Student Utilities &amp; Academic Calculators
-        </h1>
-        <p className="text-sm text-[#52525B] mt-1 max-w-3xl font-sans leading-relaxed">
-          Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, audit mandatory 75% attendance and safe bunks, register for campus TechFest events, and launch the dedicated AI Viva Studio.
-        </p>
-      </div>
+      {/* Unified Compact Page Header Strip */}
+      <PageHeader
+        badge="STUDENT UTILITIES"
+        badgeCode="MAKAUT 10-PT"
+        title="Student Utilities & Academic Calculators"
+        subtitle="Centralized engineering utilities for SETGOI Durgapur: MAKAUT credit-indexed grades, mandatory 75% attendance auditor, campus events, and AI study companion."
+        action={
+          <Link
+            href="/viva"
+            className="sanaka-btn-primary px-4 py-2 text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+            <span>AI Viva Studio →</span>
+          </Link>
+        }
+      />
 
       {/* Clean Horizontal Pill Tab Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-[#E4E4E7] pb-3">

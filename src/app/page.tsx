@@ -25,10 +25,10 @@ const DEPARTMENTS = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col justify-between overflow-x-hidden">
+    <div className="min-h-screen bg-[#F7F8FA] flex flex-col justify-between overflow-x-hidden">
       {/* Background Subtle Radial Dot Pattern */}
       <div
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black_20%,transparent_75%)]"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black_20%,transparent_75%)] opacity-40"
         aria-hidden="true"
       />
 
@@ -36,9 +36,9 @@ export default function HomePage() {
       <section className="relative z-10 pt-16 md:pt-28 pb-12 sm:pb-14 px-6 text-center max-w-6xl mx-auto w-full">
         {/* Eyebrow & Live MAKAUT Exam Countdown Pill */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-3.5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-zinc-200/90 shadow-2xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-mono uppercase tracking-wider text-[#475569] font-medium">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#52525B] font-semibold">
               SETGOI DURGAPUR • STUDENT PORTAL
             </span>
           </div>
@@ -46,12 +46,12 @@ export default function HomePage() {
         </div>
 
         {/* Display Headline */}
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-bold tracking-[-0.03em] text-[#0F172A] max-w-4xl mx-auto leading-[1.12]">
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-bold tracking-[-0.035em] text-[#09090B] max-w-4xl mx-auto leading-[1.08]">
           Give your B.Tech journey a modern academic cockpit.
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-3.5 text-sm sm:text-base lg:text-lg font-sans text-[#475569] max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-3.5 text-sm sm:text-base lg:text-lg font-sans text-[#52525B] max-w-2xl mx-auto leading-relaxed">
           Join thousands of SETGOI students accessing verified MAKAUT notes, solved past papers, and instant SGPA calculations.
         </p>
 
@@ -59,15 +59,15 @@ export default function HomePage() {
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/sign-up"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-semibold bg-[#0F172A] text-white hover:bg-slate-800 transition-all shadow-sm flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-semibold bg-[#09090B] text-white hover:bg-zinc-800 transition-all shadow-sm flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4 text-blue-400" />
             <span>Start in 30 seconds</span>
-            <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
+            <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
           </Link>
           <Link
             href="/notes"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-medium bg-white text-[#0F172A] border border-[#E2E8F0] hover:bg-slate-50 transition-all shadow-2xs flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs sm:text-sm font-sans font-semibold bg-white text-[#09090B] border border-zinc-200/90 hover:bg-zinc-50 transition-all shadow-2xs flex items-center justify-center gap-2"
           >
             <BookOpen className="w-4 h-4 text-[#2563EB]" />
             <span>Explore Vault</span>
@@ -78,7 +78,7 @@ export default function HomePage() {
         <HeroQuickSearch />
 
         {/* Sub-CTA Trust Note */}
-        <p className="mt-3 text-xs font-mono text-[#475569]/80">
+        <p className="mt-3 text-xs font-mono text-[#52525B]/80">
           MAKAUT affiliated • 100% Free for SETGOI students • No subscription required
         </p>
 

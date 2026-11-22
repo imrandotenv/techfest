@@ -523,7 +523,7 @@ export function NotesVaultView() {
                     setSelectedBranch(b.code);
                     setSelectedSemester(null);
                   }}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB] rounded-2xl p-6 transition-all duration-150 cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
+                  className="group sanaka-card-interactive rounded-2xl p-6 flex flex-col justify-between cursor-pointer"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -567,7 +567,7 @@ export function NotesVaultView() {
             {/* Quick Search Card */}
             <div
               onClick={() => setIsDirectSearch(true)}
-              className="group bg-gradient-to-br from-zinc-50 to-white border border-dashed border-[#E4E4E7] hover:border-[#2563EB] rounded-2xl p-6 transition-all duration-150 cursor-pointer flex flex-col justify-between"
+              className="group sanaka-card-interactive border-dashed rounded-2xl p-6 flex flex-col justify-between cursor-pointer"
             >
               <div>
                 <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-700 border border-zinc-200 flex items-center justify-center mb-4">
@@ -650,7 +650,7 @@ export function NotesVaultView() {
                 <div
                   key={s.num}
                   onClick={() => setSelectedSemester(s.num)}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB] rounded-2xl p-5 transition-all duration-150 cursor-pointer shadow-xs hover:shadow-md flex flex-col justify-between"
+                  className="group sanaka-card-interactive rounded-2xl p-5 flex flex-col justify-between cursor-pointer"
                 >
                   <div className="space-y-1">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-[#52525B] font-semibold">

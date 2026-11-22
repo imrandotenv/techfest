@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
+import { PageHeader } from '@/components/PageHeader';
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
@@ -640,73 +641,59 @@ export default function VivaStudioPage() {
   return (
     <div className="w-full space-y-5">
       {/* Top Header & Compact Controls Strip */}
-      <div className="w-full space-y-3">
-        {/* Breadcrumb / Title Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E4E7]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-[#2563EB] shadow-2xs">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold font-display text-[#09090B]">
-                  AI Viva Studio
-                </h1>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-[#2563EB] border border-blue-200/70">
-                  MAKAUT 2026
-                </span>
-              </div>
-              <p className="text-xs text-[#52525B] font-sans">
-                Interactive multi-turn viva voce with expressive animated examiner &amp; real-time voice
-              </p>
-            </div>
-          </div>
-
-          {/* Access / Score Pill & Finish Report Button */}
-          <div className="flex items-center gap-2">
-            {isSignedIn ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-mono font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>SETGOI Student • Unlimited</span>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowSignInModal(true)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer ${
-                  remainingFree > 0
-                    ? 'bg-amber-50 border border-amber-200 text-amber-800'
-                    : 'bg-red-50 border border-red-200 text-red-700 animate-pulse'
-                }`}
-              >
-                <Lock className="w-3 h-3" />
-                <span>{remainingFree > 0 ? `${remainingFree} Free Left` : 'Sign In Required'}</span>
-              </button>
-            )}
-
-            {/* Live Score Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E4E4E7] text-xs font-mono text-[#09090B] shadow-2xs">
-              <span className="flex items-center gap-1 text-[#2563EB] font-bold">
-                <Award className="w-3.5 h-3.5" />
-                {scorecard.correct}/{scorecard.attempts}
-              </span>
-              {scorecard.streak > 1 && (
-                <span className="flex items-center gap-0.5 text-orange-600 font-bold">
-                  <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-                  {scorecard.streak}
-                </span>
+      <div className="w-full space-y-4">
+        {/* Unified Compact Page Header Strip */}
+        <PageHeader
+          badge="AI VIVA STUDIO"
+          badgeCode="MAKAUT 2026"
+          title="Conversational AI Viva Studio"
+          subtitle="Interactive rapid-fire viva voce with expressive animated examiner, live speech recognition, and instant concept feedback."
+          action={
+            <div className="flex items-center gap-2">
+              {isSignedIn ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-mono font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>SETGOI Student • Unlimited</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowSignInModal(true)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    remainingFree > 0
+                      ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                      : 'bg-red-50 border border-red-200 text-red-700 animate-pulse'
+                  }`}
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>{remainingFree > 0 ? `${remainingFree} Free Left` : 'Sign In Required'}</span>
+                </button>
               )}
-            </div>
 
-            {/* Finish & Report Button */}
-            <button
-              onClick={() => setShowReportModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-sans font-semibold transition-all shadow-xs cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Report Card</span>
-            </button>
-          </div>
-        </div>
+              {/* Live Score Pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E4E4E7] text-xs font-mono text-[#09090B] shadow-2xs">
+                <span className="flex items-center gap-1 text-[#2563EB] font-bold">
+                  <Award className="w-3.5 h-3.5" />
+                  {scorecard.correct}/{scorecard.attempts}
+                </span>
+                {scorecard.streak > 1 && (
+                  <span className="flex items-center gap-0.5 text-orange-600 font-bold">
+                    <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
+                    {scorecard.streak}
+                  </span>
+                )}
+              </div>
+
+              {/* Finish & Report Button */}
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="sanaka-btn-primary px-3.5 py-1.5 text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Report Card</span>
+              </button>
+            </div>
+          }
+        />
 
         {/* Minimal Control Pill Bar (Subject + Language + Voice) */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white border border-[#E4E4E7] p-2 sm:p-2.5 rounded-xl shadow-2xs">

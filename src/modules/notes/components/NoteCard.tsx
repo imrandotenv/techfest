@@ -29,7 +29,7 @@ export function NoteCard({
   const isApproved = note.status === 'approved';
 
   return (
-    <div className="group bg-white rounded-2xl border border-[#E4E4E7] hover:border-[#2563EB]/40 hover:shadow-sm transition-all flex flex-col justify-between p-5 space-y-4">
+    <div className="group sanaka-card-interactive rounded-2xl flex flex-col justify-between p-5 space-y-4">
       <div className="space-y-3">
         {/* Top Header: Soft Blue Subject Pill + Verified/Pending Dot + Academic Year */}
         <div className="flex items-center justify-between gap-2">

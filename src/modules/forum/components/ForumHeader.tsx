@@ -3,6 +3,7 @@
 import React from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import { ForumSortOption } from '../types';
+import { PageHeader } from '@/components/PageHeader';
 
 interface ForumHeaderProps {
   searchQuery: string;
@@ -22,32 +23,24 @@ export function ForumHeader({
   totalPosts,
 }: ForumHeaderProps) {
   return (
-    <div className="flex flex-col gap-5 mb-6">
-      {/* Title & Action Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#09090B] font-display">
-              Campus Q&amp;A Forum
-            </h1>
-            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-medium">
-              {totalPosts} {totalPosts === 1 ? 'Thread' : 'Threads'}
-            </span>
-          </div>
-          <p className="text-sm text-[#52525B] mt-1 max-w-2xl font-sans leading-relaxed">
-            MAKAUT academic doubts, TechFest innovation tracks, placement roadmaps, and verified Official Faculty Answers from SETGOI professors.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onOpenCreateModal}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-[#2563EB] text-white hover:bg-blue-700 text-xs sm:text-sm font-medium transition-colors shadow-xs shrink-0 cursor-pointer font-sans"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Ask Question</span>
-        </button>
-      </div>
+    <div className="flex flex-col gap-4 mb-6">
+      {/* Unified Compact Page Header Strip */}
+      <PageHeader
+        badge="CAMPUS DISCUSSIONS"
+        badgeCode={`${totalPosts} ${totalPosts === 1 ? 'Thread' : 'Threads'}`}
+        title="Campus Q&A Forum"
+        subtitle="MAKAUT academic doubts, TechFest innovation tracks, placement roadmaps, and verified Official Faculty Answers from SETGOI professors."
+        action={
+          <button
+            type="button"
+            onClick={onOpenCreateModal}
+            className="sanaka-btn-primary px-4 py-2 text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Ask Question</span>
+          </button>
+        }
+      />
 
       {/* Search and Sort Control Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">

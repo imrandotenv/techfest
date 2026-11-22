@@ -190,28 +190,28 @@ export function CampusDirectoryView() {
         stats={{
           departmentsCount: DEPARTMENTS.length,
           facultyCount: ALL_FACULTY.length,
-          hostelsCount: ENGINEERING_LABS.length,
+          labsCount: ENGINEERING_LABS.length,
           busRoutesCount: BUS_ROUTES.length,
         }}
       />
 
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+      {/* Main Content Area */}
+      <div className="w-full space-y-6">
         {/* Universal Global Search Bar */}
         <div className="relative">
-          <div className="flex items-center gap-2 p-2.5 bg-white border border-[#E2E8F0] rounded-xl shadow-xs">
-            <Search className="w-4 h-4 text-[#475569] ml-2 shrink-0" />
+          <div className="flex items-center gap-2.5 p-2 bg-white border border-zinc-200/90 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(9,9,11,0.03)] focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+            <Search className="w-4 h-4 text-[#52525B] ml-2 shrink-0" />
             <input
               type="text"
               value={globalSearch}
               onChange={(e) => setGlobalSearch(e.target.value)}
               placeholder="Universal Campus Search: type faculty, department code, bus stop, engineering lab, or emergency..."
-              className="w-full text-xs sm:text-sm bg-transparent border-none text-[#0F172A] placeholder-[#475569]/60 focus:outline-hidden font-sans"
+              className="w-full text-xs sm:text-sm bg-transparent border-none text-[#09090B] placeholder-[#52525B]/60 focus:outline-hidden font-sans"
             />
             {globalSearch && (
               <button
                 onClick={() => setGlobalSearch('')}
-                className="text-xs font-mono text-[#475569] hover:text-[#0F172A] px-2 shrink-0"
+                className="text-xs font-mono text-[#52525B] hover:text-[#09090B] px-2 shrink-0 cursor-pointer"
               >
                 Clear
               </button>
@@ -329,14 +329,14 @@ export function CampusDirectoryView() {
                 {/* 1. Academic Departments */}
                 <div 
                   onClick={() => setActiveDrawer('departments')}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group sanaka-card-interactive rounded-2xl p-5 flex flex-col justify-between cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
+                      <span className="p-2 rounded-xl bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-zinc-200 text-[#09090B] transition-colors">
                         <Building2 className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200">
                         {DEPARTMENTS.length} Depts
                       </span>
                     </div>
@@ -347,7 +347,7 @@ export function CampusDirectoryView() {
                       B.Tech Engineering: Computer Science (CSE), ECE, Electrical (EE), Mechanical (ME), and Civil (CE).
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-zinc-200/80">
                     <span>View All Departments</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -356,14 +356,14 @@ export function CampusDirectoryView() {
                 {/* 2. Faculty Directory */}
                 <div 
                   onClick={() => setActiveDrawer('faculty')}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group sanaka-card-interactive rounded-2xl p-5 flex flex-col justify-between cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
+                      <span className="p-2 rounded-xl bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-zinc-200 text-[#09090B] transition-colors">
                         <Users className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200">
                         {ALL_FACULTY.length} Faculty
                       </span>
                     </div>
@@ -374,7 +374,7 @@ export function CampusDirectoryView() {
                       Office cabins, consultation hours, research domains, email contacts, and phone extensions.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-zinc-200/80">
                     <span>Search Faculty Profiles</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -383,14 +383,14 @@ export function CampusDirectoryView() {
                 {/* 3. B.Tech Engineering Labs & Workshops */}
                 <div 
                   onClick={() => setActiveDrawer('labs')}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group sanaka-card-interactive rounded-2xl p-5 flex flex-col justify-between cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
+                      <span className="p-2 rounded-xl bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-zinc-200 text-[#09090B] transition-colors">
                         <FlaskConical className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200">
                         {ENGINEERING_LABS.length} Labs
                       </span>
                     </div>
@@ -401,7 +401,7 @@ export function CampusDirectoryView() {
                       Advanced computing hubs, IoT testbeds, electrical motor bays, CAD/CAM mechanical workshop, and geotech lab.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-zinc-200/80">
                     <span>View All Engineering Labs</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -410,14 +410,14 @@ export function CampusDirectoryView() {
                 {/* 4. Bus Transit Schedule */}
                 <div 
                   onClick={() => setActiveDrawer('buses')}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group sanaka-card-interactive rounded-2xl p-5 flex flex-col justify-between cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
+                      <span className="p-2 rounded-xl bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-zinc-200 text-[#09090B] transition-colors">
                         <Bus className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200">
                         {BUS_ROUTES.length} Routes
                       </span>
                     </div>
@@ -428,7 +428,7 @@ export function CampusDirectoryView() {
                       Daily shuttle routes covering Asansol, Raniganj, Andal, and Durgapur Station to campus.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-zinc-200/80">
                     <span>Check Bus Timetable</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -437,14 +437,14 @@ export function CampusDirectoryView() {
                 {/* 5. Emergency SOS & Campus Security */}
                 <div 
                   onClick={() => setActiveDrawer('emergency')}
-                  className="group bg-white border border-rose-200 hover:border-rose-300 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group bg-white border border-rose-200/90 hover:border-rose-300 rounded-2xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_3px_rgba(244,63,94,0.04)] hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-8px_rgba(244,63,94,0.12)] transition-all duration-200 flex flex-col justify-between cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-600">
+                      <span className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-600">
                         <ShieldAlert className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                      <span className="text-xs font-mono font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
                         Immediate SOS
                       </span>
                     </div>
@@ -464,26 +464,26 @@ export function CampusDirectoryView() {
                 {/* 6. 24/7 Helplines */}
                 <div 
                   onClick={() => setActiveDrawer('helplines')}
-                  className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
+                  className="group sanaka-card-interactive rounded-2xl p-5 flex flex-col justify-between cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
-                      <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
+                      <span className="p-2 rounded-xl bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-zinc-200 text-[#09090B] transition-colors">
                         <PhoneCall className="w-4 h-4" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
-                        24/7 Toll-Free
+                      <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200">
+                        24/7 Helplines
                       </span>
                     </div>
                     <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
-                      24/7 Helplines &amp; Support
+                      Official Engineering Desks
                     </h4>
                     <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
-                      UGC Anti-Ragging toll-free desk (1800-180-5522), Women&apos;s Safety Cell, and Student Grievance desks.
+                      Principal Office, Examination Cell (Controller of Exams), Placement &amp; Training Cell (TPO), and Anti-Ragging Committee.
                     </p>
                   </div>
-                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
-                    <span>View 24/7 Helplines</span>
+                  <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-zinc-200/80">
+                    <span>View Official Contacts</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
