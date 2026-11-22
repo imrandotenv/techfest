@@ -16,6 +16,8 @@ export interface VivaRequest {
   language?: 'en' | 'hi';
   history?: ChatMessage[];
   intent?: 'answer' | 'hint' | 'example' | 'skip' | 'harder';
+  branch?: string;
+  semester?: number;
 }
 
 export interface VivaResponse {
@@ -475,6 +477,8 @@ export async function POST(req: Request) {
       language = 'en',
       history = [],
       intent = 'answer',
+      branch,
+      semester,
     } = body;
 
     if (!question || !answer) {
@@ -490,6 +494,7 @@ export async function POST(req: Request) {
     const recentHistory = (history || []).slice(-8);
 
     const currentUserPrompt = `SUBJECT: ${subject}
+STUDENT PROFILE: ${branch ? `B.Tech ${branch}` : 'B.Tech Engineering'}${semester ? `, Semester ${semester}` : ''} (MAKAUT Curriculum)
 DIFFICULTY: ${difficulty}
 STUDENT INTENT: ${intent}
 LANGUAGE MODE: ${language === 'hi' ? 'Hinglish (Conversational Roman Hindi)' : 'Natural Indian English'}

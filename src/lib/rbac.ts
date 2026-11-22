@@ -90,6 +90,11 @@ export interface AuthUserContext {
   studentId?: string;
   avatarUrl?: string;
   isAuthenticated: boolean;
+  branch?: string;
+  semester?: number;
+  passoutYear?: number;
+  universityRoll?: string;
+  onboardingCompleted?: boolean;
 }
 
 /**
@@ -114,6 +119,11 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
             department: previewRole === 'admin' ? 'Super Admin Office' : previewRole === 'faculty' ? 'CSE Department' : 'B.Tech CSE Sem 5',
             studentId: 'SETGOI/2026/CSE/042',
             isAuthenticated: true,
+            branch: 'CSE',
+            semester: 5,
+            passoutYear: 2027,
+            universityRoll: '12000123042',
+            onboardingCompleted: true,
           };
         }
       } catch {}
@@ -153,6 +163,11 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
       isSuperAdmin?: boolean;
       department?: string;
       studentId?: string;
+      branch?: string;
+      semester?: number;
+      passoutYear?: number;
+      universityRoll?: string;
+      onboardingCompleted?: boolean;
     };
 
     const isWhitelisted = isSuperAdminEmail(primaryEmail);
@@ -193,6 +208,11 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
       studentId: metadata.studentId,
       avatarUrl: clerkUser.imageUrl,
       isAuthenticated: true,
+      branch: metadata.branch,
+      semester: metadata.semester ? Number(metadata.semester) : undefined,
+      passoutYear: metadata.passoutYear ? Number(metadata.passoutYear) : undefined,
+      universityRoll: metadata.universityRoll,
+      onboardingCompleted: metadata.onboardingCompleted,
     };
   } catch (err: any) {
     if (err?.digest === 'DYNAMIC_SERVER_USAGE' || err?.message?.includes('Dynamic server usage')) {

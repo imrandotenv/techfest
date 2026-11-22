@@ -31,6 +31,8 @@ import { getResolvedRole, getDisplayRole } from '@/lib/auth-client';
 import { CommandPalette } from '@/components/navigation/CommandPalette';
 import { ExamCountdown } from '@/components/ExamCountdown';
 import { SetTechLogo } from '@/components/SetTechLogo';
+import { useAcademicProfile } from '@/hooks/useAcademicProfile';
+import { EditAcademicProfileModal } from '@/components/EditAcademicProfileModal';
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -58,8 +60,10 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const { user, isLoaded } = useUser();
+  const { profile, updateProfile } = useAcademicProfile();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -343,6 +347,22 @@ export function AppShell({
             </div>
           </div>
 
+          {/* Student Academic Info Pill */}
+          {resolvedRole === 'student' && (
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-blue-50/70 border border-blue-200/60 text-[11px] font-mono">
+              <span className="font-semibold text-[#2563EB]">
+                {profile.branch} • Sem {profile.semester}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(true)}
+                className="text-zinc-500 hover:text-zinc-900 underline text-[10px] cursor-pointer"
+              >
+                Edit
+              </button>
+            </div>
+          )}
+
           <Link
             href="/"
             className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-mono text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/60 transition-colors"
@@ -523,6 +543,26 @@ export function AppShell({
                   </div>
                 </div>
               </div>
+
+              {/* Student Academic Info Pill */}
+              {resolvedRole === 'student' && (
+                <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-blue-50/70 border border-blue-200/60 text-[11px] font-mono">
+                  <span className="font-semibold text-[#2563EB]">
+                    {profile.branch} • Sem {profile.semester}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileDrawerOpen(false);
+                      setIsEditProfileOpen(true);
+                    }}
+                    className="text-zinc-500 hover:text-zinc-900 underline text-[10px] cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+
               <Link
                 href="/"
                 className="w-full flex items-center justify-between text-xs font-mono text-zinc-500 pt-1"
@@ -624,6 +664,14 @@ export function AppShell({
       <CommandPalette
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
+      />
+
+      {/* Edit Academic Profile Modal */}
+      <EditAcademicProfileModal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        profile={profile}
+        onSave={updateProfile}
       />
     </div>
   );

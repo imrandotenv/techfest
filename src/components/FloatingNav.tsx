@@ -67,7 +67,9 @@ export function FloatingNav() {
     pathname.startsWith('/student') ||
     pathname.startsWith('/faculty') ||
     pathname.startsWith('/admin') ||
-    pathname.startsWith('/dashboard')
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/auth-callback')
   ) {
     return null;
   }

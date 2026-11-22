@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { requireRole } from '@/lib/rbac';
 import { AppShell } from '@/components/AppShell';
+import { BTechBranch, getBranchDetails, getSemesterSubjects } from '@/config/curriculum';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,11 @@ export default async function StudentWorkspacePage() {
   });
 
   const studentName = user.fullName || 'SETGOI Engineer';
-  const department = user.department || 'B.Tech CSE';
+  const branch = (user.branch?.toUpperCase() as BTechBranch) || 'CSE';
+  const semester = Number(user.semester) || 3;
+  const passoutYear = Number(user.passoutYear) || 2028;
+  const branchInfo = getBranchDetails(branch);
+  const mySubjects = getSemesterSubjects(branch, semester);
 
   return (
     <AppShell
@@ -64,11 +69,16 @@ export default async function StudentWorkspacePage() {
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563EB] font-mono text-xs font-semibold">
-              B.Tech Engineering • Sem 5
+              B.Tech {branchInfo.code} • Sem {semester} • Class of {passoutYear}
             </span>
             <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 font-mono text-[11px]">
-              {department}
+              {branchInfo.fullTitle}
             </span>
+            {user.universityRoll && (
+              <span className="px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 font-mono text-[11px]">
+                Roll: {user.universityRoll}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               MAKAUT Affiliated
@@ -78,7 +88,7 @@ export default async function StudentWorkspacePage() {
             Welcome back, {studentName}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 max-w-2xl leading-relaxed">
-            Your centralized B.Tech cockpit for MAKAUT coursework, lab viva readiness, and attendance tracking.
+            Your centralized B.Tech cockpit for MAKAUT coursework in {branchInfo.name}, lab viva readiness, and attendance tracking.
           </p>
         </div>
 
@@ -292,58 +302,62 @@ export default async function StudentWorkspacePage() {
                 <BookOpen className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-zinc-900">Saved Course Vaults &amp; Lab Manuals</h3>
-                <p className="text-[11px] font-mono text-zinc-500">Semester 5 MAKAUT Curriculum</p>
+                <h3 className="text-sm font-bold text-zinc-900">My Curriculum Subjects</h3>
+                <p className="text-[11px] font-mono text-zinc-500">
+                  Semester {semester} {branchInfo.name} • MAKAUT ({mySubjects.length} Core Modules)
+                </p>
               </div>
             </div>
             <Link
-              href="/notes"
+              href={`/notes?branch=${branch}&semester=${semester}`}
               className="text-xs font-mono font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
             >
-              <span>Browse All</span>
+              <span>Notes Vault</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
           <div className="space-y-2.5">
-            <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between hover:bg-zinc-100/70 transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-blue-100 text-[#2563EB]">
-                  PCC-CS501
-                </span>
-                <div>
-                  <div className="text-xs font-medium text-zinc-900">Compiler Design &amp; Lexical Analysis</div>
-                  <div className="text-[11px] font-mono text-zinc-500">Unit 1–4 Complete Notes • Prof. Mukherjee Verified</div>
+            {mySubjects.map((sub, idx) => (
+              <div
+                key={sub.code}
+                className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between hover:bg-zinc-100/70 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <span
+                    className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold shrink-0 ${
+                      idx % 3 === 0
+                        ? 'bg-blue-100 text-[#2563EB]'
+                        : idx % 3 === 1
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}
+                  >
+                    {sub.code}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-zinc-900 truncate">{sub.name}</div>
+                    <div className="text-[11px] font-mono text-zinc-500 truncate">
+                      {sub.credits} Credits • {sub.type} {sub.description ? `• ${sub.description}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Link
+                    href={`/notes?branch=${branch}&semester=${semester}&subject=${encodeURIComponent(sub.name)}`}
+                    className="text-[10px] font-mono text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200/60 font-semibold"
+                  >
+                    Notes
+                  </Link>
+                  <Link
+                    href={`/viva?subject=${encodeURIComponent(sub.name)}`}
+                    className="text-[10px] font-mono text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200/60 font-semibold"
+                  >
+                    Viva
+                  </Link>
                 </div>
               </div>
-              <span className="text-[11px] font-mono text-emerald-700 font-semibold shrink-0">Verified</span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between hover:bg-zinc-100/70 transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-purple-100 text-purple-700">
-                  PCC-CS591
-                </span>
-                <div>
-                  <div className="text-xs font-medium text-zinc-900">DBMS Lab Manual &amp; Top 5 External Viva Q&amp;A</div>
-                  <div className="text-[11px] font-mono text-zinc-500">ER-Model, SQL Queries &amp; Normalization Cheat Sheet</div>
-                </div>
-              </div>
-              <span className="text-[11px] font-mono text-purple-700 font-semibold shrink-0">Lab Manual</span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between hover:bg-zinc-100/70 transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-100 text-amber-800">
-                  ESC391
-                </span>
-                <div>
-                  <div className="text-xs font-medium text-zinc-900">Analog &amp; Digital Electronics Lab Handout</div>
-                  <div className="text-[11px] font-mono text-zinc-500">5 Essential External Examiner Viva Questions</div>
-                </div>
-              </div>
-              <span className="text-[11px] font-mono text-amber-800 font-semibold shrink-0">5 Viva Qs</span>
-            </div>
+            ))}
           </div>
         </div>
 

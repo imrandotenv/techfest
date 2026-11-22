@@ -19,12 +19,16 @@ import { VerificationQueue } from './VerificationQueue';
 import { NotePreviewModal } from './NotePreviewModal';
 import { LabPracticalsView } from './LabPracticalsView';
 import { LAB_PRACTICALS } from '../data/lab-practicals-data';
+import { useAcademicProfile } from '@/hooks/useAcademicProfile';
 import { 
   Laptop, 
   Cpu, 
   Zap, 
   Cog, 
   Building2, 
+  Network,
+  BrainCircuit,
+  GraduationCap,
   ArrowRight, 
   ArrowLeft, 
   Search, 
@@ -77,6 +81,18 @@ const BTECH_BRANCHES: BranchConfig[] = [
     shortName: 'Civil Engg (CE)',
     icon: Building2,
   },
+  {
+    code: 'IT',
+    name: 'Information Technology',
+    shortName: 'Information Tech (IT)',
+    icon: Network,
+  },
+  {
+    code: 'AIML',
+    name: 'AI & Machine Learning',
+    shortName: 'CSE (AI & ML)',
+    icon: BrainCircuit,
+  },
 ];
 
 const SEMESTERS = [
@@ -106,12 +122,15 @@ export function NotesVaultView() {
   const initialBranch = searchParams?.get('branch') as BranchCode | null;
   const initialSem = searchParams?.get('sem') || searchParams?.get('semester');
 
+  const { profile } = useAcademicProfile();
+  const [hasAppliedStudentDefaults, setHasAppliedStudentDefaults] = useState(false);
+
   // Master notes state
   const [notes, setNotes] = useState<NoteItem[]>(() => getInitialNotes());
 
   // Progressive Vault Flow State
   const [selectedBranch, setSelectedBranch] = useState<BranchCode | null>(() => {
-    return initialBranch && ['CSE', 'ECE', 'EE', 'ME', 'CE'].includes(initialBranch)
+    return initialBranch && ['CSE', 'ECE', 'EE', 'ME', 'CE', 'IT', 'AIML'].includes(initialBranch)
       ? initialBranch
       : null;
   });
@@ -120,6 +139,18 @@ export function NotesVaultView() {
     const s = initialSem ? Number(initialSem) : null;
     return s && s >= 1 && s <= 8 ? s : null;
   });
+
+  // Auto-apply student academic profile if no URL params specified
+  useEffect(() => {
+    if (hasAppliedStudentDefaults) return;
+    if (!initialBranch && !initialSem && !initialQ && profile.onboardingCompleted && profile.branch) {
+      if (['CSE', 'ECE', 'EE', 'ME', 'CE', 'IT', 'AIML'].includes(profile.branch)) {
+        setSelectedBranch(profile.branch as BranchCode);
+        setSelectedSemester(profile.semester);
+        setHasAppliedStudentDefaults(true);
+      }
+    }
+  }, [profile, initialBranch, initialSem, initialQ, hasAppliedStudentDefaults]);
 
   // Direct Search Mode (e.g. from homepage quick search)
   const [isDirectSearch, setIsDirectSearch] = useState<boolean>(() => Boolean(initialQ));
@@ -722,12 +753,31 @@ export function NotesVaultView() {
                   setSelectedBranch(null);
                   setSelectedSemester(null);
                 }}
-                className="text-xs font-sans text-[#52525B] hover:text-[#09090B] cursor-pointer"
+                className="text-xs font-sans text-zinc-500 hover:text-zinc-900 cursor-pointer"
               >
-                Change Branch
+                All Branches
               </button>
             </div>
           </div>
+
+          {/* Student Profile Quick-Tag */}
+          {profile.onboardingCompleted && selectedBranch === profile.branch && selectedSemester === profile.semester && (
+            <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-[#2563EB] font-medium">
+                <GraduationCap className="w-4 h-4 shrink-0" />
+                <span>Showing your enrolled <strong>{profile.branch} • Semester {profile.semester}</strong> MAKAUT vault</span>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedBranch(null);
+                  setSelectedSemester(null);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-50 font-mono text-[11px] font-semibold transition-all shadow-2xs cursor-pointer"
+              >
+                View All Departments
+              </button>
+            </div>
+          )}
 
           {activeVaultTab === 'practicals' ? (
             /* LAB PRACTICALS & VIVA HUB VIEW */

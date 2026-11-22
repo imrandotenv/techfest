@@ -1,10 +1,31 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  clerkId             String   @unique
+  email               String   @unique
+  fullName            String?
+  role                String   @default("STUDENT") // "STUDENT" | "FACULTY" | "ADMIN"
+  degree              String   @default("B.Tech") // strictly B.Tech
+  branch              String?  // "CSE" | "ECE" | "EE" | "ME" | "CE" | "IT" | "AIML"
+  semester            Int?     // 1 to 8
+  passoutYear         Int?     // e.g. 2026–2030
+  universityRoll      String?  // optional MAKAUT roll number
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([clerkId])
+  @@index([email])
+  @@index([branch, semester])
 }
 
 enum UserRole {

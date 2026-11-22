@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
+import { useAcademicProfile } from '@/hooks/useAcademicProfile';
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
@@ -176,6 +177,7 @@ export interface MessageItem {
 
 export default function VivaStudioPage() {
   const { user, isLoaded, isSignedIn } = useUser();
+  const { profile } = useAcademicProfile();
 
   // Control bar state
   const [subject, setSubject] = useState<VivaSubject>('DSA');
@@ -539,6 +541,8 @@ export default function VivaStudioPage() {
             language,
             history: historyPayload,
             intent: forcedIntent,
+            branch: profile?.branch,
+            semester: profile?.semester,
           }),
         });
 
@@ -905,6 +909,11 @@ export default function VivaStudioPage() {
             <span className="text-[10px] font-mono px-1.5 py-0.2 bg-blue-50 text-[#2563EB] border border-blue-200/70 rounded font-semibold">
               Studio
             </span>
+            {profile.onboardingCompleted && (
+              <span className="hidden md:inline-flex text-[10px] font-mono px-1.5 py-0.2 bg-zinc-100 text-zinc-700 border border-zinc-200 rounded font-semibold">
+                {profile.branch} • Sem {profile.semester}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">

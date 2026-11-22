@@ -18,6 +18,10 @@ const isStudentRoute = createRouteMatcher([
   '/student(.*)',
 ]);
 
+const isOnboardingRoute = createRouteMatcher([
+  '/onboarding(.*)',
+]);
+
 const isDashboardRoute = createRouteMatcher([
   '/dashboard',
 ]);
@@ -26,6 +30,7 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/auth-callback(.*)',
   '/viva(.*)',
   '/notes',
   '/campus',
@@ -44,6 +49,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/ai(.*)',
   '/api/notes',
   '/api/forum',
+  '/api/onboarding(.*)',
+  '/api/profile(.*)',
 ]);
 
 const hasResolvableClerk = 
@@ -75,6 +82,26 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
   const isApi = url.pathname.startsWith('/api');
   const previewRole = req.cookies.get('settech_preview_role')?.value || req.cookies.get('sanakahub_preview_role')?.value;
+
+  // 0. Check Onboarding Route
+  if (isOnboardingRoute(req)) {
+    if (previewRole) {
+      return NextResponse.next();
+    }
+
+    const authObject = await auth();
+    const { userId, sessionClaims, redirectToSignIn } = authObject;
+
+    if (!userId) {
+      return redirectToSignIn({ returnBackUrl: req.url });
+    }
+
+    const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { onboardingCompleted?: boolean };
+    if (metadata.onboardingCompleted) {
+      return NextResponse.redirect(new URL('/student', req.url));
+    }
+    return NextResponse.next();
+  }
 
   // 1. Check Admin Routes
   if (isAdminRoute(req)) {
@@ -143,11 +170,17 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const authObject = await auth();
-    const { userId, redirectToSignIn } = authObject;
+    const { userId, sessionClaims, redirectToSignIn } = authObject;
 
     if (!userId) {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
+
+    const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { onboardingCompleted?: boolean };
+    if (metadata.onboardingCompleted === false) {
+      return NextResponse.redirect(new URL('/onboarding', req.url));
+    }
+
     return NextResponse.next();
   }
 
