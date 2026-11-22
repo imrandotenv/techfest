@@ -67,8 +67,8 @@ export function FloatingNav() {
   const role = getResolvedRole(user);
   const displayRole = getDisplayRole(role);
   const roleBadgeClass = ROLE_CONFIGS[role]?.badgeClass || 'bg-slate-100 text-[#0F172A] border-[#E2E8F0]';
-  const hasConsoleAccess = role === 'college' || role === 'admin';
-  const consoleHref = role === 'admin' ? '/dashboard/admin' : '/dashboard/college';
+  const roleDashboardHref = role === 'admin' ? '/admin' : role === 'college' ? '/faculty' : '/student';
+  const roleDotColor = role === 'admin' ? 'bg-purple-500' : role === 'college' ? 'bg-emerald-500' : 'bg-[#2563EB]';
 
   return (
     <>
@@ -129,17 +129,18 @@ export function FloatingNav() {
               <kbd className="text-[10px] bg-white border border-zinc-300 rounded px-1 text-zinc-500 font-mono shadow-2xs">⌘K</kbd>
             </button>
 
-            {/* Role-Based Console Access Link */}
-            {hasConsoleAccess && (
+            {/* Clean Role-Aware Dashboard Link */}
+            {mounted && isSignedIn && (
               <Link
-                href={consoleHref}
-                className={`text-[11px] font-mono transition-all px-2.5 py-1 rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
-                  pathname.startsWith('/dashboard')
-                    ? 'bg-purple-900 text-white font-bold border-purple-900'
-                    : 'text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200'
+                href={roleDashboardHref}
+                className={`inline-flex items-center gap-1.5 text-xs font-sans transition-all px-3 py-1 rounded-full border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                  pathname === roleDashboardHref || pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/faculty') || pathname.startsWith('/student')
+                    ? 'bg-zinc-900 text-white font-semibold border-zinc-900 shadow-2xs'
+                    : 'text-zinc-700 bg-zinc-50 hover:bg-zinc-100 border-zinc-200'
                 }`}
               >
-                Console
+                <span className={`w-1.5 h-1.5 rounded-full ${roleDotColor}`} />
+                <span>Dashboard</span>
               </Link>
             )}
 

@@ -18,7 +18,9 @@ import {
   FileText,
   Bot,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Shield
 } from 'lucide-react';
 
 export interface CommandItem {
@@ -145,7 +147,31 @@ const COMMAND_ITEMS: CommandItem[] = [
     icon: FileText,
   },
 
-  // Engineering Tools
+  // Engineering Tools & Role Workspaces
+  {
+    id: 'workspace-student',
+    title: 'Student Academic Workspace',
+    subtitle: 'My enrolled courses, attendance standing, saved notes & viva status',
+    category: 'Engineering Tools',
+    href: '/student',
+    icon: GraduationCap,
+  },
+  {
+    id: 'workspace-faculty',
+    title: 'Faculty Moderation Desk',
+    subtitle: 'Notes verification queue, official notice publisher & doubt answers',
+    category: 'Engineering Tools',
+    href: '/faculty',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'workspace-admin',
+    title: 'Super Admin Control Console',
+    subtitle: 'User & role management, campus directory editor & audit trail',
+    category: 'Engineering Tools',
+    href: '/admin',
+    icon: Shield,
+  },
   {
     id: 'tool-viva-studio',
     title: 'AI Viva Studio (Expressive Examiner)',

@@ -2,28 +2,45 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 const isAdminRoute = createRouteMatcher([
+  '/admin(.*)',
   '/dashboard/admin(.*)',
   '/api/admin(.*)',
 ]);
 
-const isCollegeRoute = createRouteMatcher([
+const isFacultyRoute = createRouteMatcher([
+  '/faculty(.*)',
   '/dashboard/college(.*)',
+  '/api/faculty(.*)',
   '/api/college(.*)',
+]);
+
+const isStudentRoute = createRouteMatcher([
+  '/student(.*)',
+]);
+
+const isDashboardRoute = createRouteMatcher([
+  '/dashboard',
 ]);
 
 const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/campus(.*)',
-  '/notes(.*)',
-  '/forum(.*)',
-  '/tools(.*)',
+  '/viva(.*)',
+  '/notes',
+  '/campus',
+  '/forum',
+  '/tools',
+  '/notices',
+  '/calendar',
+  '/privacy',
+  '/terms',
   '/unauthorized',
+  '/api/viva(.*)',
+  '/api/tts(.*)',
   '/api/ai(.*)',
-  '/api/campus(.*)',
-  '/api/forum(.*)',
-  '/api/notes(.*)',
+  '/api/notes',
+  '/api/forum',
 ]);
 
 const hasResolvableClerk = 
@@ -31,8 +48,114 @@ const hasResolvableClerk =
   Boolean(process.env.CLERK_SECRET_KEY) && 
   !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('durgapur.dev');
 
+function resolveRoleFromClaims(sessionClaims: any): 'admin' | 'faculty' | 'student' {
+  if (!sessionClaims) return 'student';
+  const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { role?: string };
+  const rawRole = (metadata.role || sessionClaims?.role || '').toString().toLowerCase().trim();
+
+  // Check email in session claims against super admin whitelist
+  const userEmail = (sessionClaims?.email || sessionClaims?.primary_email || '').toString().toLowerCase().trim();
+  const superAdminEnv = process.env.SUPER_ADMIN_EMAILS || '';
+  if (userEmail && superAdminEnv) {
+    const list = superAdminEnv.split(',').map((e) => e.trim().toLowerCase());
+    if (list.includes(userEmail)) {
+      return 'admin';
+    }
+  }
+
+  if (rawRole === 'admin' || rawRole === 'superadmin') return 'admin';
+  if (rawRole === 'faculty' || rawRole === 'college' || rawRole === 'teacher' || rawRole === 'professor') return 'faculty';
+  return 'student';
+}
+
 const clerkHandler = clerkMiddleware(async (auth, req) => {
-  if (isAdminRoute(req) || isCollegeRoute(req)) {
+  const url = req.nextUrl;
+  const isApi = url.pathname.startsWith('/api');
+  const previewRole = req.cookies.get('sanakahub_preview_role')?.value;
+
+  // 1. Check Admin Routes
+  if (isAdminRoute(req)) {
+    if (previewRole) {
+      if (previewRole !== 'admin') {
+        if (isApi) return NextResponse.json({ error: 'Forbidden: Admin clearance required.' }, { status: 403 });
+        return NextResponse.redirect(new URL('/unauthorized', req.url));
+      }
+      return NextResponse.next();
+    }
+
+    const authObject = await auth();
+    const { userId, sessionClaims, redirectToSignIn } = authObject;
+
+    if (!userId) {
+      if (isApi) {
+        return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });
+      }
+      return redirectToSignIn({ returnBackUrl: req.url });
+    }
+
+    const role = resolveRoleFromClaims(sessionClaims);
+    if (role !== 'admin') {
+      if (isApi) {
+        return NextResponse.json({ error: 'Forbidden: Admin clearance required.' }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+    return NextResponse.next();
+  }
+
+  // 2. Check Faculty Routes
+  if (isFacultyRoute(req)) {
+    if (previewRole) {
+      if (previewRole !== 'faculty' && previewRole !== 'admin') {
+        if (isApi) return NextResponse.json({ error: 'Forbidden: Faculty clearance required.' }, { status: 403 });
+        return NextResponse.redirect(new URL('/unauthorized', req.url));
+      }
+      return NextResponse.next();
+    }
+
+    const authObject = await auth();
+    const { userId, sessionClaims, redirectToSignIn } = authObject;
+
+    if (!userId) {
+      if (isApi) {
+        return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });
+      }
+      return redirectToSignIn({ returnBackUrl: req.url });
+    }
+
+    const role = resolveRoleFromClaims(sessionClaims);
+    if (role !== 'faculty' && role !== 'admin') {
+      if (isApi) {
+        return NextResponse.json({ error: 'Forbidden: Faculty clearance required.' }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+    return NextResponse.next();
+  }
+
+  // 3. Check Student Routes
+  if (isStudentRoute(req)) {
+    if (previewRole) {
+      return NextResponse.next();
+    }
+
+    const authObject = await auth();
+    const { userId, redirectToSignIn } = authObject;
+
+    if (!userId) {
+      return redirectToSignIn({ returnBackUrl: req.url });
+    }
+    return NextResponse.next();
+  }
+
+  // 4. Smart /dashboard Redirector
+  if (isDashboardRoute(req)) {
+    if (previewRole) {
+      if (previewRole === 'admin') return NextResponse.redirect(new URL('/admin', req.url));
+      if (previewRole === 'faculty') return NextResponse.redirect(new URL('/faculty', req.url));
+      return NextResponse.redirect(new URL('/student', req.url));
+    }
+
     const authObject = await auth();
     const { userId, sessionClaims, redirectToSignIn } = authObject;
 
@@ -40,15 +163,13 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
-    const metadata = (sessionClaims?.metadata || {}) as { role?: string };
-    const role = metadata.role || (sessionClaims as any)?.role || 'student';
-
-    if (isAdminRoute(req) && role !== 'admin') {
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
-    }
-
-    if (isCollegeRoute(req) && role !== 'college' && role !== 'admin') {
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    const role = resolveRoleFromClaims(sessionClaims);
+    if (role === 'admin') {
+      return NextResponse.redirect(new URL('/admin', req.url));
+    } else if (role === 'faculty') {
+      return NextResponse.redirect(new URL('/faculty', req.url));
+    } else {
+      return NextResponse.redirect(new URL('/student', req.url));
     }
   }
 
@@ -56,14 +177,14 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default function middleware(req: NextRequest, ev: any) {
-  // If public route, immediately proceed with zero external network redirects
+  // If public route, immediately proceed with zero external network overhead
   if (isPublicRoute(req)) {
     return NextResponse.next();
   }
 
-  // If unresolvable Clerk dev domain, guard admin and college locally
+  // If unresolvable Clerk dev domain, guard admin and faculty locally
   if (!hasResolvableClerk) {
-    if (isAdminRoute(req) || isCollegeRoute(req)) {
+    if (isAdminRoute(req) || isFacultyRoute(req)) {
       return NextResponse.redirect(new URL('/unauthorized', req.url));
     }
     return NextResponse.next();

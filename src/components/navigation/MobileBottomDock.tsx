@@ -31,8 +31,8 @@ export function MobileBottomDock() {
   const role = getResolvedRole(user);
   const displayRole = getDisplayRole(role);
   const roleBadgeClass = ROLE_CONFIGS[role]?.badgeClass || 'bg-slate-100 text-[#0F172A] border-[#E2E8F0]';
-  const hasConsoleAccess = role === 'college' || role === 'admin';
-  const consoleHref = role === 'admin' ? '/dashboard/admin' : '/dashboard/college';
+  const roleDashboardHref = role === 'admin' ? '/admin' : role === 'college' ? '/faculty' : '/student';
+  const roleDashboardLabel = role === 'admin' ? 'Super Admin Console' : role === 'college' ? 'Faculty Academic Desk' : 'Student Academic Workspace';
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {
@@ -122,19 +122,19 @@ export function MobileBottomDock() {
                 <ArrowRight className="w-4 h-4 text-zinc-400" />
               </Link>
 
-              {hasConsoleAccess && (
+              {mounted && isSignedIn && (
                 <Link
-                  href={consoleHref}
+                  href={roleDashboardHref}
                   onClick={() => setDrawerOpen(false)}
                   className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-4 h-4 text-zinc-900" />
+                    <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
                     <div>
-                      <div className="text-sm font-medium text-zinc-900">
-                        {role === 'admin' ? 'Admin Console' : 'Faculty Console'}
+                      <div className="text-sm font-semibold text-zinc-900">
+                        {roleDashboardLabel}
                       </div>
-                      <div className="text-xs text-zinc-500">Institutional management</div>
+                      <div className="text-xs text-zinc-500">My Role Workspace</div>
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-zinc-400" />

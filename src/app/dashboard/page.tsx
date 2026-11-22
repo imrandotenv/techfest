@@ -1,18 +1,20 @@
-import React from 'react';
-import { Metadata } from 'next';
-import { StudentAcademicCockpit } from '@/modules/tools/components/StudentAcademicCockpit';
+import { redirect } from 'next/navigation';
+import { getCurrentAuthUser } from '@/lib/rbac';
 
-export const metadata: Metadata = {
-  title: 'Student Academic Dashboard | SanakaHub SETGOI',
-  description: 'Official student academic cockpit, enrolled courses, attendance progress, upcoming MAKAUT examinations, and quick campus utilities.',
-};
+export const dynamic = 'force-dynamic';
 
-export default function StudentDashboardPage() {
-  return (
-    <div className="w-full min-h-screen bg-[#FAFAFA]">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-16 md:pt-28 pb-28 md:pb-20">
-        <StudentAcademicCockpit />
-      </div>
-    </div>
-  );
+export default async function DashboardRedirectPage() {
+  const user = await getCurrentAuthUser();
+
+  if (!user.isAuthenticated || !user.userId) {
+    redirect('/sign-in?redirect_url=/dashboard');
+  }
+
+  if (user.role === 'admin') {
+    redirect('/admin');
+  } else if (user.role === 'faculty') {
+    redirect('/faculty');
+  } else {
+    redirect('/student');
+  }
 }
