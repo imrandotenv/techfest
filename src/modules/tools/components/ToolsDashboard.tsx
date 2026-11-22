@@ -25,12 +25,14 @@ import { TechFestBoard } from './TechFestBoard';
 import { StudentAcademicCockpit } from './StudentAcademicCockpit';
 import { VivaBuddyCharacter } from '@/components/VivaBuddyCharacter';
 import { PageHeader } from '@/components/PageHeader';
+import { useAcademicProfile } from '@/hooks/useAcademicProfile';
 
 export type ToolTab = 'dashboard' | 'viva-buddy' | 'calculator' | 'attendance' | 'events' | 'notices' | 'ai-companion';
 
 export function ToolsDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { profile } = useAcademicProfile();
 
   const tabParam = searchParams.get('tab') as ToolTab | null;
   const validTabs: ToolTab[] = ['dashboard', 'viva-buddy', 'calculator', 'attendance', 'events', 'notices', 'ai-companion'];
@@ -83,6 +85,13 @@ export function ToolsDashboard() {
       />
 
       {/* Clean Horizontal Pill Tab Bar */}
+      {profile.onboardingCompleted && (
+        <div className="flex items-center gap-2 text-xs font-mono text-zinc-600 bg-blue-50/70 border border-blue-200/60 px-3.5 py-2 rounded-xl">
+          <GraduationCap className="w-4 h-4 text-[#2563EB] shrink-0" />
+          <span>Calculators &amp; utilities configured for <strong>B.Tech {profile.branch} • Semester {profile.semester}</strong> ({profile.passoutYear ? `Class of ${profile.passoutYear}` : 'MAKAUT'})</span>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-[#E4E4E7] pb-3">
         {pillTabs.map((tab) => {
           const Icon = tab.icon;
