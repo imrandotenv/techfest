@@ -147,6 +147,14 @@ const COMMAND_ITEMS: CommandItem[] = [
 
   // Engineering Tools
   {
+    id: 'tool-viva-studio',
+    title: 'AI Viva Studio (Expressive Examiner)',
+    subtitle: 'Rapid-fire B.Tech viva in English & Hinglish with live animated feedback',
+    category: 'Engineering Tools',
+    href: '/viva',
+    icon: Sparkles,
+  },
+  {
     id: 'tool-cockpit',
     title: 'Student Academic Dashboard & Course Roster',
     subtitle: 'Enrolled subjects, upcoming CA assessments & live metrics',

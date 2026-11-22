@@ -4,7 +4,15 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, ArrowRight, CornerDownLeft } from 'lucide-react';
 
-const POPULAR_SEARCHES = [
+interface QuickChip {
+  label: string;
+  query?: string;
+  href?: string;
+  highlight?: boolean;
+}
+
+const POPULAR_SEARCHES: QuickChip[] = [
+  { label: 'AI Viva Studio ✨', href: '/viva', highlight: true },
   { label: 'PCC-CS301', query: 'PCC-CS301' },
   { label: 'ESC301', query: 'ESC301' },
   { label: 'Data Structures', query: 'Data Structures' },
@@ -25,8 +33,12 @@ export function HeroQuickSearch() {
     }
   };
 
-  const handleChipClick = (searchQuery: string) => {
-    router.push(`/notes?q=${encodeURIComponent(searchQuery)}`);
+  const handleChipClick = (chip: QuickChip) => {
+    if (chip.href) {
+      router.push(chip.href);
+    } else if (chip.query) {
+      router.push(`/notes?q=${encodeURIComponent(chip.query)}`);
+    }
   };
 
   return (
@@ -62,8 +74,12 @@ export function HeroQuickSearch() {
           <button
             key={chip.label}
             type="button"
-            onClick={() => handleChipClick(chip.query)}
-            className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white border border-[#E2E8F0] text-[#0F172A] hover:border-[#0F172A] hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+            onClick={() => handleChipClick(chip)}
+            className={`text-[11px] font-mono px-2 py-0.5 rounded-md transition-all shadow-2xs cursor-pointer ${
+              chip.highlight
+                ? 'bg-blue-50 border border-blue-200/80 text-[#2563EB] font-bold hover:bg-blue-100'
+                : 'bg-white border border-[#E2E8F0] text-[#0F172A] hover:border-[#0F172A] hover:bg-slate-50'
+            }`}
           >
             {chip.label}
           </button>

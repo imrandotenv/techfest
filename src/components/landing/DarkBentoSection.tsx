@@ -21,9 +21,17 @@ export function DarkBentoSection() {
       <div className="max-w-6xl mx-auto px-6 w-full">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-blue-200/80 text-[#2563EB] text-xs font-mono mb-3 shadow-2xs font-medium">
-            <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
-            <span>Do more with SanakaHub Tools</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-blue-200/80 text-[#2563EB] text-xs font-mono shadow-2xs font-medium">
+              <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>Do more with SanakaHub Tools</span>
+            </div>
+            <Link
+              href="/viva"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-mono font-semibold shadow-2xs transition-colors cursor-pointer"
+            >
+              <span>Launch AI Viva Studio →</span>
+            </Link>
           </div>
 
           <h2 className="text-2xl sm:text-4xl lg:text-5xl font-display font-bold tracking-tight text-[#09090B] leading-[1.14]">
