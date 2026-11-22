@@ -30,7 +30,7 @@ export function QuickSearchBar() {
     if (!trimmed) return;
 
     // Check if the query is more campus/directory related
-    const campusKeywords = ['bus', 'route', 'hostel', 'faculty', 'professor', 'library', 'canteen', 'map', 'hospital', 'pharmacy', 'campus'];
+    const campusKeywords = ['bus', 'route', 'lab', 'workshop', 'faculty', 'professor', 'library', 'canteen', 'map', 'campus'];
     const isCampus = campusKeywords.some((kw) => trimmed.toLowerCase().includes(kw));
 
     if (isCampus) {

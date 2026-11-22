@@ -15,12 +15,15 @@ import {
   Check, 
   Copy, 
   Search, 
-  ArrowRight
+  ArrowRight,
+  FlaskConical,
+  Wrench,
+  Cpu
 } from 'lucide-react';
 import { 
   DEPARTMENTS, 
   ALL_FACULTY, 
-  HOSTELS, 
+  ENGINEERING_LABS, 
   BUS_ROUTES, 
   EMERGENCY_CONTACTS 
 } from '../data';
@@ -28,7 +31,7 @@ import {
 export type CampusDrawerType = 
   | 'departments' 
   | 'faculty' 
-  | 'hostels' 
+  | 'labs' 
   | 'buses' 
   | 'emergency' 
   | 'helplines' 
@@ -84,12 +87,12 @@ export function CampusDetailDrawer({
           badge: `${ALL_FACULTY.length} Faculty Profiles`,
           badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
         };
-      case 'hostels':
+      case 'labs':
         return {
-          title: 'Hostels & Mess Timings',
-          subtitle: 'Aryabhatta (Boys) & Kalpana Chawla (Girls) halls with weekly menus',
-          icon: Home,
-          badge: 'Residential Living',
+          title: 'B.Tech Engineering Labs & Workshops',
+          subtitle: 'Advanced computing hubs, IoT testbeds, electrical motor bays, and CNC workshops',
+          icon: FlaskConical,
+          badge: `${ENGINEERING_LABS.length} Laboratories`,
           badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         };
       case 'buses':
@@ -103,7 +106,7 @@ export function CampusDetailDrawer({
       case 'emergency':
         return {
           title: 'Emergency SOS & Campus Security',
-          subtitle: '24/7 on-campus ambulance, main security control & medical centre',
+          subtitle: '24/7 on-campus first-aid ambulance & main security checkpost',
           icon: ShieldAlert,
           badge: '24/7 Priority Emergency',
           badgeColor: 'bg-red-50 text-red-700 border-red-200',
@@ -346,78 +349,59 @@ export function CampusDetailDrawer({
             </div>
           )}
 
-          {/* HOSTELS & MESS TIMINGS VIEW */}
-          {type === 'hostels' && (
-            <div className="space-y-5">
-              {HOSTELS.map((hostel) => (
+          {/* B.TECH ENGINEERING LABS & WORKSHOPS VIEW */}
+          {type === 'labs' && (
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-blue-900 text-xs flex items-start gap-2">
+                <FlaskConical className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block font-semibold">MAKAUT Accredited Engineering Laboratories</strong>
+                  <p className="text-[11px] leading-relaxed mt-0.5">
+                    Laboratories are equipped with high-spec equipment, workstations, and safety apparatus for B.Tech academic practicals and research.
+                  </p>
+                </div>
+              </div>
+
+              {ENGINEERING_LABS.map((lab) => (
                 <div 
-                  key={hostel.id}
-                  className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-2xs space-y-4"
+                  key={lab.id}
+                  className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-2xs space-y-3.5 hover:border-[#2563EB]/40 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          {hostel.gender} Hall
+                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200">
+                          {lab.department}
                         </span>
-                        <h3 className="text-base font-bold text-[#0F172A] font-display">
-                          {hostel.name}
-                        </h3>
                       </div>
-                      <p className="text-xs text-[#475569] mt-1 font-mono">
-                        Biometric Curfew: <strong className="text-rose-600">{hostel.curfewTime}</strong> • Capacity: {hostel.capacity} Residents
+                      <h3 className="text-base font-bold text-[#0F172A] font-display mt-1">
+                        {lab.name}
+                      </h3>
+                      <p className="text-xs text-[#475569] mt-0.5 font-mono flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{lab.roomNumber}</span>
                       </p>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-[10px] font-mono text-[#475569] block">Warden:</span>
-                      <strong className="text-xs text-[#0F172A] block">{hostel.wardenName}</strong>
-                      <span className="text-[11px] font-mono text-[#2563EB]">{hostel.wardenContact}</span>
+                      <span className="text-[10px] font-mono text-[#475569] block">Faculty In-Charge:</span>
+                      <strong className="text-xs text-[#0F172A] block">{lab.inCharge}</strong>
+                      <span className="text-[11px] font-mono text-[#2563EB]">{lab.contact}</span>
                     </div>
                   </div>
 
-                  {/* Mess Timetable Table */}
-                  <div className="rounded-lg border border-[#E2E8F0] overflow-hidden">
-                    <div className="px-3 py-2 bg-slate-50 border-b border-[#E2E8F0] flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[#0F172A] uppercase">
-                        Weekly Mess Meal Schedule
-                      </span>
-                      <span className="text-[10px] font-mono text-[#475569]">
-                        FSSAI Inspected
-                      </span>
-                    </div>
-                    <div className="divide-y divide-[#E2E8F0] text-[11px] font-sans">
-                      <div className="p-2.5 flex items-center justify-between bg-white">
-                        <span className="font-semibold text-[#0F172A]">Breakfast (7:30 AM – 9:00 AM)</span>
-                        <span className="text-[#475569]">Idli-Sambar / Puri-Sabzi / Boiled Eggs / Milk &amp; Tea</span>
-                      </div>
-                      <div className="p-2.5 flex items-center justify-between bg-slate-50/50">
-                        <span className="font-semibold text-[#0F172A]">Lunch (12:30 PM – 2:00 PM)</span>
-                        <span className="text-[#475569]">Basmati Rice, Dal Tadka, Seasonal Veg, Fish Curry / Paneer, Salad</span>
-                      </div>
-                      <div className="p-2.5 flex items-center justify-between bg-white">
-                        <span className="font-semibold text-[#0F172A]">Evening Tea (5:00 PM – 6:00 PM)</span>
-                        <span className="text-[#475569]">Tea, Biscuits, Vegetable Patties, Samosa</span>
-                      </div>
-                      <div className="p-2.5 flex items-center justify-between bg-slate-50/50">
-                        <span className="font-semibold text-[#0F172A]">Dinner (8:00 PM – 9:30 PM)</span>
-                        <span className="text-[#475569]">Tawa Roti, Chicken Kasha / Shahi Paneer, Dal Makhani, Gulab Jamun</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rules & Guidelines */}
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[10px] font-mono uppercase text-[#475569] font-semibold block">
-                      Hall Rules &amp; Curfew Policy:
+                  {/* Equipment Chips */}
+                  <div className="pt-2 border-t border-[#E2E8F0]">
+                    <span className="text-[10px] font-mono uppercase text-[#475569] font-semibold block mb-1.5">
+                      Key Equipment & Workstations:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {hostel.rules.map((rule: string, idx: number) => (
+                      {lab.equipment.map((eq: string, idx: number) => (
                         <span 
                           key={idx}
-                          className="text-[10px] font-sans bg-slate-50 border border-[#E2E8F0] px-2 py-0.5 rounded text-[#475569]"
+                          className="text-[11px] font-mono bg-slate-50 border border-[#E2E8F0] px-2.5 py-1 rounded text-[#0F172A]"
                         >
-                          ✓ {rule}
+                          ⚙ {eq}
                         </span>
                       ))}
                     </div>
@@ -494,10 +478,10 @@ export function CampusDetailDrawer({
               <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-900 text-xs">
                 <div className="flex items-center gap-2 font-bold mb-1">
                   <ShieldAlert className="w-4 h-4 text-red-600" />
-                  <span>Immediate Medical &amp; Campus Emergency Action</span>
+                  <span>Immediate Campus First-Aid &amp; Emergency Action</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  The SETGOI Medical Centre is located near Gate 2 with 24/7 doctor on call, basic life support ambulance, and emergency first-aid station.
+                  The SETGOI Emergency Health Post is located at the Main Administration Complex with 24/7 on-duty attendant, basic life support response, and emergency first-aid station.
                 </p>
               </div>
 

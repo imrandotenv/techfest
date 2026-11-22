@@ -28,7 +28,7 @@ export function DepartmentDirectory({
   onSelectDepartmentFaculty 
 }: DepartmentDirectoryProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'ENGG' | 'PHARM'>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'CSE' | 'ECE' | 'EE' | 'ME' | 'CE'>('ALL');
   const [expandedDeptId, setExpandedDeptId] = useState<string | null>(null);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
@@ -39,9 +39,8 @@ export function DepartmentDirectory({
   };
 
   const filteredDepartments = departments.filter((dept) => {
-    // Category filter
-    if (categoryFilter === 'ENGG' && dept.code === 'PHARM') return false;
-    if (categoryFilter === 'PHARM' && dept.code !== 'PHARM') return false;
+    // Branch filter
+    if (categoryFilter !== 'ALL' && dept.code !== categoryFilter) return false;
 
     // Search query
     if (!searchQuery.trim()) return true;
@@ -72,12 +71,15 @@ export function DepartmentDirectory({
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {(
             [
-              { id: 'ALL', label: 'All Departments' },
-              { id: 'ENGG', label: 'Engineering (B.Tech)' },
-              { id: 'PHARM', label: 'Pharmacy (B.Pharm)' },
+              { id: 'ALL', label: 'All B.Tech' },
+              { id: 'CSE', label: 'CSE' },
+              { id: 'ECE', label: 'ECE' },
+              { id: 'EE', label: 'EE' },
+              { id: 'ME', label: 'ME' },
+              { id: 'CE', label: 'CE' },
             ] as const
           ).map((filter) => (
             <button
@@ -99,8 +101,8 @@ export function DepartmentDirectory({
       {filteredDepartments.length === 0 ? (
         <div className="text-center py-12 bg-white border border-zinc-200 rounded-lg p-6">
           <Building2 className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-          <p className="text-sm font-medium text-zinc-900">No departments match your query</p>
-          <p className="text-xs text-zinc-500 mt-1">Try searching for &quot;CSE&quot;, &quot;Civil&quot;, or &quot;Pharmacy&quot;.</p>
+          <p className="text-sm font-medium text-zinc-900">No engineering departments match your query</p>
+          <p className="text-xs text-zinc-500 mt-1">Try searching for &quot;CSE&quot;, &quot;Civil&quot;, or &quot;Mechanical&quot;.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,4 +1,4 @@
-import { Department, FacultyMember, HostelInfo, BusRoute, EmergencyContact } from '@/types';
+import { Department, FacultyMember, EngineeringLabInfo, BusRoute, EmergencyContact } from '@/types';
 import { CampusZoneExtended } from './types';
 
 // Strictly B.Tech Engineering Departments (SETGOI Durgapur)
@@ -257,49 +257,56 @@ export const EXTENDED_CAMPUS_ZONES: CampusZoneExtended[] = [
   },
 ];
 
-// Hostels
-export const HOSTELS: HostelInfo[] = [
+// B.Tech Engineering Labs & Advanced Research Facilities
+export const ENGINEERING_LABS: EngineeringLabInfo[] = [
   {
-    id: 'hostel-boys-1',
-    name: 'Aryabhatta Boys Hostel (B.Tech Senior Wing)',
-    gender: 'Boys',
-    wardenName: 'Mr. R. K. Mukherjee',
-    wardenContact: 'Contact via Dept. Office / Admin Editable',
-    capacity: 220,
-    curfewTime: '9:30 PM (Strict gate biometric)',
-    messTimings: {
-      breakfast: '7:30 AM – 9:00 AM',
-      lunch: '12:30 PM – 2:30 PM',
-      snacks: '5:00 PM – 6:30 PM',
-      dinner: '8:00 PM – 9:45 PM',
-    },
-    rules: [
-      'Valid SETGOI Engineering biometric card required for hostel entry.',
-      'Night-out passes must be submitted to the hostel warden 24 hours prior.',
-      'Zero tolerance for anti-ragging infractions; reported straight to national helpline.',
-    ],
+    id: 'lab-cse-ai',
+    name: 'Advanced Computing & AI Research Laboratory',
+    department: 'Computer Science & Engineering',
+    inCharge: 'Dr. Sourav Sengupta',
+    contact: '+91 94340 12301',
+    roomNumber: 'Room 312, Academic Core (Level 3)',
+    equipment: ['NVIDIA RTX GPU Workstations', 'High-Speed Gigabit LAN', 'Linux Server Rack', 'Ubuntu 24.04 LTS'],
   },
   {
-    id: 'hostel-girls-1',
-    name: 'Kalpana Chawla Girls Hostel (B.Tech Wing)',
-    gender: 'Girls',
-    wardenName: 'Mrs. S. Banerjee',
-    wardenContact: 'Contact via Dept. Office / Admin Editable',
-    capacity: 180,
-    curfewTime: '7:30 PM (Strict gate attendance)',
-    messTimings: {
-      breakfast: '7:30 AM – 9:00 AM',
-      lunch: '12:30 PM – 2:30 PM',
-      snacks: '5:00 PM – 6:30 PM',
-      dinner: '8:00 PM – 9:30 PM',
-    },
-    rules: [
-      'Hostel gate closes promptly at 7:30 PM.',
-      'Visitor entry strictly permitted only in ground floor reception lounge.',
-      'Study room with Wi-Fi available 24/7 on Level 1 and Level 2.',
-    ],
+    id: 'lab-ece-iot',
+    name: 'Embedded Systems & IoT Hardware Lab',
+    department: 'Electronics & Communication Engineering',
+    inCharge: 'Dr. Debabrata Roy',
+    contact: '+91 94340 12302',
+    roomNumber: 'Room 214, Academic Core (Level 2)',
+    equipment: ['ARM Cortex-M4 Kits', 'Digital Storage Oscilloscopes (100MHz)', 'FPGA Development Boards', 'IoT Sensor Nodes'],
+  },
+  {
+    id: 'lab-ee-power',
+    name: 'Electrical Machines & Power Systems Lab',
+    department: 'Electrical Engineering',
+    inCharge: 'Prof. Anirban Mukherjee',
+    contact: '+91 94340 12303',
+    roomNumber: 'Ground Floor, Electrical Wing',
+    equipment: ['DC Shunt & Series Motor-Generators', '3-Phase Alternator Sets', 'Transformers & Load Banks', 'Power Quality Analyzers'],
+  },
+  {
+    id: 'lab-me-cad',
+    name: 'CAD/CAM & CNC Manufacturing Workshop',
+    department: 'Mechanical Engineering',
+    inCharge: 'Dr. Subhashish Ghosh',
+    contact: '+91 94340 12304',
+    roomNumber: 'Central Mechanical Workshop Block',
+    equipment: ['CNC Lathe & Milling Centre', 'SolidWorks / AutoCAD Stations', 'Universal Testing Machine (1000kN)', 'Hydraulic Test Bench'],
+  },
+  {
+    id: 'lab-ce-geotech',
+    name: 'Geotechnical & Structural Testing Lab',
+    department: 'Civil Engineering',
+    inCharge: 'Prof. Kaushik Chatterjee',
+    contact: '+91 94340 12305',
+    roomNumber: 'Civil Heavy Structures Bay, Ground Level',
+    equipment: ['Triaxial Shear Apparatus', 'Direct Shear Machine', 'Compression Testing Machine', 'Total Station Survey Equipment'],
   },
 ];
+
+export const HOSTELS: any[] = [];
 
 // Bus Routes for SETGOI Durgapur
 export const BUS_ROUTES: BusRoute[] = [
@@ -367,11 +374,11 @@ export const EMERGENCY_CONTACTS: EmergencyContact[] = [
     location: 'Main Gate Security Checkpost, Malandighi',
   },
   {
-    id: 'sos-medical',
-    service: 'Campus Health Centre & Ambulance',
+    id: 'sos-first-aid',
+    service: 'Campus First-Aid & Emergency Response',
     department: 'Emergency First-Aid Desk',
-    phone: 'Contact via Health Centre / Admin Editable',
-    availableHours: '24/7 Medical Care & On-Campus Doctor',
-    location: 'Health Wing, Adjacent to Central Lawn',
+    phone: '0343-275-5556',
+    availableHours: '24/7 On-Duty First-Aid Attendant & Transport',
+    location: 'Main Administration Complex, Malandighi',
   },
 ];

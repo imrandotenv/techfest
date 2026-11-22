@@ -37,7 +37,7 @@ const CATEGORIES = [
   { id: 'Coding & DSA', label: 'Coding & DSA', icon: Code2 },
   { id: 'Labs & Viva', label: 'Labs & Viva', icon: FlaskConical },
   { id: 'Placements & Internships', label: 'Placements & Internships', icon: Briefcase },
-  { id: 'Campus & Hostel', label: 'Campus & Hostel', icon: Building2 },
+  { id: 'Engineering Campus', label: 'Engineering Campus', icon: Building2 },
 ];
 
 const STATUS_FILTERS: { id: ForumStatusFilter; label: string; icon: React.ElementType }[] = [
@@ -351,8 +351,8 @@ export function ForumMainView({
         if (selectedCategory === 'Placements & Internships') {
           return p.category === 'Placements & Internships' || p.category === 'Placements';
         }
-        if (selectedCategory === 'Campus & Hostel') {
-          return p.category === 'Campus & Hostel' || p.category === 'Campus Life' || p.category === 'Hostel';
+        if (selectedCategory === 'Engineering Campus') {
+          return p.category === 'Engineering Campus' || p.category === 'Campus Life';
         }
         return p.category.toLowerCase() === selectedCategory.toLowerCase();
       });
@@ -421,7 +421,7 @@ export function ForumMainView({
       'Coding & DSA': 0,
       'Labs & Viva': 0,
       'Placements & Internships': 0,
-      'Campus & Hostel': 0,
+      'Engineering Campus': 0,
     };
     posts.forEach((p) => {
       if (p.category === 'Academic' || p.category === 'Academics & Syllabus') {
@@ -432,8 +432,8 @@ export function ForumMainView({
         counts['Labs & Viva']++;
       } else if (p.category === 'Placements' || p.category === 'Placements & Internships') {
         counts['Placements & Internships']++;
-      } else if (p.category === 'Campus Life' || p.category === 'Hostel' || p.category === 'Campus & Hostel') {
-        counts['Campus & Hostel']++;
+      } else if (p.category === 'Engineering Campus' || p.category === 'Campus Life') {
+        counts['Engineering Campus']++;
       }
     });
     return counts;

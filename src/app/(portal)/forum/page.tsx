@@ -4,7 +4,7 @@ import { forumStore } from '@/modules/forum/forum-service';
 
 export const metadata: Metadata = {
   title: 'Discussions & Academic Q&A | SanakaHub SETGOI',
-  description: 'Categorized campus discussion board for SETGOI Durgapur: MAKAUT academic queries, TechFest 2026 tracks, placements, hostel updates, and verified Official Faculty Answers.',
+  description: 'Categorized campus discussion board for SETGOI Durgapur: MAKAUT academic queries, TechFest 2026 tracks, placements, engineering lab updates, and verified Official Faculty Answers.',
 };
 
 interface ForumPageProps {

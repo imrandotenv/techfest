@@ -117,13 +117,13 @@ export function DarkBentoSection() {
                   <span className="text-[#2563EB] font-semibold">Buses Ready</span>
                 </div>
                 <div className="flex items-center justify-between text-[#52525B]">
-                  <span>Zone C • Sanaka Hospital &amp; Labs</span>
+                  <span>Zone C • Advanced B.Tech Labs &amp; Workshops</span>
                   <span className="text-[#52525B]">24/7 SOS</span>
                 </div>
               </div>
 
               <p className="mt-3.5 text-xs text-[#52525B] leading-relaxed font-sans">
-                Explore the entire Malandighi campus in full 3D. Locate faculty chambers, exam venues, hostel cafeterias, and bus routes in seconds.
+                Explore the entire Malandighi campus in full 3D. Locate faculty chambers, exam venues, engineering workshops, and bus routes in seconds.
               </p>
             </div>
 

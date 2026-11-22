@@ -4,7 +4,7 @@ export * from './components/CampusHeader';
 export * from './components/CampusVisualizer3D';
 export * from './components/DepartmentDirectory';
 export * from './components/FacultyDirectory';
-export * from './components/HostelDirectory';
+export * from './components/EngineeringLabDirectory';
 export * from './components/BusTimingsDirectory';
 export * from './components/EmergencySosSection';
 export * from './components/CampusDirectoryView';

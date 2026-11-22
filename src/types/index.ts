@@ -34,21 +34,14 @@ export interface FacultyMember {
   researchInterests: string[];
 }
 
-export interface HostelInfo {
+export interface EngineeringLabInfo {
   id: string;
   name: string;
-  gender: 'Boys' | 'Girls';
-  wardenName: string;
-  wardenContact: string;
-  capacity: number;
-  curfewTime: string;
-  messTimings: {
-    breakfast: string;
-    lunch: string;
-    snacks: string;
-    dinner: string;
-  };
-  rules: string[];
+  department: string;
+  inCharge: string;
+  contact: string;
+  roomNumber: string;
+  equipment: string[];
 }
 
 export interface BusStop {
@@ -117,7 +110,7 @@ export interface NoteItem {
 // ----------------------------------------------------
 // DISCUSSION FORUM TYPES
 // ----------------------------------------------------
-export type ForumCategory = 'Academic' | 'TechFest' | 'Campus Life' | 'Placements' | 'Hostel';
+export type ForumCategory = 'Academic' | 'TechFest' | 'Campus Life' | 'Placements' | 'Engineering Campus';
 
 export interface ForumReply {
   id: string;

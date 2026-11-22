@@ -53,10 +53,9 @@ export function ForumPostCard({
       case 'Placements':
       case 'Placements & Internships':
         return 'Placements';
+      case 'Engineering Campus':
       case 'Campus Life':
-      case 'Hostel':
-      case 'Campus & Hostel':
-        return 'Campus & Hostel';
+        return 'Engineering Campus';
       default:
         return post.category;
     }

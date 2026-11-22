@@ -380,7 +380,7 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
     const burgundyMat = new THREE.MeshStandardMaterial({ color: '#702D3B', roughness: 0.8 });
     const libraryMat = new THREE.MeshStandardMaterial({ color: '#3E6B89', roughness: 0.8 });
     const workshopMat = new THREE.MeshStandardMaterial({ color: '#606C38', roughness: 0.85 });
-    const pharmacyMat = new THREE.MeshStandardMaterial({ color: '#2A9D8F', roughness: 0.8 });
+    const civilLabMat = new THREE.MeshStandardMaterial({ color: '#3A506B', roughness: 0.8 });
 
     // Road builder helper
     const addRoad = (x: number, z: number, w: number, d: number) => {
@@ -629,36 +629,36 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
     zoneGroups.push(parkingGroup);
     meshesMap.set('zone-parking', parkingGroup);
 
-    // 4. ARYABHATTA HALL OF RESIDENCE (Boys Hostel)
-    const boysHostelGroup = new THREE.Group();
-    boysHostelGroup.userData = { zoneId: 'zone-hostel-boys', slug: 'aryabhatta-hostel' };
-    addBoxMesh(boysHostelGroup, 18, 9, 14, -28, 4.5, -15, burgundyMat);
-    addBoxMesh(boysHostelGroup, 19, 0.35, 15, -28, 9.2, -15, stoneWallMat); // roof trim
+    // 4. CENTRAL COMPUTING & ADVANCED IT LAB WING
+    const computingGroup = new THREE.Group();
+    computingGroup.userData = { zoneId: 'zone-computing-wing', slug: 'computing-wing' };
+    addBoxMesh(computingGroup, 18, 9, 14, -28, 4.5, -15, blueTrimMat);
+    addBoxMesh(computingGroup, 19, 0.35, 15, -28, 9.2, -15, stoneWallMat); // roof trim
     // Windows
     for (let row = 1; row <= 3; row++) {
       const wy = row * 2.5;
       for (let wx = -34; wx <= -22; wx += 2.8) {
-        addBoxMesh(boysHostelGroup, 1.2, 1.3, 0.1, wx, wy, -7.9, glassMat);
+        addBoxMesh(computingGroup, 1.2, 1.3, 0.1, wx, wy, -7.9, glassMat);
       }
     }
-    scene.add(boysHostelGroup);
-    zoneGroups.push(boysHostelGroup);
-    meshesMap.set('zone-hostel-boys', boysHostelGroup);
+    scene.add(computingGroup);
+    zoneGroups.push(computingGroup);
+    meshesMap.set('zone-computing-wing', computingGroup);
 
-    // 5. KALPANA CHAWLA HALL OF RESIDENCE (Girls Hostel)
-    const girlsHostelGroup = new THREE.Group();
-    girlsHostelGroup.userData = { zoneId: 'zone-hostel-girls', slug: 'kalpana-chawla-hostel' };
-    addBoxMesh(girlsHostelGroup, 18, 9, 14, 28, 4.5, -15, burgundyMat);
-    addBoxMesh(girlsHostelGroup, 19, 0.35, 15, 28, 9.2, -15, stoneWallMat);
+    // 5. ELECTRICAL & EMBEDDED RESEARCH COMPLEX
+    const electricalGroup = new THREE.Group();
+    electricalGroup.userData = { zoneId: 'zone-electrical-wing', slug: 'electrical-wing' };
+    addBoxMesh(electricalGroup, 18, 9, 14, 28, 4.5, -15, blueTrimMat);
+    addBoxMesh(electricalGroup, 19, 0.35, 15, 28, 9.2, -15, stoneWallMat);
     for (let row = 1; row <= 3; row++) {
       const wy = row * 2.5;
       for (let wx = 22; wx <= 34; wx += 2.8) {
-        addBoxMesh(girlsHostelGroup, 1.2, 1.3, 0.1, wx, wy, -7.9, glassMat);
+        addBoxMesh(electricalGroup, 1.2, 1.3, 0.1, wx, wy, -7.9, glassMat);
       }
     }
-    scene.add(girlsHostelGroup);
-    zoneGroups.push(girlsHostelGroup);
-    meshesMap.set('zone-hostel-girls', girlsHostelGroup);
+    scene.add(electricalGroup);
+    zoneGroups.push(electricalGroup);
+    meshesMap.set('zone-electrical-wing', electricalGroup);
 
     // 6. CENTRAL LIBRARY & AUDITORIUM COMPLEX
     const libraryGroup = new THREE.Group();
@@ -682,20 +682,20 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
     zoneGroups.push(workshopGroup);
     meshesMap.set('zone-workshops', workshopGroup);
 
-    // 8. SANAKA INSTITUTE OF PHARMACY (West Block)
-    const pharmacyGroup = new THREE.Group();
-    pharmacyGroup.userData = { zoneId: 'zone-pharmacy', slug: 'pharmacy-block' };
-    addBoxMesh(pharmacyGroup, 16, 10, 14, -16, 5, -34, pharmacyMat);
-    addBoxMesh(pharmacyGroup, 17, 0.3, 15, -16, 10.15, -34, stoneWallMat);
+    // 8. CIVIL & HEAVY TESTING LAB BLOCK (West Wing)
+    const civilGroup = new THREE.Group();
+    civilGroup.userData = { zoneId: 'zone-civil-wing', slug: 'civil-wing' };
+    addBoxMesh(civilGroup, 16, 10, 14, -16, 5, -34, civilLabMat);
+    addBoxMesh(civilGroup, 17, 0.3, 15, -16, 10.15, -34, stoneWallMat);
     for (let r = 1; r <= 3; r++) {
       const wy = r * 2.8;
       for (let wx = -22; wx <= -10; wx += 3) {
-        addBoxMesh(pharmacyGroup, 1.4, 1.4, 0.1, wx, wy, -26.9, glassMat);
+        addBoxMesh(civilGroup, 1.4, 1.4, 0.1, wx, wy, -26.9, glassMat);
       }
     }
-    scene.add(pharmacyGroup);
-    zoneGroups.push(pharmacyGroup);
-    meshesMap.set('zone-pharmacy', pharmacyGroup);
+    scene.add(civilGroup);
+    zoneGroups.push(civilGroup);
+    meshesMap.set('zone-civil-wing', civilGroup);
 
     buildingMeshesRef.current = meshesMap;
 

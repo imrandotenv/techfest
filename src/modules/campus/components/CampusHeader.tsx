@@ -6,7 +6,7 @@ import {
   PhoneCall, 
   ShieldAlert, 
   Bus, 
-  Home, 
+  FlaskConical, 
   Users, 
   Compass, 
   MapPin
@@ -19,7 +19,8 @@ interface CampusHeaderProps {
   stats: {
     departmentsCount: number;
     facultyCount: number;
-    hostelsCount: number;
+    hostelsCount?: number;
+    labsCount?: number;
     busRoutesCount: number;
   };
 }

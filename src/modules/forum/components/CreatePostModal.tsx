@@ -22,7 +22,7 @@ interface CreatePostModalProps {
   }) => void;
 }
 
-const SUGGESTED_TAGS = ['PCC-CS301', 'MAKAUT', 'TechFest2026', 'Placements', 'CA2', 'Hostel'];
+const SUGGESTED_TAGS = ['PCC-CS301', 'MAKAUT', 'TechFest2026', 'Placements', 'CA2', 'BTechLabs'];
 
 export function CreatePostModal({
   isOpen,

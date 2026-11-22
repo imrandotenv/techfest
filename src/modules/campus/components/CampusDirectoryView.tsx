@@ -16,12 +16,13 @@ import {
   ArrowUpRight,
   PhoneCall,
   Maximize2,
-  X
+  X,
+  FlaskConical
 } from 'lucide-react';
 import { 
   DEPARTMENTS, 
   ALL_FACULTY, 
-  HOSTELS, 
+  ENGINEERING_LABS, 
   BUS_ROUTES, 
   EMERGENCY_CONTACTS, 
   EXTENDED_CAMPUS_ZONES 
@@ -31,9 +32,9 @@ import { CampusHeader } from './CampusHeader';
 import { CampusVisualizer3D } from './CampusVisualizer3D';
 import { DepartmentDirectory } from './DepartmentDirectory';
 import { FacultyDirectory } from './FacultyDirectory';
-import { HostelDirectory } from './HostelDirectory';
 import { BusTimingsDirectory } from './BusTimingsDirectory';
 import { EmergencySosSection } from './EmergencySosSection';
+import { EngineeringLabDirectory } from './EngineeringLabDirectory';
 import { CampusDetailDrawer, CampusDrawerType } from './CampusDetailDrawer';
 
 export function CampusDirectoryView() {
@@ -88,20 +89,21 @@ export function CampusDirectoryView() {
       }
     });
 
-    // Search Hostels
-    HOSTELS.forEach((h) => {
+    // Search Engineering Labs
+    ENGINEERING_LABS.forEach((lab) => {
       if (
-        h.name.toLowerCase().includes(q) ||
-        h.gender.toLowerCase().includes(q) ||
-        h.wardenName.toLowerCase().includes(q)
+        lab.name.toLowerCase().includes(q) ||
+        lab.department.toLowerCase().includes(q) ||
+        lab.roomNumber.toLowerCase().includes(q) ||
+        lab.equipment.some((eq) => eq.toLowerCase().includes(q))
       ) {
         results.push({
-          id: h.id,
-          title: h.name,
-          subtitle: `Warden: ${h.wardenName} • Curfew: ${h.curfewTime}`,
-          category: 'Hostel',
-          badge: `${h.gender} Hall`,
-          targetTab: 'hostels',
+          id: lab.id,
+          title: lab.name,
+          subtitle: `${lab.department} • ${lab.roomNumber}`,
+          category: 'Engineering Lab',
+          badge: 'B.Tech Lab',
+          targetTab: 'labs',
         });
       }
     });
@@ -188,7 +190,7 @@ export function CampusDirectoryView() {
         stats={{
           departmentsCount: DEPARTMENTS.length,
           facultyCount: ALL_FACULTY.length,
-          hostelsCount: HOSTELS.length,
+          hostelsCount: ENGINEERING_LABS.length,
           busRoutesCount: BUS_ROUTES.length,
         }}
       />
@@ -203,7 +205,7 @@ export function CampusDirectoryView() {
               type="text"
               value={globalSearch}
               onChange={(e) => setGlobalSearch(e.target.value)}
-              placeholder="Universal Campus Search: type faculty, department code, bus stop, hostel, or emergency..."
+              placeholder="Universal Campus Search: type faculty, department code, bus stop, engineering lab, or emergency..."
               className="w-full text-xs sm:text-sm bg-transparent border-none text-[#0F172A] placeholder-[#475569]/60 focus:outline-hidden font-sans"
             />
             {globalSearch && (
@@ -378,29 +380,29 @@ export function CampusDirectoryView() {
                   </div>
                 </div>
 
-                {/* 3. Hostels & Mess Timings */}
+                {/* 3. B.Tech Engineering Labs & Workshops */}
                 <div 
-                  onClick={() => setActiveDrawer('hostels')}
+                  onClick={() => setActiveDrawer('labs')}
                   className="group bg-white border border-[#E4E4E7] hover:border-[#2563EB]/40 rounded-xl p-5 shadow-xs flex flex-col justify-between transition-all cursor-pointer h-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
                       <span className="p-2 rounded-lg bg-zinc-100 group-hover:bg-blue-50 group-hover:text-[#2563EB] border border-[#E4E4E7] text-[#09090B] transition-colors">
-                        <Home className="w-4 h-4" />
+                        <FlaskConical className="w-4 h-4" />
                       </span>
                       <span className="text-xs font-mono font-semibold text-[#09090B] bg-zinc-50 px-2 py-0.5 rounded border border-[#E4E4E7]">
-                        {HOSTELS.length} Halls
+                        {ENGINEERING_LABS.length} Labs
                       </span>
                     </div>
                     <h4 className="text-base font-semibold text-[#09090B] mb-1 font-display group-hover:text-[#2563EB] transition-colors">
-                      Hostels &amp; Mess Timings
+                      Engineering Labs &amp; Workshops
                     </h4>
                     <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
-                      Aryabhatta (Boys) &amp; Kalpana Chawla (Girls) halls, biometric curfews, warden numbers, and meal tables.
+                      Advanced computing hubs, IoT testbeds, electrical motor bays, CAD/CAM mechanical workshop, and geotech lab.
                     </p>
                   </div>
                   <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-[#2563EB] pt-3 border-t border-[#E4E4E7]">
-                    <span>View Hostel &amp; Mess Rules</span>
+                    <span>View All Engineering Labs</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
@@ -450,7 +452,7 @@ export function CampusDirectoryView() {
                       Emergency SOS &amp; Security
                     </h4>
                     <p className="text-xs text-[#52525B] leading-relaxed mb-4 font-sans">
-                      Campus Medical Centre ambulance (+91 94340 00001), Main Gate Security (+91 94340 00002), and hospital link.
+                      Campus First-Aid &amp; Emergency Response (+91 94340 00001), Main Gate Security (+91 94340 00002), and 24/7 control room.
                     </p>
                   </div>
                   <div className="inline-flex items-center justify-between text-xs font-mono font-medium text-rose-600 pt-3 border-t border-rose-100">
@@ -511,9 +513,9 @@ export function CampusDirectoryView() {
           </div>
         )}
 
-        {activeTab === 'hostel-bus' && (
+        {activeTab === 'labs' && (
           <div className="space-y-10">
-            <HostelDirectory hostels={HOSTELS} />
+            <EngineeringLabDirectory labs={ENGINEERING_LABS} />
             <div className="pt-6 border-t border-[#E2E8F0]">
               <BusTimingsDirectory busRoutes={BUS_ROUTES} />
             </div>
@@ -530,10 +532,6 @@ export function CampusDirectoryView() {
             selectedDepartmentCode={selectedDeptForFaculty}
             onClearDepartmentFilter={() => setSelectedDeptForFaculty(undefined)}
           />
-        )}
-
-        {activeTab === 'hostels' && (
-          <HostelDirectory hostels={HOSTELS} />
         )}
 
         {activeTab === 'buses' && (

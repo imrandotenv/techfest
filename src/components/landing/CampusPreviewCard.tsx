@@ -46,7 +46,7 @@ export function CampusPreviewCard() {
               SETGOI Spatial Map
             </h4>
             <p className="text-xs text-zinc-500">
-              Academic blocks, lab wings, hostel routes & bus bays
+              Engineering academic blocks, lab complexes &amp; shuttle bays
             </p>
           </div>
           <div className="w-8 h-8 rounded-lg bg-white border border-zinc-200/80 shadow-2xs flex items-center justify-center text-zinc-700 group-hover:text-blue-600 group-hover:border-blue-200 transition-all shrink-0">

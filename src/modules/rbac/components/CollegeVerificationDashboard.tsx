@@ -69,7 +69,7 @@ export function CollegeVerificationDashboard({
     title: '',
     content: '',
     department: 'All Departments',
-    category: 'Academic' as 'Examination' | 'Academic' | 'Hostel' | 'Transit' | 'Administration',
+    category: 'Academic' as 'Examination' | 'Academic' | 'Laboratories' | 'Transit' | 'Administration',
     priority: 'high' as 'low' | 'medium' | 'high' | 'urgent',
   });
   const [noticeSubmitting, setNoticeSubmitting] = useState(false);
@@ -728,7 +728,7 @@ export function CollegeVerificationDashboard({
                   <option value="CE">CE</option>
                   <option value="EE">EE</option>
                   <option value="Transport">Transport</option>
-                  <option value="Hostel">Hostel</option>
+                  <option value="Laboratories">Engineering Labs</option>
                 </select>
               </div>
 
@@ -743,7 +743,7 @@ export function CollegeVerificationDashboard({
                 >
                   <option value="Academic">Academic</option>
                   <option value="Examination">Examination</option>
-                  <option value="Hostel">Hostel</option>
+                  <option value="Laboratories">Laboratories</option>
                   <option value="Transit">Transit</option>
                   <option value="Administration">Administration</option>
                 </select>

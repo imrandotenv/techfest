@@ -26,7 +26,7 @@ I can help you with:
 - **MAKAUT Exam Schedules & CA/PCA dates**
 - **Syllabus details & subject codes** (e.g. \`PCC-CS301\`, \`ESC301\`)
 - **SGPA, YGPA, and MAKAUT percentage formulas**
-- **SETGOI Campus bus timings & hostel curfew regulations**
+- **SETGOI Campus shuttle timings & B.Tech laboratory operating schedules**
 - **TechFest 2026 events & pass registrations**
 
 What would you like to check today?`,
@@ -44,7 +44,7 @@ What would you like to check today?`,
     'When are CA1 & Theory exams scheduled?',
     'Raniganj to SETGOI bus timings',
     'How do I calculate MAKAUT YGPA and percentage?',
-    'Hostel mess and curfew timings',
+    'B.Tech laboratory and library operating hours',
     'TechFest 2026 hackathon details',
   ];
 
@@ -169,7 +169,7 @@ What would you like to check today?`,
             </h2>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
-            Grounded in official MAKAUT 2026–27 curriculum, SETGOI bus routes, hostel rules, and student utilities. Real-time streaming powered by <code className="font-mono text-zinc-700">@google/genai</code>.
+            Grounded in official MAKAUT 2026–27 curriculum, SETGOI bus routes, engineering lab facilities, and student utilities. Real-time streaming powered by <code className="font-mono text-zinc-700">@google/genai</code>.
           </p>
         </div>
 

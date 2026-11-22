@@ -434,7 +434,6 @@ export function TechFestBoard() {
                     <option value="EE">EE (Electrical Engg)</option>
                     <option value="ME">ME (Mechanical Engg)</option>
                     <option value="CE">CE (Civil Engg)</option>
-                    <option value="PHARM">Pharmacy</option>
                   </select>
                 </div>
 

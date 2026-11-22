@@ -1,7 +1,7 @@
 import {
   Department,
   FacultyMember,
-  HostelInfo,
+  EngineeringLabInfo,
   BusRoute,
   EmergencyContact,
   CampusZone,
@@ -71,17 +71,6 @@ export const DEPARTMENTS: Department[] = [
     locationBuilding: 'Main College Building (Ground Level)',
     establishedYear: 2010,
   },
-  {
-    id: 'dept-pharm',
-    name: 'Sanaka Institute of Pharmacy',
-    code: 'PHARM',
-    hodName: 'Dr. Prosenjit Das',
-    hodEmail: 'principal.pharmacy@setgoi.ac.in',
-    description: 'PCI-approved pharmaceutical research, pharmacology, medicinal chemistry, and pharmacognosy.',
-    intakeCapacity: 100,
-    locationBuilding: 'Pharmacy Block West',
-    establishedYear: 2015,
-  },
 ];
 
 export const FACULTY_MEMBERS: FacultyMember[] = [
@@ -128,50 +117,55 @@ export const FACULTY_MEMBERS: FacultyMember[] = [
   },
 ];
 
-export const HOSTELS: HostelInfo[] = [
+export const ENGINEERING_LABS: EngineeringLabInfo[] = [
   {
-    id: 'hostel-boys-1',
-    name: 'Aryabhatta Hall of Residence',
-    gender: 'Boys',
-    wardenName: 'Prof. S. Banerjee',
-    wardenContact: '+91 94340 44551',
-    capacity: 320,
-    curfewTime: '9:30 PM',
-    messTimings: {
-      breakfast: '7:30 AM – 9:00 AM',
-      lunch: '12:30 PM – 2:30 PM',
-      snacks: '5:30 PM – 6:30 PM',
-      dinner: '8:00 PM – 9:45 PM',
-    },
-    rules: [
-      'Biometric entry strictly recorded at the main gate before 9:30 PM.',
-      'Night-out passes must be approved by the warden via the portal 24 hours prior.',
-      'Zero tolerance for ragging — offenders subject to immediate MAKAUT disciplinary suspension.',
-      'High-wattage appliances (immersion rods, heaters) prohibited in rooms.',
-    ],
+    id: 'lab-cse-ai',
+    name: 'Advanced Computing & AI Research Laboratory',
+    department: 'Computer Science & Engineering',
+    inCharge: 'Dr. Sourav Sengupta',
+    contact: '+91 94340 12301',
+    roomNumber: 'Room 312, Academic Core (Level 3)',
+    equipment: ['NVIDIA RTX GPU Workstations', 'High-Speed Gigabit LAN', 'Linux Server Rack', 'Ubuntu 24.04 LTS'],
   },
   {
-    id: 'hostel-girls-1',
-    name: 'Kalpana Chawla Hall of Residence',
-    gender: 'Girls',
-    wardenName: 'Dr. Arpita Mukherjee',
-    wardenContact: '+91 94340 44552',
-    capacity: 250,
-    curfewTime: '7:30 PM',
-    messTimings: {
-      breakfast: '7:30 AM – 9:00 AM',
-      lunch: '12:30 PM – 2:30 PM',
-      snacks: '5:00 PM – 6:15 PM',
-      dinner: '8:00 PM – 9:30 PM',
-    },
-    rules: [
-      'Strict campus entry check at 7:30 PM with hostel matron attendance log.',
-      'Visitors permitted only in the ground-floor visitor lounge on weekends (4 PM – 6 PM).',
-      'Quiet study hours observed from 10:00 PM onwards in all residential corridors.',
-      'Medical emergencies must be signaled immediately to the resident hostel nurse.',
-    ],
+    id: 'lab-ece-iot',
+    name: 'Embedded Systems & IoT Hardware Lab',
+    department: 'Electronics & Communication Engineering',
+    inCharge: 'Dr. Debabrata Roy',
+    contact: '+91 94340 12302',
+    roomNumber: 'Room 214, Academic Core (Level 2)',
+    equipment: ['ARM Cortex-M4 Kits', 'Digital Storage Oscilloscopes (100MHz)', 'FPGA Development Boards', 'IoT Sensor Nodes'],
+  },
+  {
+    id: 'lab-ee-power',
+    name: 'Electrical Machines & Power Systems Lab',
+    department: 'Electrical Engineering',
+    inCharge: 'Prof. Anirban Mukherjee',
+    contact: '+91 94340 12303',
+    roomNumber: 'Ground Floor, Electrical Wing',
+    equipment: ['DC Shunt & Series Motor-Generators', '3-Phase Alternator Sets', 'Transformers & Load Banks', 'Power Quality Analyzers'],
+  },
+  {
+    id: 'lab-me-cad',
+    name: 'CAD/CAM & CNC Manufacturing Workshop',
+    department: 'Mechanical Engineering',
+    inCharge: 'Dr. Subhashish Ghosh',
+    contact: '+91 94340 12304',
+    roomNumber: 'Central Mechanical Workshop Block',
+    equipment: ['CNC Lathe & Milling Centre', 'SolidWorks / AutoCAD Stations', 'Universal Testing Machine (1000kN)', 'Hydraulic Test Bench'],
+  },
+  {
+    id: 'lab-ce-geotech',
+    name: 'Geotechnical & Structural Testing Lab',
+    department: 'Civil Engineering',
+    inCharge: 'Prof. Kaushik Chatterjee',
+    contact: '+91 94340 12305',
+    roomNumber: 'Civil Heavy Structures Bay, Ground Level',
+    equipment: ['Triaxial Shear Apparatus', 'Direct Shear Machine', 'Compression Testing Machine', 'Total Station Survey Equipment'],
   },
 ];
+
+export const HOSTELS: any[] = [];
 
 export const BUS_ROUTES: BusRoute[] = [
   {
@@ -209,11 +203,11 @@ export const BUS_ROUTES: BusRoute[] = [
 export const EMERGENCY_CONTACTS: EmergencyContact[] = [
   {
     id: 'em-1',
-    service: 'Campus Medical Centre & Ambulance',
-    department: 'Healthcare Services',
+    service: 'Campus First-Aid Centre & Ambulance',
+    department: 'First-Aid & Emergency Response',
     phone: '+91 94340 00001',
     availableHours: '24 Hours / 7 Days',
-    location: 'Ground Floor, Pharmacy Complex',
+    location: 'Ground Floor, Main Administration Complex',
   },
   {
     id: 'em-2',

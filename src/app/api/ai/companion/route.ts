@@ -20,13 +20,13 @@ Your responsibilities:
      * Route 1: Asansol Station (07:15 AM) -> Raniganj (07:40 AM) -> Andal (08:05 AM) -> SETGOI Campus (08:45 AM).
      * Route 2: Durgapur Railway Station (07:45 AM) -> City Centre (08:05 AM) -> Muchipara (08:20 AM) -> SETGOI Campus (08:45 AM).
      * Evening Return buses depart SETGOI at 04:45 PM.
-   - Hostel Rules & Timings:
-     * Boys Hostel (Aryabhatta Hall): Curfew 08:30 PM.
-     * Girls Hostel (Gargi Hall): Curfew 07:30 PM.
-     * Mess Timings: Breakfast (07:30 - 09:00 AM), Lunch (12:30 - 02:30 PM), Snacks (05:30 - 06:30 PM), Dinner (08:00 - 09:30 PM).
+   - B.Tech Engineering Laboratories:
+     * Central Computing & AI Lab: Mon–Fri: 09:00 AM – 06:00 PM (extended till 02:00 AM for TechFest hackathons).
+     * Embedded Systems & VLSI Lab: Mon–Fri: 09:30 AM – 05:30 PM.
+     * Central Mechanical Workshop: Mon–Sat: 09:00 AM – 05:00 PM.
    - Emergency & SOS:
-     * Campus Medical Unit & Ambulance: +91 94340 12399 (24/7).
-     * Anti-Ragging Helpline: 1800-180-5522 / +91 94340 12390.
+     * Campus First-Aid Unit & Ambulance: 0343-275-5555 / +91 94340 00001 (24/7).
+     * Anti-Ragging Helpline: 1800-180-5522.
 
 3. TECHFEST 2026:
    - Dates: 26 Nov 2026 (Innovation & Code Sprint Hackathon) and 27-28 Nov 2026 (Cultural Fiesta).
@@ -78,20 +78,17 @@ SETGOI runs dedicated student & faculty transport across the industrial belt:
 - **Return Buses:** Depart the SETGOI campus bus bay promptly at **04:45 PM** every weekday.`;
   }
 
-  if (p.includes('hostel') || p.includes('curfew') || p.includes('mess') || p.includes('food') || p.includes('warden')) {
-    return `### 🏢 SETGOI Hostel Regulations & Mess Timings
+  if (p.includes('lab') || p.includes('workshop') || p.includes('computing') || p.includes('hardware') || p.includes('timing')) {
+    return `### 🔬 SETGOI B.Tech Laboratories & Workshop Operating Schedule
 
-**Hostel Curfew Timings:**
-- **Girls Hostel (Gargi Hall):** Curfew is strictly **07:30 PM**. Biometric attendance is taken at the gate. Warden: Mrs. Ananya Banerjee (+91 94340 12382).
-- **Boys Hostel (Aryabhatta Hall):** Curfew is **08:30 PM**. Warden: Mr. Bikash Chandra Pal (+91 94340 12381).
+**Engineering Laboratories:**
+- **Central Computing & AI Lab (Room 312, Level 3):** Mon–Fri: 09:00 AM – 06:00 PM. High-speed gigabit LAN and GPU workstations.
+- **Embedded Systems & IoT Lab (Room 214, Level 2):** Mon–Fri: 09:30 AM – 05:30 PM. ARM Cortex kits and 100MHz DSOs.
+- **Electrical Machines & Power Systems Lab (Ground Level):** Mon–Fri: 09:30 AM – 05:00 PM.
+- **Central Mechanical Workshop & CAD/CAM Center:** Mon–Sat: 09:00 AM – 05:00 PM. CNC lathe, milling, and 3D printing bay.
+- **Civil Engineering Geotechnical & Structures Bay:** Mon–Fri: 09:30 AM – 04:30 PM.
 
-**Daily Mess Timings:**
-- **Breakfast:** 07:30 AM – 09:00 AM
-- **Lunch:** 12:30 PM – 02:30 PM
-- **Evening Tea & Snacks:** 05:30 PM – 06:30 PM
-- **Dinner:** 08:00 PM – 09:30 PM
-
-*Note: Overnight night-out passes must be submitted to the Hostel Warden Office by 03:00 PM with parental verification.*`;
+*Note: Special evening and night lab passes for hackathon participants are issued by the Directorate of Labs & Student Welfare.*`;
   }
 
   if (p.includes('calculate') || p.includes('sgpa') || p.includes('cgpa') || p.includes('ygpa') || p.includes('formula') || p.includes('percentage')) {
@@ -132,13 +129,13 @@ MAKAUT follows the Choice Based Credit System (CBCS):
 I am here to assist SETGOI students with:
 - **MAKAUT Curriculum & Notes:** Subject codes (e.g. \`PCC-CS301\`, \`ESC301\`), credit weights, and PYQ solutions.
 - **Calculators:** Step-by-step guidance on calculating your SGPA, YGPA, and MAKAUT percentage using $(CGPA - 0.75) \\times 10$.
-- **Campus Facilities:** Bus routes from Asansol/Raniganj/Durgapur, hostel curfew and mess timings, and emergency contacts.
+- **Campus Facilities:** Bus routes from Asansol/Raniganj/Durgapur, B.Tech laboratory operating schedules, and emergency contacts.
 - **Academic Schedule:** CA1–CA4 deadlines, practical viva dates, and university theory examination windows.
 
 Feel free to ask a specific question like:
 * *"When are CA1 exams scheduled?"*
 * *"What is the bus schedule from Raniganj to campus?"*
-* *"What are the hostel curfew and mess timings?"*
+* *"What are the engineering lab and library operating hours?"*
 * *"How do I calculate my YGPA?"*`;
 }
 

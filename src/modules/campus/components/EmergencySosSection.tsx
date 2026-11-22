@@ -32,12 +32,12 @@ export function EmergencySosSection({ emergencyContacts }: EmergencySosSectionPr
               SETGOI Emergency SOS & Crisis Response Hotlines
             </h2>
             <p className="text-xs text-red-800/90 mt-0.5 leading-relaxed">
-              Immediate 24/7 assistance for medical distress, campus security, anti-ragging intervention, and student safety.
+              Immediate 24/7 assistance for first-aid emergencies, campus security, anti-ragging intervention, and student safety.
             </p>
           </div>
         </div>
 
-        {/* Rapid Medical Dial */}
+        {/* Rapid Emergency Dial */}
         <a
           href="tel:+919434000001"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold transition-colors shrink-0 shadow-xs"
@@ -50,8 +50,8 @@ export function EmergencySosSection({ emergencyContacts }: EmergencySosSectionPr
       {/* Grid of Emergency Services */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {emergencyContacts.map((contact) => {
-          const isMedical = contact.id === 'em-1';
-          const isSecurity = contact.id === 'em-2';
+          const isEmergencyHealth = contact.id === 'em-1' || contact.id === 'sos-first-aid';
+          const isSecurity = contact.id === 'em-2' || contact.id === 'sos-security';
           const isAntiRagging = contact.id === 'em-3';
           const isWomenCell = contact.id === 'em-4';
 
@@ -66,7 +66,7 @@ export function EmergencySosSection({ emergencyContacts }: EmergencySosSectionPr
                   <div className="flex items-center gap-2">
                     <span
                       className={`w-2.5 h-2.5 rounded-full ${
-                        isMedical
+                        isEmergencyHealth
                           ? 'bg-red-500 animate-pulse'
                           : isSecurity
                           ? 'bg-amber-500'
@@ -110,7 +110,7 @@ export function EmergencySosSection({ emergencyContacts }: EmergencySosSectionPr
                 <a
                   href={`tel:${contact.phone.replace(/[^0-9+]/g, '')}`}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-medium transition-colors border ${
-                    isMedical
+                    isEmergencyHealth
                       ? 'bg-red-600 hover:bg-red-700 text-white border-red-600'
                       : 'bg-zinc-900 hover:bg-zinc-800 text-white border-zinc-900'
                   }`}
@@ -133,8 +133,8 @@ export function EmergencySosSection({ emergencyContacts }: EmergencySosSectionPr
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-zinc-600">
           <div className="p-3 bg-white border border-zinc-200 rounded">
-            <strong className="text-zinc-900 block font-semibold mb-1">Medical Emergencies</strong>
-            Dial the Campus Medical Centre directly. The on-campus ambulance is stationed at the Pharmacy Complex Ground Floor.
+            <strong className="text-zinc-900 block font-semibold mb-1">First-Aid & Health Emergencies</strong>
+            Dial the Campus First-Aid Centre directly. The on-campus ambulance is stationed at the Main Administrative Complex.
           </div>
           <div className="p-3 bg-white border border-zinc-200 rounded">
             <strong className="text-zinc-900 block font-semibold mb-1">Anti-Ragging Zero Tolerance</strong>
@@ -142,7 +142,7 @@ export function EmergencySosSection({ emergencyContacts }: EmergencySosSectionPr
           </div>
           <div className="p-3 bg-white border border-zinc-200 rounded">
             <strong className="text-zinc-900 block font-semibold mb-1">Night Perimeter Security</strong>
-            For escorts between hostel blocks and main library during late study hours, call the Chief Security Officer.
+            For campus security patrols and night transit assistance across engineering blocks, call the Chief Security Officer.
           </div>
         </div>
       </div>

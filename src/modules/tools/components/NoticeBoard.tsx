@@ -61,14 +61,14 @@ const DEFAULT_NOTICES: CampusNotice[] = [
   },
   {
     id: 'notice-04',
-    title: 'Aryabhatta Boys Hostel & Kalpana Chawla Mess Timetable Update',
+    title: 'Central Computing & IoT Engineering Labs Extended Access for TechFest 2026',
     content:
-      'Special dinner menu for TechFest weekend scheduled. Strict biometric reporting by 8:00 PM for all hostellers is enforced.',
-    department: 'Hostel',
-    category: 'Hostel',
+      'Night lab access approved for B.Tech project teams and hackathon participants in Central Computing Labs 304/305 with biometric logging.',
+    department: 'Laboratories',
+    category: 'Laboratories',
     priority: 'medium',
     postedById: 'usr-admin-01',
-    postedByName: 'Chief Hostel Warden',
+    postedByName: 'Director of Engineering Labs',
     postedByRole: 'admin',
     createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
   },
@@ -79,7 +79,7 @@ export function NoticeBoard({ initialNotices = DEFAULT_NOTICES }: NoticeBoardPro
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  const categories = ['ALL', 'Examination', 'Academic', 'Transit', 'Hostel', 'Administration'];
+  const categories = ['ALL', 'Examination', 'Academic', 'Transit', 'Laboratories', 'Administration'];
 
   const filteredNotices = notices.filter((n) => {
     const matchesSearch =
@@ -105,7 +105,7 @@ export function NoticeBoard({ initialNotices = DEFAULT_NOTICES }: NoticeBoardPro
             Campus Priority Notice Board
           </h2>
           <p className="text-xs text-zinc-500 mt-0.5">
-            Verified academic circulars, MAKAUT examination updates, hostel announcements, and transit bulletins.
+            Verified academic circulars, MAKAUT examination updates, laboratory circulars, and transit bulletins.
           </p>
         </div>
 

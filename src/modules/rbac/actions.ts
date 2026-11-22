@@ -409,7 +409,7 @@ export interface CampusNotice {
   title: string;
   content: string;
   department: string;
-  category: 'Examination' | 'Academic' | 'Hostel' | 'Transit' | 'Administration';
+  category: 'Examination' | 'Academic' | 'Laboratories' | 'Transit' | 'Administration';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   postedById: string;
   postedByName: string;
@@ -546,7 +546,7 @@ export async function postOfficialNoticeAction(params: {
   title: string;
   content: string;
   department: string;
-  category: 'Examination' | 'Academic' | 'Hostel' | 'Transit' | 'Administration';
+  category: 'Examination' | 'Academic' | 'Laboratories' | 'Transit' | 'Administration';
   priority: 'low' | 'medium' | 'high' | 'urgent';
 }) {
   const guard = await assertRoleGuard(['college', 'admin']);

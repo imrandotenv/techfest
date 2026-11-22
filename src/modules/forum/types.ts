@@ -7,12 +7,11 @@ export type ForumCategory =
   | 'Coding & DSA'
   | 'Labs & Viva'
   | 'Placements & Internships'
-  | 'Campus & Hostel'
+  | 'Engineering Campus'
   | 'Academic'
   | 'TechFest'
   | 'Campus Life'
-  | 'Placements'
-  | 'Hostel';
+  | 'Placements';
 
 export interface ForumReply {
   id: string;
@@ -92,9 +91,9 @@ export const FORUM_CATEGORIES: ForumCategoryMeta[] = [
     iconName: 'Briefcase',
   },
   {
-    id: 'Campus & Hostel',
-    label: 'Campus & Hostel',
-    description: 'College bus routes, library hours, hostel amenities, and campus life.',
+    id: 'Engineering Campus',
+    label: 'Engineering Campus',
+    description: 'College shuttle routes, Central Library, B.Tech workshops, and campus facilities.',
     badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
     iconName: 'Building2',
   },

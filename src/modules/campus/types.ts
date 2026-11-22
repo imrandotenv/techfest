@@ -1,7 +1,7 @@
 import {
   Department,
   FacultyMember,
-  HostelInfo,
+  EngineeringLabInfo,
   BusRoute,
   EmergencyContact,
   CampusZone,
@@ -13,9 +13,8 @@ export type CampusTab =
   | 'overview' 
   | 'departments' 
   | 'faculty' 
-  | 'hostels' 
+  | 'labs' 
   | 'buses' 
-  | 'hostel-bus'
   | 'contacts'
   | 'emergency';
 
@@ -34,7 +33,7 @@ export interface UniversalSearchResult {
   id: string;
   title: string;
   subtitle: string;
-  category: 'Department' | 'Faculty' | 'Hostel' | 'Bus Stop' | 'Emergency SOS' | 'Campus Zone';
+  category: 'Department' | 'Faculty' | 'Engineering Lab' | 'Bus Stop' | 'Emergency SOS' | 'Campus Zone';
   badge: string;
   targetTab: CampusTab;
   actionPayload?: string;

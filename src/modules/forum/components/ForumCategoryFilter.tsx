@@ -28,12 +28,11 @@ export function ForumCategoryFilter({
         return GraduationCap;
       case 'TechFest':
         return Zap;
+      case 'Engineering Campus':
       case 'Campus Life':
         return Building2;
       case 'Placements':
         return Briefcase;
-      case 'Hostel':
-        return Home;
       default:
         return Layers;
     }

@@ -89,7 +89,7 @@ export function LandingFooter() {
               </li>
               <li>
                 <Link href="/campus" className="hover:text-zinc-950 transition-colors">
-                  Hostel & Cafeteria
+                  B.Tech Engineering Labs
                 </Link>
               </li>
             </ul>
