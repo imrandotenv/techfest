@@ -32,7 +32,7 @@ export default async function CollegeDashboardPage() {
   const isAuthorized = hasRole(user.role, ['college', 'admin']);
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-16">
+    <div className="min-h-screen bg-zinc-50 pt-16 md:pt-28 pb-28 md:pb-20">
       {/* Top Banner / Breadcrumb */}
       <div className="bg-white border-b border-zinc-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

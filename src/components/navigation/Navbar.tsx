@@ -1,2 +1,2 @@
-export { DesktopFloatingHeader as Navbar } from './DesktopFloatingHeader';
+export { FloatingNav as Navbar, FloatingNav } from '@/components/FloatingNav';
 export { DesktopFloatingHeader } from './DesktopFloatingHeader';

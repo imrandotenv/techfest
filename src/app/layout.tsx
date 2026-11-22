@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Navbar } from "@/components/navigation/Navbar";
+import { FloatingNav } from "@/components/FloatingNav";
 import { Footer } from "@/components/navigation/Footer";
 import "./globals.css";
 
@@ -66,7 +66,7 @@ export default function RootLayout({
           />
         </head>
         <body className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#09090B] selection:bg-[#2563EB] selection:text-white">
-          <Navbar />
+          <FloatingNav />
           <main className="flex-1 w-full">{children}</main>
           <Footer />
         </body>
