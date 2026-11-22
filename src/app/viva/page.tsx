@@ -165,6 +165,8 @@ export interface MessageItem {
   reaction?: string;
   explanation?: string;
   nextQuestion?: string;
+  spokenText?: string;
+  audioUrl?: string; // 0ms instantaneous replay blob URL
   isCorrect?: boolean | null;
   topicTag?: string;
   provider?: 'groq' | 'gemini' | 'simulation';
@@ -179,6 +181,9 @@ export default function VivaStudioPage() {
   const [subject, setSubject] = useState<VivaSubject>('DSA');
   const [language, setLanguage] = useState<VivaLanguage>('en');
   const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
+  const [voiceGender, setVoiceGender] = useState<'female' | 'male'>('female');
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [activeSpeakingMsgId, setActiveSpeakingMsgId] = useState<string | null>(null);
 
   // Active question being answered
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
@@ -213,6 +218,8 @@ export default function VivaStudioPage() {
   const audioAnalyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ttsAbortControllerRef = useRef<AbortController | null>(null);
+  const blobUrlsRef = useRef<Set<string>>(new Set());
 
   // Score stats
   const [scorecard, setScorecard] = useState({
@@ -248,14 +255,31 @@ export default function VivaStudioPage() {
     scrollToBottom();
   }, [messages, isEvaluating, scrollToBottom]);
 
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+      });
+      blobUrlsRef.current.clear();
+    };
+  }, []);
+
   const stopVoice = useCallback(() => {
     if (typeof window !== 'undefined') {
+      if (ttsAbortControllerRef.current) {
+        ttsAbortControllerRef.current.abort();
+        ttsAbortControllerRef.current = null;
+      }
       if (window.speechSynthesis) window.speechSynthesis.cancel();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
       setIsSpeaking(false);
+      setActiveSpeakingMsgId(null);
     }
   }, []);
 
@@ -264,7 +288,7 @@ export default function VivaStudioPage() {
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.02;
+    utterance.rate = playbackSpeed;
     utterance.pitch = 1.0;
 
     const voices = window.speechSynthesis.getVoices();
@@ -288,25 +312,40 @@ export default function VivaStudioPage() {
     }
 
     utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setActiveSpeakingMsgId(null);
+    };
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setActiveSpeakingMsgId(null);
+    };
 
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [playbackSpeed]);
 
-  // High-Quality Speech Player (Sarvam AI / Groq TTS with Neural Browser Fallback)
+  // High-Quality Speech Player (Microsoft Edge Azure Neural Voices + Sarvam AI + In-Memory Caching)
   const speakVoice = useCallback(
-    async (textToSpeak: string) => {
-      if (!isVoiceEnabled || typeof window === 'undefined') return;
+    async (textToSpeak: string, msgId?: string) => {
+      if (!isVoiceEnabled || typeof window === 'undefined' || !textToSpeak?.trim()) return;
 
-      // Stop any active speech
+      // Stop any active speech and cancel in-flight TTS fetches
       stopVoice();
+
+      const controller = new AbortController();
+      ttsAbortControllerRef.current = controller;
 
       try {
         const ttsRes = await fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: textToSpeak, language }),
+          body: JSON.stringify({
+            text: textToSpeak,
+            language,
+            gender: voiceGender,
+            speed: playbackSpeed,
+          }),
+          signal: controller.signal,
         });
 
         if (ttsRes.ok) {
@@ -314,16 +353,40 @@ export default function VivaStudioPage() {
           const cleanText = ttsData.cleanText || textToSpeak;
 
           if (ttsData.audio) {
-            const mime = ttsData.format === 'mp3' ? 'audio/mp3' : 'audio/wav';
-            const audioUrl = `data:${mime};base64,${ttsData.audio}`;
-            const audio = new Audio(audioUrl);
+            const mime = ttsData.format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
+            const byteCharacters = atob(ttsData.audio);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const audioBlob = new Blob([byteArray], { type: mime });
+            const blobUrl = URL.createObjectURL(audioBlob);
+            blobUrlsRef.current.add(blobUrl);
+
+            // Attach cached audioUrl to message for instant 0ms replay
+            if (msgId) {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === msgId ? { ...m, audioUrl: blobUrl } : m))
+              );
+            }
+
+            const audio = new Audio(blobUrl);
+            audio.playbackRate = playbackSpeed;
             audioRef.current = audio;
             setIsSpeaking(true);
-            audio.onended = () => setIsSpeaking(false);
+            if (msgId) setActiveSpeakingMsgId(msgId);
+
+            audio.onended = () => {
+              setIsSpeaking(false);
+              setActiveSpeakingMsgId(null);
+            };
             audio.onerror = () => {
               setIsSpeaking(false);
+              setActiveSpeakingMsgId(null);
               playBrowserSpeech(cleanText, language);
             };
+
             await audio.play();
             return;
           }
@@ -332,13 +395,57 @@ export default function VivaStudioPage() {
           playBrowserSpeech(cleanText, language);
           return;
         }
-      } catch (e) {
+      } catch (e: any) {
+        if (e.name === 'AbortError') return;
         console.warn('[TTS] Cloud audio playback skipped, falling back to browser speech:', e);
       }
 
       playBrowserSpeech(textToSpeak, language);
     },
-    [isVoiceEnabled, language, stopVoice, playBrowserSpeech]
+    [isVoiceEnabled, language, voiceGender, playbackSpeed, stopVoice, playBrowserSpeech]
+  );
+
+  // 0ms Instant Replay Handler via Cached Blob URL or Fallback
+  const handleReplayMessage = useCallback(
+    (msg: MessageItem) => {
+      stopVoice();
+
+      // If audio was already synthesized, replay cached blob URL instantly (0ms latency)
+      if (msg.audioUrl) {
+        const audio = new Audio(msg.audioUrl);
+        audio.playbackRate = playbackSpeed;
+        audioRef.current = audio;
+        setIsSpeaking(true);
+        setActiveSpeakingMsgId(msg.id);
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          setActiveSpeakingMsgId(null);
+        };
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          setActiveSpeakingMsgId(null);
+          const fallbackText = msg.spokenText || `${msg.reaction || ''} ${msg.explanation || ''}`;
+          speakVoice(fallbackText, msg.id);
+        };
+
+        audio.play().catch(() => {
+          const fallbackText = msg.spokenText || `${msg.reaction || ''} ${msg.explanation || ''}`;
+          speakVoice(fallbackText, msg.id);
+        });
+        return;
+      }
+
+      // Otherwise synthesize afresh
+      const script =
+        msg.spokenText ||
+        `${msg.reaction || ''} ${msg.explanation || ''} ${
+          msg.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + msg.nextQuestion : ''
+        }`.trim();
+
+      speakVoice(script, msg.id);
+    },
+    [playbackSpeed, stopVoice, speakVoice, language]
   );
 
   // Pick Initial Question and reset chat for subject/language
@@ -352,6 +459,10 @@ export default function VivaStudioPage() {
       setEmotion('idle');
       setActiveTopicTag(`${targetSubject} Core`);
 
+      const spoken = targetLang === 'hi'
+        ? `Namaste! ${SUBJECT_CATALOG[targetSubject].name} ka viva shuru karte hain. Pehla sawal: ${initialQ}`
+        : `Welcome to ${SUBJECT_CATALOG[targetSubject].name} viva. Your first question: ${initialQ}`;
+
       const welcomeMsg: MessageItem = {
         id: 'initial-' + Date.now(),
         role: 'assistant',
@@ -359,6 +470,7 @@ export default function VivaStudioPage() {
           ? `Namaste! Main hu Viva Buddy. ${SUBJECT_CATALOG[targetSubject].name} (${SUBJECT_CATALOG[targetSubject].code}) ka viva shuru karte hain. Pehla sawal ye raha:`
           : `Welcome to SETGOI Viva Voce for ${SUBJECT_CATALOG[targetSubject].name} (${SUBJECT_CATALOG[targetSubject].code}). Let us begin with your first question:`,
         nextQuestion: initialQ,
+        spokenText: spoken,
         topicTag: `${targetSubject} Intro`,
         isCorrect: null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -469,13 +581,15 @@ export default function VivaStudioPage() {
         }
 
         // Add examiner response to chat
+        const assistantMsgId = 'ast-' + Date.now();
         const assistantMsg: MessageItem = {
-          id: 'ast-' + Date.now(),
+          id: assistantMsgId,
           role: 'assistant',
           content: data.explanation,
           reaction: data.reaction,
           explanation: data.explanation,
           nextQuestion: data.nextQuestion,
+          spokenText: data.spokenText,
           isCorrect: data.isCorrect,
           topicTag: data.topicTag,
           provider: data.provider,
@@ -489,12 +603,14 @@ export default function VivaStudioPage() {
           setCurrentQuestion(data.nextQuestion);
         }
 
-        // Speak aloud if voice enabled
+        // Parallel speech synthesis: spokenText is punchy 2-3 sentences (<350ms TTS time)
         if (isVoiceEnabled) {
-          const voiceScript = `${data.reaction || ''} ${data.explanation || ''} ${
-            data.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + data.nextQuestion : ''
-          }`.trim();
-          speakVoice(voiceScript);
+          const voiceScript =
+            data.spokenText?.trim() ||
+            `${data.reaction || ''} ${data.explanation || ''} ${
+              data.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + data.nextQuestion : ''
+            }`.trim();
+          speakVoice(voiceScript, assistantMsgId);
         }
       } catch (err) {
         console.error('Viva submission failed:', err);
@@ -618,7 +734,14 @@ export default function VivaStudioPage() {
         }
       }
 
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recorderOptions: MediaRecorderOptions = {
+        audioBitsPerSecond: 32000,
+      };
+      if (mimeType) {
+        recorderOptions.mimeType = mimeType;
+      }
+
+      const recorder = new MediaRecorder(stream, recorderOptions);
       audioChunksRef.current = [];
 
       recorder.ondataavailable = (event) => {
@@ -845,6 +968,51 @@ export default function VivaStudioPage() {
             aria-label="Toggle voice output"
           >
             {isVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Neural Voice Persona Toggle (Neerja/Swara vs Prabhat/Madhur) */}
+          <div className="hidden sm:inline-flex items-center bg-zinc-100 p-0.5 rounded-lg border border-zinc-200 text-[11px] font-mono font-medium">
+            <button
+              onClick={() => setVoiceGender('female')}
+              className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                voiceGender === 'female'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-bold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+              title={language === 'hi' ? 'Azure Indian Neural: Swara' : 'Azure Indian Neural: Neerja'}
+            >
+              ♀ {language === 'hi' ? 'Swara' : 'Neerja'}
+            </button>
+            <button
+              onClick={() => setVoiceGender('male')}
+              className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                voiceGender === 'male'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-bold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+              title={language === 'hi' ? 'Azure Indian Neural: Madhur' : 'Azure Indian Neural: Prabhat'}
+            >
+              ♂ {language === 'hi' ? 'Madhur' : 'Prabhat'}
+            </button>
+          </div>
+
+          {/* Speed Toggle (1x vs 1.15x) */}
+          <button
+            onClick={() => {
+              const nextSpeed = playbackSpeed === 1.0 ? 1.15 : 1.0;
+              setPlaybackSpeed(nextSpeed);
+              if (audioRef.current) {
+                audioRef.current.playbackRate = nextSpeed;
+              }
+            }}
+            className={`hidden sm:inline-flex px-2 py-1 rounded-lg border text-[11px] font-mono font-bold transition-all cursor-pointer ${
+              playbackSpeed > 1.0
+                ? 'bg-blue-50 border-blue-200 text-[#2563EB]'
+                : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900'
+            }`}
+            title="Toggle examiner voice speed (1.0x / 1.15x)"
+          >
+            {playbackSpeed}x
           </button>
 
           {/* Guest 2-Free Questions Counter Pill */}
@@ -1077,21 +1245,61 @@ export default function VivaStudioPage() {
                         )}
                       </div>
 
-                      {/* Replay Voice Button */}
-                      {(msg.reaction || msg.explanation) && (
-                        <button
-                          onClick={() => {
-                            const replayScript = `${msg.reaction || ''} ${msg.explanation || ''} ${msg.nextQuestion || ''}`;
-                            speakVoice(replayScript);
-                          }}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono text-[#52525B] hover:text-[#09090B] hover:bg-white border border-transparent hover:border-[#E4E4E7] transition-all cursor-pointer"
-                          title="Replay Voice Audio"
-                        >
-                          <Volume2 className="w-3 h-3 text-[#2563EB]" />
-                          <span>Replay</span>
-                        </button>
+                      {/* Replay Voice / Active Waveform */}
+                      {(msg.spokenText || msg.reaction || msg.explanation) && (
+                        <div>
+                          {activeSpeakingMsgId === msg.id && isSpeaking ? (
+                            <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-[#2563EB] rounded-md border border-blue-200/80 font-mono text-[10px] font-semibold">
+                                <span className="w-1 h-2.5 bg-[#2563EB] animate-pulse rounded-full" />
+                                <span className="w-1 h-3.5 bg-[#2563EB] animate-pulse rounded-full delay-75" />
+                                <span className="w-1 h-2 bg-[#2563EB] animate-pulse rounded-full delay-150" />
+                                <span className="ml-0.5">Speaking</span>
+                              </div>
+                              <button
+                                onClick={stopVoice}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer font-bold"
+                                title="Stop examiner voice"
+                              >
+                                <Square className="w-2.5 h-2.5 fill-current" />
+                                <span>Stop</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleReplayMessage(msg)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono text-[#52525B] hover:text-[#09090B] hover:bg-white border border-transparent hover:border-[#E4E4E7] transition-all cursor-pointer"
+                              title={msg.audioUrl ? '0ms Instant Replay (Cached)' : 'Replay Examiner Voice'}
+                            >
+                              <Volume2 className="w-3 h-3 text-[#2563EB]" />
+                              <span>{msg.audioUrl ? '0ms Replay' : 'Replay'}</span>
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
+
+                    {/* Conversational Spoken Audio Script */}
+                    {msg.spokenText && (
+                      <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200/60 text-xs sm:text-sm font-sans text-blue-950 flex items-start gap-2.5">
+                        <Volume2 className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold text-[#2563EB] uppercase tracking-wide">
+                              Spoken Examiner Feedback
+                            </span>
+                            {msg.audioUrl && (
+                              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-100/70 text-emerald-800 font-semibold">
+                                Cached 0ms
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm text-blue-950 leading-relaxed font-medium">
+                            &ldquo;{msg.spokenText}&rdquo;
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Witty Reaction Line */}
                     {msg.reaction && (

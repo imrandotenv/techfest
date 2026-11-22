@@ -23,6 +23,7 @@ export interface VivaResponse {
   reaction: string;
   explanation: string;
   nextQuestion: string;
+  spokenText: string; // Strictly 2-3 short, punchy, conversational sentences for voice synthesis
   provider: 'groq' | 'gemini' | 'simulation';
   isCorrect: boolean | null; // null for follow-up hints, examples, or questions
   topicTag: string;
@@ -38,6 +39,10 @@ SPEAKING STYLE (NATURAL HINGLISH):
 - Sound like a real, witty college senior or friendly professor who is evaluating viva.
 - ZERO robotic jargon, ZERO filler like "tests your foundational grasp of system tradeoffs".
 - Keep it punchy, authentic, and direct.
+
+VOICE VS VISUAL EXPLANATION DUALITY (CRITICAL):
+- "spokenText": This text is fed DIRECTLY to our neural voice synthesizer. It MUST be strictly 2–3 short, punchy, conversational sentences (max ~35–45 words). Lead with your conversational reaction ("Spot on bhai!", "Arre close tha par..."), give the single most important 1-sentence takeaway, and end introducing the next question. NEVER read bullet points, formulas, or raw code aloud!
+- "explanation": This is displayed VISUALLY on screen in the EXACT CONCEPT card. Write the full, structured, accurate technical concept here.
 
 MULTI-TURN CONVERSATION & INTENT HANDLING:
 1. If the student is giving an ANSWER to the viva question:
@@ -75,7 +80,8 @@ Return valid JSON only with keys:
 {
   "emotion": "happy" | "shocked" | "thinking" | "idle",
   "reaction": "<1 short witty Hinglish line>",
-  "explanation": "<exact technical answer first, then explanation/hint>",
+  "explanation": "<exact technical answer first, then structured visual concept note>",
+  "spokenText": "<2-3 short, punchy sentences specifically for speech voice, max 40 words>",
   "nextQuestion": "<crisp next question>",
   "isCorrect": true | false | null,
   "topicTag": "<concise topic tag>"
@@ -88,6 +94,10 @@ SPEAKING STYLE (NATURAL INDIAN ENGLISH):
 - Speak like an articulate engineering mentor or friendly examiner.
 - ZERO robotic filler phrases (never say "tests your foundational grasp of system tradeoffs" or "this demonstrates an invariant").
 - Concise, conversational, witty, and crystal clear.
+
+VOICE VS VISUAL EXPLANATION DUALITY (CRITICAL):
+- "spokenText": This text is fed DIRECTLY to our neural voice synthesizer. It MUST be strictly 2–3 short, punchy, conversational sentences (max ~35–45 words). Lead with your natural reaction ("Spot on!", "Close attempt, but..."), state the key 1-sentence technical takeaway, and end introducing the next question. NEVER read long bullet points or code aloud!
+- "explanation": This is displayed VISUALLY on screen in the EXACT CONCEPT card. State the crisp, accurate, structured technical concept here.
 
 MULTI-TURN CONVERSATION & INTENT HANDLING:
 1. If the student is giving an ANSWER to the viva question:
@@ -125,7 +135,8 @@ Return valid JSON only with keys:
 {
   "emotion": "happy" | "shocked" | "thinking" | "idle",
   "reaction": "<1 short witty line>",
-  "explanation": "<exact technical answer first, then explanation/hint>",
+  "explanation": "<exact technical answer first, then structured visual concept sentence>",
+  "spokenText": "<2-3 short, punchy sentences specifically for speech voice, max 40 words>",
   "nextQuestion": "<crisp next question>",
   "isCorrect": true | false | null,
   "topicTag": "<concise topic tag>"
@@ -190,11 +201,16 @@ function getSimulatedVivaResponse(
         : 'Hint: Focus on the fundamental hardware/memory trade-off behind this.';
     }
 
+    const spokenText = isHi
+      ? `Chalo ek solid hint deta hu: ${hintText}`
+      : `Here is a guiding hint: ${hintText}`;
+
     return {
       emotion: 'thinking',
       reaction: isHi ? 'Chalo ek solid hint deta hu:' : 'Here is a guiding hint from the examiner:',
       explanation: hintText,
       nextQuestion: question,
+      spokenText,
       provider: 'simulation',
       isCorrect: null,
       topicTag: topic,
@@ -227,11 +243,16 @@ function getSimulatedVivaResponse(
         : 'Concrete Example: In production microarchitectures, cache line transfers across L1/L2 and bus contention illustrate this trade-off.';
     }
 
+    const spokenText = isHi
+      ? `Real-world example se samajhte hain. ${question}`
+      : `Let us illustrate this with a concrete example. ${question}`;
+
     return {
       emotion: 'idle',
       reaction: isHi ? 'Real-world example se samajhte hain:' : 'Let us illustrate this with a concrete example:',
       explanation: exampleText,
-      nextQuestion: isHi ? 'Ab batao, iska main operational tradeoff kya bana?' : 'Now, how would you state the primary operational trade-off?',
+      nextQuestion: question,
+      spokenText,
       provider: 'simulation',
       isCorrect: null,
       topicTag: topic,
@@ -241,15 +262,22 @@ function getSimulatedVivaResponse(
   // 3. Ask Harder Handling
   if (isHarderRequest) {
     const topic = `${subject} Advanced`;
+    const nextQ = isHi
+      ? 'B+ Tree mein leaf nodes ke beech doubly-linked list kyu hoti hai jabki standard B-Tree mein nahi hoti?'
+      : 'Why do B+ Trees maintain a doubly-linked list among leaf nodes while B-Trees do not?';
+
+    const spokenText = isHi
+      ? `Oho, heavy driver mode on! Lo ye advance sawal solve karke dikhao: ${nextQ}`
+      : `Leveling up! Let us see how you handle this advanced question: ${nextQ}`;
+
     return {
       emotion: 'thinking',
       reaction: isHi ? 'Oho! Heavy driver mode on! Ye advance sawal tackle karo:' : 'Leveling up! Here is an advanced question from MAKAUT / GATE:',
       explanation: isHi
         ? 'GATE aur external examiners aksar boundary conditions aur amortized complexity par students ko test karte hain.'
         : 'External examiners frequently probe edge-case amortized bounds and memory barrier semantics.',
-      nextQuestion: isHi
-        ? 'B+ Tree mein leaf nodes ke beech doubly-linked list kyu hoti hai jabki standard B-Tree mein nahi hoti?'
-        : 'Why do B+ Trees maintain a doubly-linked list among leaf nodes while B-Trees do not?',
+      nextQuestion: nextQ,
+      spokenText,
       provider: 'simulation',
       isCorrect: null,
       topicTag: topic,
@@ -416,11 +444,20 @@ function getSimulatedVivaResponse(
     }
   }
 
+  const spokenText = `${reaction} ${
+    isCorrect === true
+      ? (isHi ? 'Bahut badhiya! ' : 'Great job! ')
+      : isCorrect === false
+      ? (isHi ? 'Sahi concept card par dekho. ' : 'Check the exact concept card. ')
+      : ''
+  }${nextQuestion ? (isHi ? 'Agla sawal suno: ' : 'Next question: ') + nextQuestion : ''}`.trim();
+
   return {
     emotion: isCorrect ? 'happy' : 'shocked',
     reaction,
     explanation,
     nextQuestion,
+    spokenText,
     provider: 'simulation',
     isCorrect,
     topicTag,
@@ -512,11 +549,16 @@ Remember:
                 ? 'happy'
                 : 'shocked';
 
+              const reaction = parsed.reaction || (language === 'hi' ? 'Suno, chal aage badhte hain!' : 'Interesting answer! Let us proceed.');
+              const nextQuestion = parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: Array aur Linked list mein kya fark hai?' : 'Next question: Explain the difference between an array and a linked list.');
+              const spokenText = parsed.spokenText || `${reaction} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
+
               return NextResponse.json({
                 emotion,
-                reaction: parsed.reaction || (language === 'hi' ? 'Suno, chal aage badhte hain!' : 'Interesting answer! Let us proceed.'),
+                reaction,
                 explanation: parsed.explanation || '',
-                nextQuestion: parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: Array aur Linked list mein kya fark hai?' : 'Next question: Explain the difference between an array and a linked list.'),
+                nextQuestion,
+                spokenText,
                 provider: 'groq',
                 isCorrect: parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy'),
                 topicTag: parsed.topicTag || `${subject} Core`,
@@ -567,11 +609,16 @@ Remember:
               ? 'happy'
               : 'shocked';
 
+            const reaction = parsed.reaction || (language === 'hi' ? 'Suno bhai, answer check kiya!' : 'Evaluated by Examiner.');
+            const nextQuestion = parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: QuickSort ka worst case kya hai?' : 'What is the worst-case time complexity of QuickSort?');
+            const spokenText = parsed.spokenText || `${reaction} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
+
             return NextResponse.json({
               emotion,
-              reaction: parsed.reaction || (language === 'hi' ? 'Suno bhai, answer check kiya!' : 'Evaluated by Examiner.'),
+              reaction,
               explanation: parsed.explanation || '',
-              nextQuestion: parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: QuickSort ka worst case kya hai?' : 'What is the worst-case time complexity of QuickSort?'),
+              nextQuestion,
+              spokenText,
               provider: 'gemini',
               isCorrect: parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy'),
               topicTag: parsed.topicTag || `${subject} Core`,
@@ -604,6 +651,7 @@ Remember:
         reaction: 'Technical hiccup on the examiner desk! Let us tackle this question together.',
         explanation: 'You need 2 queues, or 1 queue with element rotation on push. Enqueue new elements and rotate existing elements behind it to reverse FIFO to LIFO.',
         nextQuestion: 'What is the worst-case time complexity of QuickSort and how can it be avoided?',
+        spokenText: 'Technical hiccup on the examiner desk! Let us tackle this question together: What is the worst-case time complexity of QuickSort?',
         provider: 'simulation',
         isCorrect: false,
         topicTag: 'System Invariants',
