@@ -14,17 +14,18 @@ import { SgpaCgpaCalculator } from './SgpaCgpaCalculator';
 import { AttendanceTracker } from './AttendanceTracker';
 import { NoticeBoard } from './NoticeBoard';
 import { AiStudyCompanion } from './AiStudyCompanion';
+import { AiVivaBuddy } from './AiVivaBuddy';
 import { TechFestBoard } from './TechFestBoard';
 import { StudentAcademicCockpit } from './StudentAcademicCockpit';
 
-export type ToolTab = 'dashboard' | 'calculator' | 'attendance' | 'events' | 'notices' | 'ai-companion';
+export type ToolTab = 'dashboard' | 'viva-buddy' | 'calculator' | 'attendance' | 'events' | 'notices' | 'ai-companion';
 
 export function ToolsDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const tabParam = searchParams.get('tab') as ToolTab | null;
-  const validTabs: ToolTab[] = ['dashboard', 'calculator', 'attendance', 'events', 'notices', 'ai-companion'];
+  const validTabs: ToolTab[] = ['dashboard', 'viva-buddy', 'calculator', 'attendance', 'events', 'notices', 'ai-companion'];
   const [activeTab, setActiveTab] = useState<ToolTab>(
     tabParam && validTabs.includes(tabParam)
       ? tabParam
@@ -45,6 +46,7 @@ export function ToolsDashboard() {
   };
 
   const pillTabs = [
+    { id: 'viva-buddy' as ToolTab, label: 'Expressive AI Viva Buddy', icon: Sparkles },
     { id: 'dashboard' as ToolTab, label: 'Student Cockpit', icon: GraduationCap },
     { id: 'calculator' as ToolTab, label: 'SGPA / CGPA Calculator', icon: Calculator },
     { id: 'attendance' as ToolTab, label: '75% Attendance Tracker', icon: ShieldCheck },
@@ -97,6 +99,7 @@ export function ToolsDashboard() {
 
       {/* Tab Content Panes */}
       <div className="animate-in fade-in duration-150">
+        {activeTab === 'viva-buddy' && <AiVivaBuddy />}
         {activeTab === 'dashboard' && <StudentAcademicCockpit />}
         {activeTab === 'calculator' && <SgpaCgpaCalculator />}
         {activeTab === 'attendance' && <AttendanceTracker />}

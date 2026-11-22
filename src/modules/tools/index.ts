@@ -7,4 +7,5 @@ export { AcademicCalendarTimeline } from './components/AcademicCalendarTimeline'
 export { PdfMerger } from './components/PdfMerger';
 export { TechFestBoard } from './components/TechFestBoard';
 export { AiStudyCompanion } from './components/AiStudyCompanion';
+export { AiVivaBuddy } from './components/AiVivaBuddy';
 export { NoticeBoard } from './components/NoticeBoard';
