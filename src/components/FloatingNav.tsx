@@ -249,43 +249,46 @@ export function FloatingNav() {
       {/* =========================================================================
           3. MOBILE BOTTOM THUMB DOCK (< 768px / md:hidden)
           Fixed in ergonomic thumb zone, safe-area compliant, 60fps hide-downwards
+          Hidden on /viva studio to give 100% unobstructed thumb zone to chat input & mic
           ========================================================================= */}
-      <nav
-        aria-label="Mobile Navigation"
-        className={`md:hidden fixed left-1/2 z-50 w-[92%] max-w-md transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isVisible
-            ? '-translate-x-1/2 translate-y-0 opacity-100 pointer-events-auto'
-            : '-translate-x-1/2 translate-y-[150%] opacity-0 pointer-events-none'
-        }`}
-        style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
-      >
-        <div className="w-full px-2 py-1.5 rounded-full bg-white/85 backdrop-blur-xl border border-zinc-200/90 shadow-[0_10px_30px_-5px_rgba(9,9,11,0.12)] flex items-center justify-around">
-          {NAV_LINKS.map((item) => {
-            const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center flex-1 min-w-[48px] min-h-[48px] py-1 px-1 rounded-2xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
-                  isActive
-                    ? 'text-[#2563EB]'
-                    : 'text-zinc-500 hover:text-zinc-900'
-                }`}
-              >
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-[#2563EB]' : 'text-zinc-500'}`} />
-                <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? 'font-semibold text-[#2563EB]' : 'font-medium text-zinc-500'}`}>
-                  {item.label}
-                </span>
-                {isActive && (
-                  <span className="w-1 h-1 rounded-full bg-[#2563EB] mt-0.5" />
-                )}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {!pathname.startsWith('/viva') && (
+        <nav
+          aria-label="Mobile Navigation"
+          className={`md:hidden fixed left-1/2 z-50 w-[92%] max-w-md transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isVisible
+              ? '-translate-x-1/2 translate-y-0 opacity-100 pointer-events-auto'
+              : '-translate-x-1/2 translate-y-[150%] opacity-0 pointer-events-none'
+          }`}
+          style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <div className="w-full px-2 py-1.5 rounded-full bg-white/85 backdrop-blur-xl border border-zinc-200/90 shadow-[0_10px_30px_-5px_rgba(9,9,11,0.12)] flex items-center justify-around">
+            {NAV_LINKS.map((item) => {
+              const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex flex-col items-center justify-center flex-1 min-w-[48px] min-h-[48px] py-1 px-1 rounded-2xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                    isActive
+                      ? 'text-[#2563EB]'
+                      : 'text-zinc-500 hover:text-zinc-900'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-[#2563EB]' : 'text-zinc-500'}`} />
+                  <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? 'font-semibold text-[#2563EB]' : 'font-medium text-zinc-500'}`}>
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <span className="w-1 h-1 rounded-full bg-[#2563EB] mt-0.5" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {/* Global ⌘K Command Palette Dialog */}
       <CommandPalette

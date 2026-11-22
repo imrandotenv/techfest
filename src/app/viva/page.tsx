@@ -34,7 +34,6 @@ import {
 } from 'lucide-react';
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
-import { PageHeader } from '@/components/PageHeader';
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
@@ -769,76 +768,33 @@ export default function VivaStudioPage() {
   const gradeInfo = getGradeInfo(accuracyPct);
 
   return (
-    <div className="w-full space-y-5">
-      {/* Top Header & Compact Controls Strip */}
-      <div className="w-full space-y-4">
-        {/* Unified Compact Page Header Strip */}
-        <PageHeader
-          badge="AI VIVA STUDIO"
-          badgeCode="MAKAUT 2026"
-          title="Conversational AI Viva Studio"
-          subtitle="Interactive rapid-fire viva voce with expressive animated examiner, live speech recognition, and instant concept feedback."
-          action={
-            <div className="flex items-center gap-2">
-              {isSignedIn ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-mono font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>SETGOI Student • Unlimited</span>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowSignInModal(true)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold transition-all cursor-pointer ${
-                    remainingFree > 0
-                      ? 'bg-amber-50 border border-amber-200 text-amber-800'
-                      : 'bg-red-50 border border-red-200 text-red-700 animate-pulse'
-                  }`}
-                >
-                  <Lock className="w-3 h-3" />
-                  <span>{remainingFree > 0 ? `${remainingFree} Free Left` : 'Sign In Required'}</span>
-                </button>
-              )}
+    <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-[calc(100dvh-6.5rem)] mt-20 md:mt-24 flex flex-col gap-2.5 sm:gap-3 overflow-hidden pb-1">
+      {/* =========================================================================
+          1. SINGLE COMPACT HEADER ROW
+          Subject pills + EN/Hinglish toggle + Voice + Score + Report Card
+          ========================================================================= */}
+      <header className="w-full bg-white border border-[#E4E4E7] px-3.5 py-2 sm:py-2.5 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        {/* Left: Studio Label + Subject Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5">
+          <div className="flex items-center gap-1.5 pr-2.5 border-r border-zinc-200 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
+            <span className="text-xs font-display font-bold text-zinc-900 tracking-tight">AI Viva</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.2 bg-blue-50 text-[#2563EB] border border-blue-200/70 rounded font-semibold">
+              Studio
+            </span>
+          </div>
 
-              {/* Live Score Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E4E4E7] text-xs font-mono text-[#09090B] shadow-2xs">
-                <span className="flex items-center gap-1 text-[#2563EB] font-bold">
-                  <Award className="w-3.5 h-3.5" />
-                  {scorecard.correct}/{scorecard.attempts}
-                </span>
-                {scorecard.streak > 1 && (
-                  <span className="flex items-center gap-0.5 text-orange-600 font-bold">
-                    <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500" />
-                    {scorecard.streak}
-                  </span>
-                )}
-              </div>
-
-              {/* Finish & Report Button */}
-              <button
-                onClick={() => setShowReportModal(true)}
-                className="settech-btn-primary px-3.5 py-1.5 text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Report Card</span>
-              </button>
-            </div>
-          }
-        />
-
-        {/* Minimal Control Pill Bar (Subject + Language + Voice) */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white border border-[#E4E4E7] p-2 sm:p-2.5 rounded-xl shadow-2xs">
-          {/* Subject Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 shrink-0">
             {(Object.keys(SUBJECT_CATALOG) as VivaSubject[]).map((subj) => {
               const isSelected = subject === subj;
               return (
                 <button
                   key={subj}
                   onClick={() => setSubject(subj)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-medium transition-all shrink-0 cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all shrink-0 cursor-pointer ${
                     isSelected
                       ? 'bg-[#2563EB] text-white shadow-xs font-semibold'
-                      : 'bg-zinc-50 text-[#52525B] hover:bg-zinc-100 hover:text-[#09090B] border border-transparent'
+                      : 'bg-zinc-100/80 text-zinc-600 hover:bg-zinc-200/70 hover:text-zinc-950 border border-transparent'
                   }`}
                 >
                   {subj}
@@ -846,60 +802,102 @@ export default function VivaStudioPage() {
               );
             })}
           </div>
+        </div>
 
-          {/* Right Control Switches: Language & Voice */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Language Switcher */}
-            <div className="inline-flex items-center bg-zinc-100 p-0.5 rounded-lg border border-[#E4E4E7] text-xs font-mono font-medium">
-              <button
-                onClick={() => setLanguage('en')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  language === 'en'
-                    ? 'bg-white text-[#09090B] shadow-2xs font-bold'
-                    : 'text-[#52525B] hover:text-[#09090B]'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setLanguage('hi')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  language === 'hi'
-                    ? 'bg-white text-[#2563EB] shadow-2xs font-bold'
-                    : 'text-[#52525B] hover:text-[#09090B]'
-                }`}
-              >
-                हिंदी / Hinglish
-              </button>
-            </div>
-
-            {/* Voice Toggle */}
+        {/* Right: Language Switcher + Voice + Free/Auth + Score + Report Card */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Language Switcher */}
+          <div className="inline-flex items-center bg-zinc-100 p-0.5 rounded-lg border border-zinc-200 text-xs font-mono font-medium">
             <button
-              onClick={() => {
-                if (isVoiceEnabled) stopVoice();
-                setIsVoiceEnabled(!isVoiceEnabled);
-              }}
-              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                isVoiceEnabled
-                  ? 'bg-blue-50 border-blue-200/80 text-[#2563EB]'
-                  : 'bg-zinc-50 border-[#E4E4E7] text-[#52525B] hover:text-[#09090B]'
+              onClick={() => setLanguage('en')}
+              className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                language === 'en'
+                  ? 'bg-white text-zinc-900 shadow-2xs font-bold'
+                  : 'text-zinc-500 hover:text-zinc-900'
               }`}
-              title={isVoiceEnabled ? 'Voice output enabled' : 'Voice output muted'}
             >
-              {isVoiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage('hi')}
+              className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                language === 'hi'
+                  ? 'bg-white text-[#2563EB] shadow-2xs font-bold'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              हिंदी / Hinglish
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Main Studio Grid: Left Examiner Desk + Right Conversational Chat Feed */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-        {/* Left Column: Examiner Desk (Sidebar on desktop, compact on mobile) */}
-        <div className="md:col-span-4 lg:col-span-4 space-y-4">
-          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs flex flex-col items-center text-center space-y-4">
-            {/* Expressive Animated Character */}
+          {/* Voice Output Toggle */}
+          <button
+            onClick={() => {
+              if (isVoiceEnabled) stopVoice();
+              setIsVoiceEnabled(!isVoiceEnabled);
+            }}
+            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+              isVoiceEnabled
+                ? 'bg-blue-50 border-blue-200 text-[#2563EB]'
+                : 'bg-zinc-100 border-zinc-200 text-zinc-400 hover:text-zinc-700'
+            }`}
+            title={isVoiceEnabled ? 'Examiner voice enabled' : 'Examiner voice muted'}
+            aria-label="Toggle voice output"
+          >
+            {isVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Guest 2-Free Questions Counter Pill */}
+          {!isSignedIn && (
+            <button
+              onClick={() => setShowSignInModal(true)}
+              className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+                remainingFree > 0
+                  ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                  : 'bg-red-50 border border-red-200 text-red-700 animate-pulse'
+              }`}
+              title="Click to sign in with SETGOI account"
+            >
+              <Lock className="w-3 h-3" />
+              <span>{remainingFree > 0 ? `${remainingFree} Free` : 'Sign In'}</span>
+            </button>
+          )}
+
+          {/* Live Score Pill */}
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-50 border border-zinc-200 text-xs font-mono text-zinc-900">
+            <Award className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span className="font-bold text-[#2563EB]">{scorecard.correct}</span>
+            <span className="text-zinc-400">/</span>
+            <span>{scorecard.attempts}</span>
+            {scorecard.streak > 1 && (
+              <span className="flex items-center gap-0.5 text-orange-600 font-bold ml-1">
+                <Flame className="w-3 h-3 fill-orange-500 text-orange-500" />
+                {scorecard.streak}
+              </span>
+            )}
+          </div>
+
+          {/* Report Card Button */}
+          <button
+            onClick={() => setShowReportModal(true)}
+            className="settech-btn-primary px-3 py-1 text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Report Card</span>
+          </button>
+        </div>
+      </header>
+
+      {/* =========================================================================
+          2. MAIN STUDIO GRID (Internal Scrolling Only)
+          ========================================================================= */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 overflow-hidden">
+        {/* Left Column: Examiner Desk (Desktop Viewport Sidebar) */}
+        <div className="hidden md:flex md:col-span-4 lg:col-span-4 h-full flex-col justify-between bg-white border border-[#E4E4E7] rounded-2xl p-4 shadow-xs overflow-y-auto">
+          {/* Expressive Character & Status */}
+          <div className="flex flex-col items-center text-center space-y-3">
             <div className="relative py-1">
-              <VivaBuddyCharacter emotion={emotion} size={140} />
+              <VivaBuddyCharacter emotion={emotion} size={120} />
             </div>
 
             {/* Live Status Badge */}
@@ -950,8 +948,8 @@ export default function VivaStudioPage() {
               )}
             </div>
 
-            {/* Subject Details & Syllabus Code */}
-            <div className="w-full pt-1 border-t border-[#E4E4E7] space-y-1 text-left">
+            {/* Subject Details & Code */}
+            <div className="w-full pt-2 border-t border-[#E4E4E7] space-y-1 text-left">
               <div className="flex items-center justify-between text-[11px] font-mono text-[#52525B]">
                 <span>SUBJECT</span>
                 <span className="font-bold text-[#2563EB]">{SUBJECT_CATALOG[subject].code}</span>
@@ -963,14 +961,16 @@ export default function VivaStudioPage() {
                 Active Topic: <span className="font-medium text-[#09090B]">{activeTopicTag}</span>
               </div>
             </div>
+          </div>
 
-            {/* Performance Mini-Stats */}
-            <div className="w-full grid grid-cols-2 gap-2 pt-1 border-t border-[#E4E4E7]">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-[#E4E4E7] text-left">
+          {/* Performance Mini-Stats & Session Reset */}
+          <div className="space-y-2 pt-2 border-t border-[#E4E4E7]">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 rounded-xl bg-slate-50 border border-[#E4E4E7] text-left">
                 <div className="text-[10px] font-mono text-[#52525B] uppercase">Accuracy</div>
                 <div className="text-sm font-bold font-mono text-[#09090B]">{accuracyPct}%</div>
               </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-[#E4E4E7] text-left">
+              <div className="p-2 rounded-xl bg-slate-50 border border-[#E4E4E7] text-left">
                 <div className="text-[10px] font-mono text-[#52525B] uppercase">Streak</div>
                 <div className="text-sm font-bold font-mono text-orange-600 flex items-center gap-1">
                   <Flame className="w-3.5 h-3.5 fill-orange-500" />
@@ -979,10 +979,9 @@ export default function VivaStudioPage() {
               </div>
             </div>
 
-            {/* Quick Session Reset */}
             <button
               onClick={() => initializeSubject(subject, language)}
-              className="w-full py-2 px-3 rounded-xl border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-1.5 px-3 rounded-xl border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Session</span>
@@ -991,11 +990,26 @@ export default function VivaStudioPage() {
         </div>
 
         {/* Right Column: Conversational Chat Feed & Sticky Input Dock */}
-        <div className="md:col-span-8 lg:col-span-8 flex flex-col space-y-3">
-          {/* Scrollable Chat Feed */}
+        <div className="col-span-12 md:col-span-8 lg:col-span-8 h-full flex flex-col overflow-hidden bg-white border border-[#E4E4E7] rounded-2xl p-3 sm:p-4 shadow-xs">
+          {/* Mobile Examiner Header Strip (only visible on mobile screens) */}
+          <div className="md:hidden flex items-center justify-between pb-2 mb-2 border-b border-zinc-100 shrink-0">
+            <div className="flex items-center gap-2">
+              <VivaBuddyCharacter emotion={emotion} size={42} />
+              <div>
+                <div className="text-xs font-bold text-zinc-900">{SUBJECT_CATALOG[subject].code}</div>
+                <div className="text-[10px] font-mono text-zinc-500">{activeTopicTag}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs font-mono font-bold text-[#2563EB]">{scorecard.correct}/{scorecard.attempts} Marks</div>
+              <div className="text-[10px] font-mono text-zinc-400">{accuracyPct}% accuracy</div>
+            </div>
+          </div>
+
+          {/* Internal Scrollable Chat Feed */}
           <div
             ref={chatScrollRef}
-            className="w-full h-[480px] sm:h-[520px] overflow-y-auto bg-white border border-[#E4E4E7] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs"
+            className="flex-1 min-h-0 overflow-y-auto pr-1 sm:pr-2 space-y-3.5"
           >
             {messages.map((msg) => {
               const isUser = msg.role === 'user';

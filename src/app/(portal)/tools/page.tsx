@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { Metadata } from 'next';
 import { ToolsDashboard } from '@/modules/tools';
+import { ToolsSkeleton } from '@/components/ui/SkeletonLoaders';
 
 export const metadata: Metadata = {
   title: 'Student Utilities & MAKAUT Calculator | SETTech',
@@ -10,13 +11,7 @@ export const metadata: Metadata = {
 
 export default function ToolsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-7xl mx-auto px-4 py-16 text-center text-xs text-zinc-400 font-mono">
-          Loading SETTech Utilities...
-        </div>
-      }
-    >
+    <Suspense fallback={<ToolsSkeleton />}>
       <ToolsDashboard />
     </Suspense>
   );
