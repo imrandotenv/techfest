@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Phone, ArrowUpRight, ShieldCheck, MapPin, ExternalLink } from 'lucide-react';
+import { SetTechLogo } from '@/components/SetTechLogo';
 
 export function Footer() {
   const pathname = usePathname();
@@ -28,14 +29,7 @@ export function Footer() {
           {/* Column 1: Brand & Status (2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
-              <span className="font-display font-bold tracking-tight text-lg text-zinc-900">
-                <span className="text-[#09090B]">SET</span>
-                <span className="text-[#2563EB]">Tech</span>
-              </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-200/70 text-zinc-700 border border-zinc-300">
-                B.Tech SETGOI
-              </span>
+              <SetTechLogo variant="full" size={24} textClassName="text-lg font-bold" subtitle="B.Tech SETGOI" showSubtitle />
             </div>
 
             <p className="text-xs font-sans text-zinc-600 max-w-sm leading-relaxed">

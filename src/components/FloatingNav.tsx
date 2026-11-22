@@ -16,6 +16,7 @@ import {
 import { getResolvedRole, getDisplayRole, ROLE_CONFIGS } from '@/lib/auth-client';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { CommandPalette } from '@/components/navigation/CommandPalette';
+import { SetTechLogo } from '@/components/SetTechLogo';
 
 interface NavItem {
   href: string;
@@ -91,15 +92,13 @@ export function FloatingNav() {
         }`}
       >
         <div className="w-max max-w-4xl px-3 py-2 rounded-full bg-white/85 backdrop-blur-xl border border-zinc-200/90 shadow-[0_10px_30px_-5px_rgba(9,9,11,0.10)] flex items-center justify-between gap-5 lg:gap-7">
-          {/* Brand Mark + Subtle SETGOI Dot Indicator */}
+          {/* Brand Mark with Official Custom SVG Logo */}
           <Link
             href="/"
-            className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#09090B] hover:opacity-85 transition-opacity shrink-0 px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full"
+            className="flex items-center hover:opacity-85 transition-opacity shrink-0 px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full"
             aria-label="SETTech Homepage"
           >
-            <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
-            <span className="font-semibold tracking-tight text-[#09090B]">SET</span>
-            <span className="font-semibold tracking-tight text-[#2563EB]">Tech</span>
+            <SetTechLogo variant="full" size={20} textClassName="text-sm font-bold" />
           </Link>
 
           {/* Desktop Primary Route Links */}
@@ -201,15 +200,13 @@ export function FloatingNav() {
         }`}
       >
         <div className="w-full px-3.5 py-1.5 rounded-full bg-white/85 backdrop-blur-xl border border-zinc-200/90 shadow-[0_4px_20px_-2px_rgba(9,9,11,0.06)] flex items-center justify-between">
-          {/* Brand Mark */}
+          {/* Brand Mark with Official Custom SVG Logo */}
           <Link
             href="/"
-            className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full px-1"
+            className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full px-1"
             aria-label="SETTech Homepage"
           >
-            <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
-            <span className="font-semibold tracking-tight text-[#09090B]">SET</span>
-            <span className="font-semibold tracking-tight text-[#2563EB]">Tech</span>
+            <SetTechLogo variant="full" size={18} textClassName="text-sm font-bold" />
           </Link>
 
           {/* Right Action Cluster */}

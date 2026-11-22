@@ -30,6 +30,7 @@ import {
 import { getResolvedRole, getDisplayRole } from '@/lib/auth-client';
 import { CommandPalette } from '@/components/navigation/CommandPalette';
 import { ExamCountdown } from '@/components/ExamCountdown';
+import { SetTechLogo } from '@/components/SetTechLogo';
 
 export interface AppShellProps {
   children: React.ReactNode;
@@ -125,11 +126,10 @@ export function AppShell({
         <div className="h-14 px-4 border-b border-zinc-200/90 flex items-center justify-between shrink-0">
           <Link
             href="/"
-            className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#09090B] hover:opacity-85 transition-opacity"
+            className="flex items-center hover:opacity-85 transition-opacity"
+            aria-label="SETTech Homepage"
           >
-            <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
-            <span>SET</span>
-            <span className="text-[#2563EB]">Tech</span>
+            <SetTechLogo variant="full" size={20} textClassName="text-sm font-bold" />
           </Link>
 
           <span
@@ -372,11 +372,10 @@ export function AppShell({
               <Link
                 href="/"
                 onClick={() => setMobileDrawerOpen(false)}
-                className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#09090B]"
+                className="flex items-center"
+                aria-label="SETTech Homepage"
               >
-                <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
-                <span>SET</span>
-                <span className="text-[#2563EB]">Tech</span>
+                <SetTechLogo variant="full" size={20} textClassName="text-sm font-bold" />
               </Link>
               <button
                 onClick={() => setMobileDrawerOpen(false)}

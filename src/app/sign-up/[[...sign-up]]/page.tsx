@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { SignUp } from '@clerk/nextjs';
 import { ArrowLeft, BookCheck, Calculator, MessageSquareCode, ExternalLink, ShieldCheck } from 'lucide-react';
+import { SetTechLogo } from '@/components/SetTechLogo';
 
 export default function SignUpPage() {
   return (
@@ -26,14 +27,7 @@ export default function SignUpPage() {
           {/* Brand Header */}
           <div className="mb-6 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
-              <span className="font-display font-bold text-lg text-zinc-900 flex items-center">
-                <span className="text-[#09090B]">SET</span>
-                <span className="text-[#2563EB]">Tech</span>
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
-                SETGOI Durgapur
-              </span>
+              <SetTechLogo variant="full" size={26} textClassName="text-xl font-bold" subtitle="SETGOI Durgapur" showSubtitle />
             </div>
             <h1 className="text-2xl font-display font-bold tracking-tight text-zinc-900">
               Create Engineering Account

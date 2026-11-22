@@ -16,14 +16,55 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
 export const metadata: Metadata = {
-  title: "SETTech | Centralized SETGOI Student Utility & Campus Portal",
-  description: "Ultra-fast student utility, MAKAUT PYQ vault, SGPA calculator, campus directory, and discussion portal for Sanaka Educational Trust's Group of Institutions, Durgapur.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "SETTech — B.Tech Engineering Cockpit for SETGOI",
+    template: "%s | SETTech",
+  },
+  description:
+    "Ultra-fast student utility, AI Viva Studio, verified MAKAUT PYQ vault, 10-point SGPA calculator, and campus portal for Sanaka Educational Trust's Group of Institutions (SETGOI), Durgapur.",
   applicationName: "SETTech",
+  authors: [{ name: "SETGOI B.Tech Engineers" }],
+  generator: "Next.js",
+  keywords: [
+    "SETTech",
+    "SETGOI",
+    "Sanaka Educational Trust",
+    "MAKAUT notes",
+    "MAKAUT PYQ",
+    "AI Viva Studio",
+    "SGPA Calculator",
+    "Durgapur Engineering",
+    "B.Tech CSE",
+  ],
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/logo.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/icon.svg',
+    shortcut: '/icon.svg',
+  },
   openGraph: {
-    title: "SETTech | Centralized SETGOI Student Utility & Campus Portal",
-    description: "Ultra-fast student utility, MAKAUT PYQ vault, SGPA calculator, campus directory, and discussion portal for SETGOI School of Engineering.",
+    type: "website",
+    locale: "en_IN",
+    url: siteUrl,
+    title: "SETTech — B.Tech Engineering Cockpit for SETGOI",
+    description:
+      "Ultra-fast student utility, AI Viva Studio with Groq Whisper, verified MAKAUT PYQ vault, SGPA calculator, and discussion portal for SETGOI School of Engineering.",
     siteName: "SETTech",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SETTech — B.Tech Engineering Cockpit for SETGOI",
+    description:
+      "Ultra-fast student utility, AI Viva Studio with Groq Whisper, verified MAKAUT PYQ vault, and SGPA tools for SETGOI B.Tech students.",
+    creator: "@SETTechSETGOI",
   },
 };
 
