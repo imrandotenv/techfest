@@ -3,13 +3,19 @@ import { GoogleGenAI } from '@google/genai';
 
 export const runtime = 'nodejs';
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface VivaRequest {
   question: string;
   answer: string;
   subject: string;
   difficulty?: 'Quick Viva' | 'External Examiner';
   language?: 'en' | 'hi';
-  history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  history?: ChatMessage[];
+  intent?: 'answer' | 'hint' | 'example' | 'skip' | 'harder';
 }
 
 export interface VivaResponse {
@@ -18,74 +24,132 @@ export interface VivaResponse {
   explanation: string;
   nextQuestion: string;
   provider: 'groq' | 'gemini' | 'simulation';
-  isCorrect: boolean;
+  isCorrect: boolean | null; // null for follow-up hints, examples, or questions
+  topicTag: string;
 }
 
 // System prompts for English and Conversational Hinglish
 function getSystemPrompt(language: 'en' | 'hi'): string {
   if (language === 'hi') {
-    return `You are "Viva Buddy", a witty, supportive, and brilliant senior engineer/examiner taking viva for B.Tech engineering students at SETGOI (Sanaka Educational Trust's Group of Institutions, Durgapur, affiliated with MAKAUT).
+    return `You are "Viva Buddy", a witty, supportive, and brilliant senior engineer & viva examiner taking viva for B.Tech engineering students at SETGOI (Sanaka Educational Trust's Group of Institutions, Durgapur, affiliated with MAKAUT).
 
 SPEAKING STYLE (NATURAL HINGLISH):
-- Speak in natural, everyday conversational Hinglish (Hindi written in Roman script, like "2 queues lagte hain bhai, ya 1 queue with rotation").
+- Speak in natural, everyday conversational Hinglish (Roman script, e.g. "2 queues lagte hain bhai, ya 1 queue with rotation").
 - Sound like a real, witty college senior or friendly professor who is evaluating viva.
-- ZERO robotic jargon, ZERO textbook filler, and ZERO generic filler like "tests your foundational grasp of system tradeoffs".
-- Keep it punchy, authentic, and human.
+- ZERO robotic jargon, ZERO filler like "tests your foundational grasp of system tradeoffs".
+- Keep it punchy, authentic, and direct.
 
-EVALUATION & RESPONSE RULES:
-1. Determine if the student's answer is correct, partially correct, or wrong/surrendered ("dont know", "pass", "skip", "nahi pata").
-2. "emotion": "happy" if correct; "shocked" if wrong or if the student surrenders/gives up.
-3. "reaction": Exactly 1 short, witty Hinglish line (praise if correct e.g. "Arre shabash! External examiner bhi khush ho jayega!", witty roast/banter if wrong e.g. "Arre bhai! Pointer sidha segfault me gir gaya kya?!", friendly encouragement if skipped e.g. "Koi tension nahi bhai, seat pe baith kar panic mat ho!").
-4. "explanation": ALWAYS state the EXACT, ACCURATE technical answer FIRST in direct, plain terms (e.g. "2 queues lagte hain bhai, ya 1 queue with rotation. Enqueue karte time purane elements rotate karke peeche le aate hain taaki LIFO order mil sake.").
-5. "nextQuestion": Exactly 1 crisp, focused next viva question for this subject in natural Hinglish/English.
-6. "isCorrect": true if technically sound, false if wrong or skipped.
+MULTI-TURN CONVERSATION & INTENT HANDLING:
+1. If the student is giving an ANSWER to the viva question:
+   - Evaluate technical correctness.
+   - If correct: "emotion": "happy", "isCorrect": true, praise with witty cheer.
+   - If wrong: "emotion": "shocked", "isCorrect": false, friendly witty roast.
+   - "explanation": ALWAYS state the EXACT ACCURATE technical answer FIRST, then 1 concise concept note.
+   - "nextQuestion": 1 crisp next viva question for this subject.
+2. If the student asks for a HINT ("hint do", "thoda clue do", "clue", etc.):
+   - "emotion": "thinking", "isCorrect": null (do NOT penalize score).
+   - "reaction": "Chalo ek solid hint deta hu:"
+   - "explanation": Give a crisp, insightful hint without revealing the entire solution.
+   - "nextQuestion": Keep the current question active or ask them to complete the thought.
+3. If the student asks for an EXAMPLE ("explain with example", "udaharan do", "samjha do"):
+   - "emotion": "idle", "isCorrect": null (do NOT penalize score).
+   - "reaction": "Real-world example se samajhte hain:"
+   - "explanation": Provide a concrete, easy-to-grasp example or mini code mental model.
+   - "nextQuestion": Ask a quick follow-up to check their understanding.
+4. If the student SURRENDERS ("nahi pata", "dont know", "skip", "pass"):
+   - "emotion": "shocked", "isCorrect": false.
+   - "reaction": Friendly encouragement, e.g. "Seat pe panic mat ho bhai! Ye suno exact answer:"
+   - "explanation": Give the exact technical answer directly.
+   - "nextQuestion": 1 fresh next viva question.
+5. If the student asks for a HARDER question ("ask harder", "kuch tough pucho"):
+   - "emotion": "thinking", "isCorrect": null.
+   - "reaction": "Oho! Heavy driver mode on?! Lo ye solve karke dikhao:"
+   - "explanation": Brief context on why this is an advanced MAKAUT/GATE question.
+   - "nextQuestion": An advanced, tricky viva question.
+
+TOPIC TAG:
+- Always supply a clean, specific 2-4 word topic tag in "topicTag" (e.g. "Stack via Queues", "QuickSort Worst Case", "Coffman Deadlock", "ACID Isolation", "Barkhausen Criterion", "Cache Locality", etc.).
 
 OUTPUT FORMAT:
 Return valid JSON only with keys:
 {
-  "emotion": "happy" | "shocked",
+  "emotion": "happy" | "shocked" | "thinking" | "idle",
   "reaction": "<1 short witty Hinglish line>",
-  "explanation": "<exact technical answer first, then 1 concise concept note in Hinglish>",
-  "nextQuestion": "<1 crisp next viva question>",
-  "isCorrect": true | false
+  "explanation": "<exact technical answer first, then explanation/hint>",
+  "nextQuestion": "<crisp next question>",
+  "isCorrect": true | false | null,
+  "topicTag": "<concise topic tag>"
 }`;
   }
 
   return `You are "Viva Buddy", a witty, sharp, and encouraging B.Tech engineering senior and viva examiner at SETGOI (Sanaka Educational Trust's Group of Institutions, Durgapur, affiliated with MAKAUT).
 
 SPEAKING STYLE (NATURAL INDIAN ENGLISH):
-- Speak like an authentic, articulate engineering mentor or friendly professor.
+- Speak like an articulate engineering mentor or friendly examiner.
 - ZERO robotic filler phrases (never say "tests your foundational grasp of system tradeoffs" or "this demonstrates an invariant").
 - Concise, conversational, witty, and crystal clear.
 
-EVALUATION & RESPONSE RULES:
-1. Determine if the student's answer is correct, partially correct, or wrong/surrendered ("dont know", "pass", "skip", etc.).
-2. "emotion": "happy" if correct; "shocked" if wrong or if the student surrendered.
-3. "reaction": Exactly 1 short, witty line (praise if correct e.g. "Spot on! That is an instant 10/10 from the external board.", witty roast if wrong e.g. "Ouch! Did your recursion just hit an infinite stack overflow?!", friendly encouragement if skipped e.g. "Caught in the hot seat! Don't sweat it, let's break it down.").
-4. "explanation": ALWAYS state the EXACT, ACCURATE technical answer FIRST in direct, plain terms (e.g. "You need 2 queues, or 1 queue with rotation on push. One queue holds items, while the other is used to reverse order on push/pop.").
-5. "nextQuestion": Exactly 1 crisp, clear next viva question matching this subject.
-6. "isCorrect": true if technically sound, false if wrong or skipped.
+MULTI-TURN CONVERSATION & INTENT HANDLING:
+1. If the student is giving an ANSWER to the viva question:
+   - Evaluate technical correctness.
+   - If correct: "emotion": "happy", "isCorrect": true, praise with witty cheer.
+   - If wrong: "emotion": "shocked", "isCorrect": false, witty roast.
+   - "explanation": ALWAYS state the EXACT ACCURATE technical answer FIRST, then 1 concise concept sentence.
+   - "nextQuestion": 1 crisp next viva question for this subject.
+2. If the student asks for a HINT ("give me a hint", "clue", etc.):
+   - "emotion": "thinking", "isCorrect": null (do NOT penalize score).
+   - "reaction": "Here is a guiding hint from the examiner desk:"
+   - "explanation": Give a clear, helpful clue without spoiling the final answer.
+   - "nextQuestion": Keep current question active or ask them to connect the clue.
+3. If the student asks for an EXAMPLE ("explain with example", "give an analogy"):
+   - "emotion": "idle", "isCorrect": null (do NOT penalize score).
+   - "reaction": "Let us break it down with a concrete engineering example:"
+   - "explanation": Provide a real-world system architecture or code example.
+   - "nextQuestion": Ask a follow-up question to test their understanding.
+4. If the student SURRENDERS ("don't know", "skip", "pass", "no idea"):
+   - "emotion": "shocked", "isCorrect": false.
+   - "reaction": Friendly encouragement, e.g. "Caught in the hot seat! Don't sweat it, here is the exact answer:"
+   - "explanation": Give the exact technical answer directly.
+   - "nextQuestion": 1 fresh next viva question.
+5. If the student asks for a HARDER question ("ask harder", "give me something tougher"):
+   - "emotion": "thinking", "isCorrect": null.
+   - "reaction": "Leveling up! Let us see how you handle this MAKAUT/GATE favorite:"
+   - "explanation": Brief note on why this is a high-depth topic.
+   - "nextQuestion": An advanced, tricky viva question.
+
+TOPIC TAG:
+- Always supply a clean, specific 2-4 word topic tag in "topicTag" (e.g. "Stack via Queues", "QuickSort Worst Case", "Coffman Deadlock", "ACID Isolation", "Barkhausen Criterion", "Cache Locality", etc.).
 
 OUTPUT FORMAT:
 Return valid JSON only with keys:
 {
-  "emotion": "happy" | "shocked",
+  "emotion": "happy" | "shocked" | "thinking" | "idle",
   "reaction": "<1 short witty line>",
-  "explanation": "<exact technical answer first, then 1 concise concept sentence>",
-  "nextQuestion": "<1 crisp next viva question>",
-  "isCorrect": true | false
+  "explanation": "<exact technical answer first, then explanation/hint>",
+  "nextQuestion": "<crisp next question>",
+  "isCorrect": true | false | null,
+  "topicTag": "<concise topic tag>"
 }`;
 }
 
-// Grounded intelligent simulation engine with exact technical answers (Zero generic filler)
+// Grounded intelligent simulation engine with exact technical answers
 function getSimulatedVivaResponse(
   question: string,
   answer: string,
   subject: string,
-  language: 'en' | 'hi' = 'en'
+  language: 'en' | 'hi' = 'en',
+  intent?: 'answer' | 'hint' | 'example' | 'skip' | 'harder'
 ): VivaResponse {
   const normAns = answer.toLowerCase().trim();
+  const isHi = language === 'hi';
+  const normQ = question.toLowerCase();
+
+  // Detect student intent if not explicitly tagged
+  const isHintRequest = intent === 'hint' || normAns.includes('hint') || normAns.includes('clue');
+  const isExampleRequest = intent === 'example' || normAns.includes('example') || normAns.includes('udaharan') || normAns.includes('samjha');
+  const isHarderRequest = intent === 'harder' || normAns.includes('harder') || normAns.includes('tough') || normAns.includes('mushkil');
   const isSurrender =
+    intent === 'skip' ||
     normAns.includes("don't know") ||
     normAns.includes('dont know') ||
     normAns.includes('pass') ||
@@ -95,17 +159,112 @@ function getSimulatedVivaResponse(
     normAns.includes('dunno') ||
     normAns.length < 3;
 
-  const isHi = language === 'hi';
+  // 1. Hint Handling
+  if (isHintRequest) {
+    let hintText = '';
+    let topic = 'General Concept';
+    if (normQ.includes('queue') || normQ.includes('stack')) {
+      topic = 'Stack Implementation via Queues';
+      hintText = isHi
+        ? 'Hint: Socho jab naya element enqueue karte ho, to puraane elements ko pop karke rotate karne se kya LIFO order ban sakta hai?'
+        : 'Hint: Think about rotation. After enqueuing a new element, what happens if you dequeue existing elements and push them back?';
+    } else if (normQ.includes('quicksort')) {
+      topic = 'QuickSort Complexity';
+      hintText = isHi
+        ? 'Hint: Jab array already sorted ho aur pivot first element chun liya jaye, to partition split kaisa banta hai?'
+        : 'Hint: Consider an already sorted array where the pivot chosen is always the minimum or maximum element.';
+    } else if (normQ.includes('deadlock') || normQ.includes('coffman')) {
+      topic = 'Coffman Conditions';
+      hintText = isHi
+        ? 'Hint: Char conditions mein se ek circular chain of waiting hoti hai, aur doosra non-sharable resource use.'
+        : 'Hint: One involves a circular chain of waiting threads, and another involves resources that cannot be shared simultaneously.';
+    } else if (normQ.includes('acid')) {
+      topic = 'ACID Properties';
+      hintText = isHi
+        ? 'Hint: "All-or-Nothing" transaction behavior kis letter se aata hai? Aur crash ke baad data survive karne ko kya kehte hain?'
+        : 'Hint: Which letter ensures an "all-or-nothing" execution, and which one guarantees persistence after a power failure?';
+    } else {
+      topic = `${subject} Fundamentals`;
+      hintText = isHi
+        ? 'Hint: Core operational principle aur memory invariant ko focus karo.'
+        : 'Hint: Focus on the fundamental hardware/memory trade-off behind this.';
+    }
 
-  // Topic-matched precise knowledge base
-  const normQ = question.toLowerCase();
+    return {
+      emotion: 'thinking',
+      reaction: isHi ? 'Chalo ek solid hint deta hu:' : 'Here is a guiding hint from the examiner:',
+      explanation: hintText,
+      nextQuestion: question,
+      provider: 'simulation',
+      isCorrect: null,
+      topicTag: topic,
+    };
+  }
 
+  // 2. Example Handling
+  if (isExampleRequest) {
+    let exampleText = '';
+    let topic = 'Practical Example';
+    if (normQ.includes('queue') || normQ.includes('stack')) {
+      topic = 'Stack Implementation via Queues';
+      exampleText = isHi
+        ? 'Real example: Maan lo queue me [10] hai. Tumhe 20 push karna hai. Pehle 20 enqueue karo -> [10, 20]. Phir 10 ko nikaal kar peeche daal do -> [20, 10]. Ab queue ka front 20 hai, jo LIFO top ban gaya!'
+        : 'Concrete Example: Say your queue has [10]. You want to push 20. Enqueue 20 -> [10, 20]. Now dequeue 10 and enqueue it -> [20, 10]. The head is 20, perfectly emulating LIFO stack behavior!';
+    } else if (normQ.includes('quicksort')) {
+      topic = 'QuickSort Worst Case';
+      exampleText = isHi
+        ? 'Real example: Agar array [1, 2, 3, 4, 5] hai aur pivot pehla element (1) liya, to partitions banenge [] aur [2, 3, 4, 5]. Har baar n elements traverse honge, total steps: n + (n-1) + ... = O(n²)!'
+        : 'Concrete Example: On an already sorted array [1, 2, 3, 4, 5], picking the first element yields partitions [] and [2, 3, 4, 5]. Recurrence becomes T(n) = T(n-1) + O(n), totaling O(n²)!';
+    } else if (normQ.includes('deadlock') || normQ.includes('coffman')) {
+      topic = 'Deadlock Prevention';
+      exampleText = isHi
+        ? 'Real example: Ek single-lane bridge par do trucks aamne-saamne aa gaye. Dono aage badhna chahte hain (Hold & Wait) aur koi reverse nahi karna chahta (No Preemption). Yahi circular deadlock hai!'
+        : 'Concrete Example: Two trains heading towards each other on a single track. Neither can proceed (Mutual Exclusion), each claims its section (Hold & Wait), and neither can be derailed (No Preemption). Classic deadlock!';
+    } else {
+      topic = `${subject} Architecture`;
+      exampleText = isHi
+        ? 'Real-world example: System architecture mein cache line invalidation aur RAM bus delays is concept ko directly affect karte hain.'
+        : 'Concrete Example: In production microarchitectures, cache line transfers across L1/L2 and bus contention illustrate this trade-off.';
+    }
+
+    return {
+      emotion: 'idle',
+      reaction: isHi ? 'Real-world example se samajhte hain:' : 'Let us illustrate this with a concrete example:',
+      explanation: exampleText,
+      nextQuestion: isHi ? 'Ab batao, iska main operational tradeoff kya bana?' : 'Now, how would you state the primary operational trade-off?',
+      provider: 'simulation',
+      isCorrect: null,
+      topicTag: topic,
+    };
+  }
+
+  // 3. Ask Harder Handling
+  if (isHarderRequest) {
+    const topic = `${subject} Advanced`;
+    return {
+      emotion: 'thinking',
+      reaction: isHi ? 'Oho! Heavy driver mode on! Ye advance sawal tackle karo:' : 'Leveling up! Here is an advanced question from MAKAUT / GATE:',
+      explanation: isHi
+        ? 'GATE aur external examiners aksar boundary conditions aur amortized complexity par students ko test karte hain.'
+        : 'External examiners frequently probe edge-case amortized bounds and memory barrier semantics.',
+      nextQuestion: isHi
+        ? 'B+ Tree mein leaf nodes ke beech doubly-linked list kyu hoti hai jabki standard B-Tree mein nahi hoti?'
+        : 'Why do B+ Trees maintain a doubly-linked list among leaf nodes while B-Trees do not?',
+      provider: 'simulation',
+      isCorrect: null,
+      topicTag: topic,
+    };
+  }
+
+  // 4. Standard Answer Evaluation
   let isCorrect = false;
   let reaction = '';
   let explanation = '';
   let nextQuestion = '';
+  let topicTag = 'Technical Fundamentals';
 
   if (normQ.includes('queue') && normQ.includes('stack')) {
+    topicTag = 'Stack Implementation via Queues';
     if (normAns.includes('2') || normAns.includes('two') || normAns.includes('1') || normAns.includes('one')) {
       isCorrect = true;
       reaction = isHi
@@ -130,6 +289,7 @@ function getSimulatedVivaResponse(
         : 'What is the difference between an Array and a Singly Linked List regarding CPU cache locality?';
     }
   } else if (normQ.includes('quicksort') && (normQ.includes('worst') || normQ.includes('average'))) {
+    topicTag = 'QuickSort Worst Case';
     if (normAns.includes('n^2') || normAns.includes('n*n') || normAns.includes('quadratic') || normAns.includes('n squared')) {
       isCorrect = true;
       reaction = isHi
@@ -154,6 +314,7 @@ function getSimulatedVivaResponse(
         : 'Why does Dijkstra’s algorithm fail when a graph has negative edge weights?';
     }
   } else if (normQ.includes('coffman') || normQ.includes('deadlock')) {
+    topicTag = 'Coffman Deadlock Conditions';
     if (normAns.includes('mutual exclusion') || normAns.includes('hold and wait') || normAns.includes('circular wait') || normAns.includes('preemption')) {
       isCorrect = true;
       reaction = isHi
@@ -178,6 +339,7 @@ function getSimulatedVivaResponse(
         : 'What is the fundamental difference in address space between a Process and a Thread?';
     }
   } else if (normQ.includes('acid')) {
+    topicTag = 'ACID Database Properties';
     if (normAns.includes('atomicity') || normAns.includes('consistency') || normAns.includes('isolation') || normAns.includes('durability')) {
       isCorrect = true;
       reaction = isHi
@@ -202,6 +364,7 @@ function getSimulatedVivaResponse(
         : 'Why do relational databases use B+ Trees rather than Hash tables for indexing?';
     }
   } else if (normQ.includes('barkhausen') || normQ.includes('oscillator')) {
+    topicTag = 'Barkhausen Criterion';
     if (normAns.includes('1') || normAns.includes('360') || normAns.includes('0') || normAns.includes('loop gain') || normAns.includes('phase')) {
       isCorrect = true;
       reaction = isHi
@@ -227,6 +390,7 @@ function getSimulatedVivaResponse(
     }
   } else {
     // General subject question handling
+    topicTag = `${subject} Concepts`;
     if (isSurrender) {
       isCorrect = false;
       reaction = isHi
@@ -259,13 +423,22 @@ function getSimulatedVivaResponse(
     nextQuestion,
     provider: 'simulation',
     isCorrect,
+    topicTag,
   };
 }
 
 export async function POST(req: Request) {
   try {
     const body: VivaRequest = await req.json();
-    const { question, answer, subject = 'DSA', difficulty = 'Quick Viva', language = 'en' } = body;
+    const {
+      question,
+      answer,
+      subject = 'DSA',
+      difficulty = 'Quick Viva',
+      language = 'en',
+      history = [],
+      intent = 'answer',
+    } = body;
 
     if (!question || !answer) {
       return NextResponse.json(
@@ -275,23 +448,41 @@ export async function POST(req: Request) {
     }
 
     const systemPrompt = getSystemPrompt(language);
-    const userPrompt = `SUBJECT: ${subject}
+
+    // Prepare conversational message list (last 8 turns)
+    const recentHistory = (history || []).slice(-8);
+
+    const currentUserPrompt = `SUBJECT: ${subject}
 DIFFICULTY: ${difficulty}
+STUDENT INTENT: ${intent}
 LANGUAGE MODE: ${language === 'hi' ? 'Hinglish (Conversational Roman Hindi)' : 'Natural Indian English'}
-VIVA QUESTION ASKED: "${question}"
-STUDENT'S ANSWER: "${answer}"
+CURRENT VIVA QUESTION: "${question}"
+STUDENT'S RESPONSE: "${answer}"
 
-Evaluate the student's answer according to your system prompt rules. Remember to state the EXACT, SHORT, ACCURATE technical answer FIRST.`;
+Evaluate the student's response according to your system prompt rules.
+Remember:
+1. If answering: state EXACT SHORT ACCURATE technical answer FIRST.
+2. If asking for a hint or example or harder question: set "isCorrect": null, provide insightful hint/example/harder question without penalizing score.
+3. Always supply a concise "topicTag" representing the subject syllabus concept.`;
 
-    // 1. Primary: Groq API (Try llama-3.3-70b-versatile, fallback to openai/gpt-oss-120b or qwen/qwen3.8-27b)
+    // 1. Primary: Groq API
     const groqApiKey = process.env.GROQ_API_KEY;
     if (groqApiKey && groqApiKey.trim().length > 10 && !groqApiKey.includes('placeholder')) {
       const groqModels = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
 
+      const groqMessages = [
+        { role: 'system', content: systemPrompt },
+        ...recentHistory.map((m) => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content,
+        })),
+        { role: 'user', content: currentUserPrompt },
+      ];
+
       for (const modelName of groqModels) {
         try {
           const groqController = new AbortController();
-          const timeoutId = setTimeout(() => groqController.abort(), 5000);
+          const timeoutId = setTimeout(() => groqController.abort(), 5500);
 
           const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
@@ -301,10 +492,7 @@ Evaluate the student's answer according to your system prompt rules. Remember to
             },
             body: JSON.stringify({
               model: modelName,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt },
-              ],
+              messages: groqMessages,
               temperature: 0.6,
               response_format: { type: 'json_object' },
             }),
@@ -318,14 +506,20 @@ Evaluate the student's answer according to your system prompt rules. Remember to
             const content = data.choices?.[0]?.message?.content;
             if (content) {
               const parsed = JSON.parse(content);
-              const emotion = parsed.emotion === 'happy' ? 'happy' : 'shocked';
+              const emotion = ['idle', 'happy', 'shocked', 'thinking'].includes(parsed.emotion)
+                ? parsed.emotion
+                : parsed.isCorrect === true
+                ? 'happy'
+                : 'shocked';
+
               return NextResponse.json({
                 emotion,
                 reaction: parsed.reaction || (language === 'hi' ? 'Suno, chal aage badhte hain!' : 'Interesting answer! Let us proceed.'),
                 explanation: parsed.explanation || '',
                 nextQuestion: parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: Array aur Linked list mein kya fark hai?' : 'Next question: Explain the difference between an array and a linked list.'),
                 provider: 'groq',
-                isCorrect: parsed.isCorrect ?? (emotion === 'happy'),
+                isCorrect: parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy'),
+                topicTag: parsed.topicTag || `${subject} Core`,
               } as VivaResponse);
             }
           } else {
@@ -344,12 +538,19 @@ Evaluate the student's answer according to your system prompt rules. Remember to
     if (geminiApiKey && geminiApiKey.trim().length > 15 && !geminiApiKey.includes('mock')) {
       const geminiModels = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
 
+      // Build context string including history
+      const historyContext = recentHistory.length > 0
+        ? `CONVERSATION RECENT HISTORY:\n` + recentHistory.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n') + '\n\n'
+        : '';
+
+      const fullGeminiPrompt = `${historyContext}${currentUserPrompt}`;
+
       for (const modelName of geminiModels) {
         try {
           const ai = new GoogleGenAI({ apiKey: geminiApiKey.trim() });
           const geminiResult = await ai.models.generateContent({
             model: modelName,
-            contents: userPrompt,
+            contents: fullGeminiPrompt,
             config: {
               systemInstruction: systemPrompt,
               temperature: 0.6,
@@ -360,14 +561,20 @@ Evaluate the student's answer according to your system prompt rules. Remember to
           const geminiText = geminiResult.text;
           if (geminiText) {
             const parsed = JSON.parse(geminiText);
-            const emotion = parsed.emotion === 'happy' ? 'happy' : 'shocked';
+            const emotion = ['idle', 'happy', 'shocked', 'thinking'].includes(parsed.emotion)
+              ? parsed.emotion
+              : parsed.isCorrect === true
+              ? 'happy'
+              : 'shocked';
+
             return NextResponse.json({
               emotion,
               reaction: parsed.reaction || (language === 'hi' ? 'Suno bhai, answer check kiya!' : 'Evaluated by Examiner.'),
               explanation: parsed.explanation || '',
               nextQuestion: parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: QuickSort ka worst case kya hai?' : 'What is the worst-case time complexity of QuickSort?'),
               provider: 'gemini',
-              isCorrect: parsed.isCorrect ?? (emotion === 'happy'),
+              isCorrect: parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy'),
+              topicTag: parsed.topicTag || `${subject} Core`,
             } as VivaResponse);
           }
         } catch (geminiErr: any) {
@@ -384,7 +591,8 @@ Evaluate the student's answer according to your system prompt rules. Remember to
       question,
       answer,
       subject || 'DSA',
-      language
+      language,
+      intent
     );
 
     return NextResponse.json(fallbackResponse);
@@ -398,6 +606,7 @@ Evaluate the student's answer according to your system prompt rules. Remember to
         nextQuestion: 'What is the worst-case time complexity of QuickSort and how can it be avoided?',
         provider: 'simulation',
         isCorrect: false,
+        topicTag: 'System Invariants',
       } as VivaResponse,
       { status: 200 }
     );

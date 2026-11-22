@@ -3,34 +3,41 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
-import { 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  VolumeX, 
-  Send, 
-  Sparkles, 
-  HelpCircle, 
-  RotateCcw, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Lock, 
-  ArrowRight, 
-  Languages, 
-  Award, 
-  GraduationCap, 
-  Flame, 
+import {
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Send,
+  Sparkles,
+  HelpCircle,
+  RotateCcw,
+  CheckCircle2,
+  AlertTriangle,
+  Lock,
+  ArrowRight,
+  Award,
+  GraduationCap,
+  Flame,
   Lightbulb,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Square,
+  Copy,
+  Check,
+  BookOpen,
+  FileText,
+  X,
+  Wrench,
+  Zap,
 } from 'lucide-react';
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
-import { VivaResponse } from '@/app/api/viva/route';
+import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
 
-interface SubjectInfo {
+export interface SubjectInfo {
   code: string;
   name: string;
   semester: string;
@@ -40,7 +47,7 @@ interface SubjectInfo {
   };
 }
 
-const SUBJECT_CATALOG: Record<VivaSubject, SubjectInfo> = {
+export const SUBJECT_CATALOG: Record<VivaSubject, SubjectInfo> = {
   DSA: {
     code: 'PCC-CS301',
     name: 'Data Structures & Algorithms',
@@ -150,6 +157,20 @@ const SUBJECT_CATALOG: Record<VivaSubject, SubjectInfo> = {
 
 const FREE_GUEST_LIMIT = 2;
 
+export interface MessageItem {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  reaction?: string;
+  explanation?: string;
+  nextQuestion?: string;
+  isCorrect?: boolean | null;
+  topicTag?: string;
+  provider?: 'groq' | 'gemini' | 'simulation';
+  intent?: 'answer' | 'hint' | 'example' | 'skip' | 'harder';
+  timestamp: string;
+}
+
 export default function VivaStudioPage() {
   const { user, isLoaded, isSignedIn } = useUser();
 
@@ -158,19 +179,24 @@ export default function VivaStudioPage() {
   const [language, setLanguage] = useState<VivaLanguage>('en');
   const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(true);
 
-  // Viva stage state
+  // Active question being answered
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
   const [studentAnswer, setStudentAnswer] = useState<string>('');
   const [emotion, setEmotion] = useState<VivaEmotion>('idle');
-  const [reactionText, setReactionText] = useState<string>('');
-  const [explanationText, setExplanationText] = useState<string>('');
+  const [activeTopicTag, setActiveTopicTag] = useState<string>('Stack Implementation via Queues');
   const [activeProvider, setActiveProvider] = useState<'groq' | 'gemini' | 'simulation' | null>(null);
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
+  // Chat stream messages
+  const [messages, setMessages] = useState<MessageItem[]>([]);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+
   // Free attempts for guest users
   const [freeCount, setFreeCount] = useState<number>(0);
   const [showSignInModal, setShowSignInModal] = useState<boolean>(false);
+  const [showReportModal, setShowReportModal] = useState<boolean>(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Speech Recognition state
   const [isListening, setIsListening] = useState<boolean>(false);
@@ -185,6 +211,9 @@ export default function VivaStudioPage() {
     streak: 0,
   });
 
+  // Weak topics recorded when student answers incorrectly
+  const [weakTopics, setWeakTopics] = useState<Array<{ topic: string; subject: string; question: string }>>([]);
+
   // Load free guest count from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -195,24 +224,142 @@ export default function VivaStudioPage() {
     }
   }, []);
 
-  // Is guest locked?
   const isGuestLocked = !isSignedIn && freeCount >= FREE_GUEST_LIMIT;
+  const remainingFree = Math.max(0, FREE_GUEST_LIMIT - freeCount);
 
-  // Pick question based on subject and language
-  const pickNewQuestion = useCallback((targetSubject: VivaSubject, targetLang: VivaLanguage) => {
-    const list = SUBJECT_CATALOG[targetSubject]?.starterQuestions[targetLang] || SUBJECT_CATALOG.DSA.starterQuestions.en;
-    const randomQ = list[Math.floor(Math.random() * list.length)];
-    setCurrentQuestion(randomQ);
-    setReactionText('');
-    setExplanationText('');
-    setEmotion('idle');
-    setStudentAnswer('');
+  // Auto-scroll chat to bottom
+  const scrollToBottom = useCallback(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
   }, []);
 
-  // Update question when subject or language changes
   useEffect(() => {
-    pickNewQuestion(subject, language);
-  }, [subject, language, pickNewQuestion]);
+    scrollToBottom();
+  }, [messages, isEvaluating, scrollToBottom]);
+
+  // High-Quality Speech Player (Sarvam AI TTS with Natural Browser Fallback)
+  const speakVoice = useCallback(
+    async (textToSpeak: string) => {
+      if (!isVoiceEnabled || typeof window === 'undefined') return;
+
+      // Stop any active speech
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      if (audioRef.current) audioRef.current.pause();
+
+      // Clean text: strip markdown symbols, asterisks, brackets, backticks
+      const cleanText = textToSpeak
+        .replace(/[*_#`~[\]]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!cleanText) return;
+
+      try {
+        const ttsRes = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cleanText, language }),
+        });
+
+        if (ttsRes.ok) {
+          const ttsData = await ttsRes.json();
+          if (ttsData.audio) {
+            const audioUrl = `data:audio/wav;base64,${ttsData.audio}`;
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            setIsSpeaking(true);
+            audio.onended = () => setIsSpeaking(false);
+            audio.onerror = () => {
+              setIsSpeaking(false);
+              playBrowserSpeech(cleanText, language);
+            };
+            await audio.play();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('[TTS] Sarvam audio playback skipped, falling back to browser speech:', e);
+      }
+
+      playBrowserSpeech(cleanText, language);
+    },
+    [isVoiceEnabled, language]
+  );
+
+  const playBrowserSpeech = (text: string, lang: VivaLanguage) => {
+    if (!window.speechSynthesis) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.02;
+    utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    let chosenVoice: SpeechSynthesisVoice | undefined;
+
+    if (lang === 'hi') {
+      chosenVoice =
+        voices.find((v) => v.name.includes('Swara') || v.name.includes('Madhur') || v.name.includes('Neerja')) ||
+        voices.find((v) => v.lang === 'hi-IN' || v.name.includes('Hindi') || v.name.includes('हिन्दी')) ||
+        voices.find((v) => v.lang.includes('en-IN'));
+    } else {
+      chosenVoice =
+        voices.find((v) => v.name.includes('Neerja') || v.name.includes('Prabhat')) ||
+        voices.find((v) => v.lang === 'en-IN') ||
+        voices.find((v) => v.name.includes('Natural') || v.name.includes('Google UK English Female')) ||
+        voices.find((v) => v.lang.startsWith('en'));
+    }
+
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopVoice = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      if (audioRef.current) audioRef.current.pause();
+      setIsSpeaking(false);
+    }
+  }, []);
+
+  // Pick Initial Question and reset chat for subject/language
+  const initializeSubject = useCallback(
+    (targetSubject: VivaSubject, targetLang: VivaLanguage) => {
+      stopVoice();
+      const list = SUBJECT_CATALOG[targetSubject]?.starterQuestions[targetLang] || SUBJECT_CATALOG.DSA.starterQuestions.en;
+      const initialQ = list[Math.floor(Math.random() * list.length)];
+      setCurrentQuestion(initialQ);
+      setStudentAnswer('');
+      setEmotion('idle');
+      setActiveTopicTag(`${targetSubject} Core`);
+
+      const welcomeMsg: MessageItem = {
+        id: 'initial-' + Date.now(),
+        role: 'assistant',
+        content: targetLang === 'hi'
+          ? `Namaste! Main hu Viva Buddy. ${SUBJECT_CATALOG[targetSubject].name} (${SUBJECT_CATALOG[targetSubject].code}) ka viva shuru karte hain. Pehla sawal ye raha:`
+          : `Welcome to SETGOI Viva Voce for ${SUBJECT_CATALOG[targetSubject].name} (${SUBJECT_CATALOG[targetSubject].code}). Let us begin with your first question:`,
+        nextQuestion: initialQ,
+        topicTag: `${targetSubject} Intro`,
+        isCorrect: null,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setMessages([welcomeMsg]);
+    },
+    [stopVoice]
+  );
+
+  useEffect(() => {
+    initializeSubject(subject, language);
+  }, [subject, language, initializeSubject]);
 
   // Setup Web Speech Recognition
   useEffect(() => {
@@ -263,111 +410,9 @@ export default function VivaStudioPage() {
           recognitionRef.current.abort();
         } catch {}
       }
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      stopVoice();
     };
-  }, [language]);
-
-  // High-Quality Speech Player (Sarvam AI TTS with Natural Browser Fallback)
-  const speakVoice = useCallback(
-    async (textToSpeak: string) => {
-      if (!isVoiceEnabled || typeof window === 'undefined') return;
-
-      // Stop any active speech
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      if (audioRef.current) audioRef.current.pause();
-
-      // Clean text: strip markdown symbols, asterisks, brackets, backticks
-      const cleanText = textToSpeak
-        .replace(/[*_#`~[\]]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (!cleanText) return;
-
-      try {
-        // Try server-side Sarvam AI TTS first
-        const ttsRes = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText, language }),
-        });
-
-        if (ttsRes.ok) {
-          const ttsData = await ttsRes.json();
-          if (ttsData.audio) {
-            const audioUrl = `data:audio/wav;base64,${ttsData.audio}`;
-            const audio = new Audio(audioUrl);
-            audioRef.current = audio;
-            setIsSpeaking(true);
-            audio.onended = () => setIsSpeaking(false);
-            audio.onerror = () => {
-              setIsSpeaking(false);
-              playBrowserSpeech(cleanText, language);
-            };
-            await audio.play();
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('[TTS] Sarvam audio playback skipped, falling back to browser speech:', e);
-      }
-
-      // Upgraded Zero-Cost Browser Speech Synthesis
-      playBrowserSpeech(cleanText, language);
-    },
-    [isVoiceEnabled, language]
-  );
-
-  // Helper for natural browser speech synthesis
-  const playBrowserSpeech = (text: string, lang: VivaLanguage) => {
-    if (!window.speechSynthesis) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.02;
-    utterance.pitch = 1.0;
-
-    const voices = window.speechSynthesis.getVoices();
-    let chosenVoice: SpeechSynthesisVoice | undefined;
-
-    if (lang === 'hi') {
-      // Look for natural Hindi voices
-      chosenVoice =
-        voices.find((v) => v.name.includes('Swara') || v.name.includes('Madhur') || v.name.includes('Neerja')) ||
-        voices.find((v) => v.lang === 'hi-IN' || v.name.includes('Hindi') || v.name.includes('हिन्दी')) ||
-        voices.find((v) => v.lang.includes('en-IN'));
-    } else {
-      // Look for natural Indian English or UK/US voices
-      chosenVoice =
-        voices.find((v) => v.name.includes('Neerja') || v.name.includes('Prabhat')) ||
-        voices.find((v) => v.lang === 'en-IN') ||
-        voices.find((v) => v.name.includes('Natural') || v.name.includes('Google UK English Female')) ||
-        voices.find((v) => v.lang.startsWith('en'));
-    }
-
-    if (chosenVoice) {
-      utterance.voice = chosenVoice;
-    }
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  // Stop voice
-  const stopVoice = () => {
-    if (typeof window !== 'undefined') {
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      if (audioRef.current) audioRef.current.pause();
-      setIsSpeaking(false);
-    }
-  };
+  }, [language, stopVoice]);
 
   // Toggle Microphone
   const toggleListening = () => {
@@ -401,28 +446,45 @@ export default function VivaStudioPage() {
     }
   };
 
-  // Submit Answer to AI Viva Evaluator
-  const handleSubmitAnswer = async (overrideAnswer?: string) => {
-    // Check guest limit first
-    if (!isSignedIn && freeCount >= FREE_GUEST_LIMIT) {
+  // Submit Turn (Answer, Hint, Example, Skip, Harder)
+  const handleSendTurn = async (
+    overrideText?: string,
+    forcedIntent: 'answer' | 'hint' | 'example' | 'skip' | 'harder' = 'answer'
+  ) => {
+    if (isGuestLocked) {
       setShowSignInModal(true);
       return;
     }
 
-    const finalAnswer = (overrideAnswer !== undefined ? overrideAnswer : studentAnswer).trim();
-    if (!finalAnswer) return;
+    const textToSend = (overrideText !== undefined ? overrideText : studentAnswer).trim();
+    if (!textToSend && forcedIntent === 'answer') return;
 
-    // Stop microphone if currently listening
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
     }
-
-    // Stop ongoing audio
     stopVoice();
 
+    // Append user message to chat stream
+    const userMsg: MessageItem = {
+      id: 'usr-' + Date.now(),
+      role: 'user',
+      content: textToSend,
+      intent: forcedIntent,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
+    setStudentAnswer('');
     setIsEvaluating(true);
     setEmotion('thinking');
+
+    // Build recent conversation history for API
+    const historyPayload: ChatMessage[] = nextMessages.slice(-8).map((m) => ({
+      role: m.role,
+      content: m.role === 'user' ? m.content : `${m.reaction || ''} ${m.explanation || ''} ${m.nextQuestion || ''}`.trim(),
+    }));
 
     try {
       const res = await fetch('/api/viva', {
@@ -430,79 +492,153 @@ export default function VivaStudioPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: currentQuestion,
-          answer: finalAnswer,
+          answer: textToSend,
           subject,
           language,
+          history: historyPayload,
+          intent: forcedIntent,
         }),
       });
 
       const data: VivaResponse = await res.json();
 
-      setReactionText(data.reaction);
-      setExplanationText(data.explanation);
       setEmotion(data.emotion);
       setActiveProvider(data.provider);
+      if (data.topicTag) setActiveTopicTag(data.topicTag);
 
-      // Track guest count
-      if (!isSignedIn) {
+      // Track guest count only on real evaluated answers (not hints or examples)
+      if (!isSignedIn && data.isCorrect !== null) {
         const nextCount = freeCount + 1;
         setFreeCount(nextCount);
         if (typeof window !== 'undefined') {
           localStorage.setItem('sanakahub_viva_free_count', nextCount.toString());
         }
         if (nextCount >= FREE_GUEST_LIMIT) {
-          // Open sign in gate after this reaction
-          setTimeout(() => {
-            setShowSignInModal(true);
-          }, 3500);
+          setTimeout(() => setShowSignInModal(true), 3500);
         }
       }
 
-      // Update scorecard
-      const wasCorrect = data.isCorrect ?? (data.emotion === 'happy');
-      setScorecard((prev) => ({
-        attempts: prev.attempts + 1,
-        correct: prev.correct + (wasCorrect ? 1 : 0),
-        streak: wasCorrect ? prev.streak + 1 : 0,
-      }));
+      // Update scorecard if answer was scored
+      if (data.isCorrect !== null) {
+        setScorecard((prev) => ({
+          attempts: prev.attempts + 1,
+          correct: prev.correct + (data.isCorrect ? 1 : 0),
+          streak: data.isCorrect ? prev.streak + 1 : 0,
+        }));
 
-      // Speak reaction + explanation if voice enabled
-      if (isVoiceEnabled) {
-        const speechContent = `${data.reaction} ${data.explanation} ${language === 'hi' ? 'Agla sawal suno:' : 'Here is your next question:'} ${data.nextQuestion}`;
-        speakVoice(speechContent);
+        if (!data.isCorrect) {
+          setWeakTopics((prev) => [
+            ...prev,
+            {
+              topic: data.topicTag || `${subject} Core`,
+              subject,
+              question: currentQuestion,
+            },
+          ]);
+        }
       }
 
-      // Transition to next question
+      // Add examiner response to chat
+      const assistantMsg: MessageItem = {
+        id: 'ast-' + Date.now(),
+        role: 'assistant',
+        content: data.explanation,
+        reaction: data.reaction,
+        explanation: data.explanation,
+        nextQuestion: data.nextQuestion,
+        isCorrect: data.isCorrect,
+        topicTag: data.topicTag,
+        provider: data.provider,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      // Update active question for next turn
       if (data.nextQuestion) {
         setCurrentQuestion(data.nextQuestion);
-        setStudentAnswer('');
+      }
+
+      // Speak aloud if voice enabled
+      if (isVoiceEnabled) {
+        const voiceScript = `${data.reaction} ${data.explanation} ${
+          data.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + data.nextQuestion : ''
+        }`;
+        speakVoice(voiceScript);
       }
     } catch (err) {
       console.error('Viva submission failed:', err);
-      setReactionText(language === 'hi' ? 'Server connect nahi ho paya! Dobara try karo.' : 'Network connection error! Please retry.');
-      setExplanationText(language === 'hi' ? 'Check your internet connection or server logs.' : 'Ensure your local server is running.');
+      const errorMsg: MessageItem = {
+        id: 'err-' + Date.now(),
+        role: 'assistant',
+        content: 'Server error encountered. Let us proceed with the next question.',
+        reaction: language === 'hi' ? 'Server connect nahi ho paya! Agla try karte hain.' : 'Network error! Let us keep going.',
+        explanation: 'Check server connection or retry your answer.',
+        nextQuestion: 'What is the time complexity of binary search on a sorted array?',
+        isCorrect: null,
+        topicTag: `${subject} Review`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
       setEmotion('shocked');
     } finally {
       setIsEvaluating(false);
     }
   };
 
-  // Surrender / Skip Question
-  const handleSkipQuestion = () => {
-    if (isGuestLocked) {
-      setShowSignInModal(true);
-      return;
-    }
-    const surrenderPrompt = language === 'hi' 
-      ? 'Mujhe nahi pata bhai, please exact jawab samjha do.' 
-      : "I don't know the exact mechanism, please explain.";
-    handleSubmitAnswer(surrenderPrompt);
+  // Quick Action Handlers
+  const handleAskHint = () => {
+    handleSendTurn(
+      language === 'hi' ? 'Bhai thoda hint do, main solve karne ki koshish karta hu.' : 'Could you give me a hint on this question?',
+      'hint'
+    );
   };
 
-  const remainingFree = Math.max(0, FREE_GUEST_LIMIT - freeCount);
+  const handleAskExample = () => {
+    handleSendTurn(
+      language === 'hi' ? 'Ek real-world example se explain karke samjha do please.' : 'Can you explain this concept with a concrete example?',
+      'example'
+    );
+  };
+
+  const handleAskHarder = () => {
+    handleSendTurn(
+      language === 'hi' ? 'Ye simple hai, ab is subject ka koi tough viva question pucho!' : 'I am ready for a harder viva question from this syllabus.',
+      'harder'
+    );
+  };
+
+  const handleSkipQuestion = () => {
+    handleSendTurn(
+      language === 'hi' ? 'Mujhe nahi pata bhai, please exact jawab samjha do.' : "I don't know the exact mechanism, please explain.",
+      'skip'
+    );
+  };
+
+  // Copy concept to clipboard
+  const handleCopyConcept = (text: string, id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  // Calculate score %
+  const accuracyPct = scorecard.attempts > 0 ? Math.round((scorecard.correct / scorecard.attempts) * 100) : 0;
+
+  // Grade classification
+  const getGradeInfo = (pct: number) => {
+    if (pct >= 85) return { grade: 'A+', label: 'MAKAUT External Ready', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' };
+    if (pct >= 70) return { grade: 'A', label: 'Strong Engineering Foundation', color: 'text-blue-700 bg-blue-50 border-blue-200' };
+    if (pct >= 50) return { grade: 'B', label: 'Good Attempt • Needs Revision', color: 'text-amber-700 bg-amber-50 border-amber-200' };
+    return { grade: 'C', label: 'Core Concepts Need Revision', color: 'text-rose-700 bg-rose-50 border-rose-200' };
+  };
+
+  const gradeInfo = getGradeInfo(accuracyPct);
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] flex flex-col justify-between max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-5">
       {/* Top Header & Compact Controls Strip */}
       <div className="w-full space-y-3">
         {/* Breadcrumb / Title Bar */}
@@ -521,12 +657,12 @@ export default function VivaStudioPage() {
                 </span>
               </div>
               <p className="text-xs text-[#52525B] font-sans">
-                Real-time rapid-fire viva examiner with expressive animated feedback
+                Interactive multi-turn viva voce with expressive animated examiner &amp; real-time voice
               </p>
             </div>
           </div>
 
-          {/* Access / Score Pill */}
+          {/* Access / Score Pill & Finish Report Button */}
           <div className="flex items-center gap-2">
             {isSignedIn ? (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-mono font-semibold">
@@ -543,12 +679,12 @@ export default function VivaStudioPage() {
                 }`}
               >
                 <Lock className="w-3 h-3" />
-                <span>{remainingFree > 0 ? `${remainingFree} Free Round${remainingFree > 1 ? 's' : ''} Left` : 'Limit Reached • Sign In'}</span>
+                <span>{remainingFree > 0 ? `${remainingFree} Free Left` : 'Sign In Required'}</span>
               </button>
             )}
 
-            {/* Streak & Score Counter */}
-            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E4E4E7] text-xs font-mono text-[#09090B] shadow-2xs">
+            {/* Live Score Pill */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E4E4E7] text-xs font-mono text-[#09090B] shadow-2xs">
               <span className="flex items-center gap-1 text-[#2563EB] font-bold">
                 <Award className="w-3.5 h-3.5" />
                 {scorecard.correct}/{scorecard.attempts}
@@ -560,6 +696,15 @@ export default function VivaStudioPage() {
                 </span>
               )}
             </div>
+
+            {/* Finish & Report Button */}
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-sans font-semibold transition-all shadow-xs cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Report Card</span>
+            </button>
           </div>
         </div>
 
@@ -630,240 +775,533 @@ export default function VivaStudioPage() {
         </div>
       </div>
 
-      {/* Center Stage: Clean Focus Studio */}
-      <div className="flex-1 flex flex-col items-center justify-center py-4 sm:py-6 space-y-5 w-full">
-        {/* Animated Expressive Character */}
-        <div className="relative flex flex-col items-center">
-          <VivaBuddyCharacter emotion={emotion} size={150} />
-          
-          {/* Subtle Emotion Status Pill */}
-          <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white border border-[#E4E4E7] text-[11px] font-mono text-[#52525B] shadow-2xs">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                emotion === 'happy'
-                  ? 'bg-emerald-500'
-                  : emotion === 'shocked'
-                  ? 'bg-rose-500'
-                  : emotion === 'thinking'
-                  ? 'bg-amber-500 animate-pulse'
-                  : emotion === 'listening'
-                  ? 'bg-cyan-500 animate-ping'
-                  : 'bg-blue-500'
-              }`}
-            />
-            <span className="capitalize font-semibold text-[#09090B]">
-              {isEvaluating
-                ? 'Evaluating...'
-                : isSpeaking
-                ? 'Speaking...'
-                : isListening
-                ? 'Listening to you...'
-                : emotion === 'shocked'
-                ? 'Examiner Reaction'
-                : emotion === 'happy'
-                ? 'Full Marks!'
-                : 'Ready for Answer'}
-            </span>
-            {activeProvider && !isEvaluating && (
-              <span className="text-[10px] text-zinc-400 pl-1 border-l border-zinc-200">
-                via {activeProvider}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Examiner Question Card */}
-        <div className="w-full bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden transition-all">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#E4E4E7]">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] font-mono text-[11px] font-bold border border-blue-200/60">
-                {SUBJECT_CATALOG[subject].code}
-              </span>
-              <span className="text-xs font-mono text-[#52525B]">
-                {SUBJECT_CATALOG[subject].name}
-              </span>
+      {/* Main Studio Grid: Left Examiner Desk + Right Conversational Chat Feed */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+        {/* Left Column: Examiner Desk (Sidebar on desktop, compact on mobile) */}
+        <div className="md:col-span-4 lg:col-span-4 space-y-4">
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs flex flex-col items-center text-center space-y-4">
+            {/* Expressive Animated Character */}
+            <div className="relative py-1">
+              <VivaBuddyCharacter emotion={emotion} size={140} />
             </div>
-            <button
-              onClick={() => pickNewQuestion(subject, language)}
-              className="text-xs font-mono text-[#2563EB] hover:text-blue-700 inline-flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Next Q</span>
-            </button>
-          </div>
 
-          <div className="space-y-1">
-            <div className="text-[11px] font-mono uppercase tracking-wider text-[#52525B]">
-              Current Viva Question
-            </div>
-            <p className="text-base sm:text-lg font-medium text-[#09090B] font-display leading-relaxed">
-              &ldquo;{currentQuestion}&rdquo;
-            </p>
-          </div>
-        </div>
-
-        {/* Conversational Feedback Bubble (Examiner Reaction + Exact Technical Answer) */}
-        {(reactionText || explanationText) && (
-          <div className="w-full space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-            {/* Witty Reaction Line */}
-            {reactionText && (
-              <div
-                className={`p-3.5 sm:p-4 rounded-xl border text-xs sm:text-sm font-sans flex items-start gap-3 shadow-2xs ${
-                  emotion === 'happy'
-                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
-                    : 'bg-rose-50/70 border-rose-200 text-rose-950'
+            {/* Live Status Badge */}
+            <div className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-[#E4E4E7] text-xs font-mono">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isSpeaking
+                    ? 'bg-blue-500 animate-pulse'
+                    : isListening
+                    ? 'bg-cyan-500 animate-ping'
+                    : isEvaluating
+                    ? 'bg-amber-500 animate-pulse'
+                    : emotion === 'happy'
+                    ? 'bg-emerald-500'
+                    : emotion === 'shocked'
+                    ? 'bg-rose-500'
+                    : 'bg-blue-500'
                 }`}
-              >
-                {emotion === 'happy' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <div className="font-semibold">{reactionText}</div>
-                </div>
-              </div>
-            )}
+              />
+              <span className="font-semibold text-[#09090B]">
+                {isSpeaking
+                  ? 'Speaking...'
+                  : isListening
+                  ? 'Listening to you...'
+                  : isEvaluating
+                  ? 'Evaluating...'
+                  : emotion === 'happy'
+                  ? 'Full Marks!'
+                  : emotion === 'shocked'
+                  ? 'Examiner Roast'
+                  : 'Ready for Answer'}
+              </span>
 
-            {/* Exact Technical Answer Card */}
-            {explanationText && (
-              <div className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-[#E4E4E7] space-y-2">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2563EB]">
-                  <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>EXACT TECHNICAL ANSWER &amp; CONCEPT</span>
-                </div>
-                <p className="text-xs sm:text-sm text-[#09090B] font-sans leading-relaxed">
-                  {explanationText}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              {/* Stop Speaking button if active audio */}
+              {isSpeaking && (
+                <button
+                  onClick={stopVoice}
+                  className="ml-1 px-1.5 py-0.5 rounded bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Stop Examiner Voice"
+                >
+                  <Square className="w-2.5 h-2.5 fill-current" />
+                  <span>Stop</span>
+                </button>
+              )}
+            </div>
 
-      {/* Bottom Input Dock */}
-      <div className="w-full space-y-2 pb-4">
-        {/* Guest Lockout Banner if locked */}
-        {isGuestLocked ? (
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
-                <Lock className="w-4 h-4" />
+            {/* Subject Details & Syllabus Code */}
+            <div className="w-full pt-1 border-t border-[#E4E4E7] space-y-1 text-left">
+              <div className="flex items-center justify-between text-[11px] font-mono text-[#52525B]">
+                <span>SUBJECT</span>
+                <span className="font-bold text-[#2563EB]">{SUBJECT_CATALOG[subject].code}</span>
               </div>
-              <div>
-                <div className="text-xs sm:text-sm font-bold text-amber-950 font-sans">
-                  2 Free Practice Rounds Completed
-                </div>
-                <div className="text-xs text-amber-800 font-sans">
-                  Sign in with your SETGOI student account to unlock unlimited viva practice.
+              <div className="text-xs font-semibold text-[#09090B] truncate">
+                {SUBJECT_CATALOG[subject].name}
+              </div>
+              <div className="text-[11px] font-mono text-[#52525B]">
+                Active Topic: <span className="font-medium text-[#09090B]">{activeTopicTag}</span>
+              </div>
+            </div>
+
+            {/* Performance Mini-Stats */}
+            <div className="w-full grid grid-cols-2 gap-2 pt-1 border-t border-[#E4E4E7]">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-[#E4E4E7] text-left">
+                <div className="text-[10px] font-mono text-[#52525B] uppercase">Accuracy</div>
+                <div className="text-sm font-bold font-mono text-[#09090B]">{accuracyPct}%</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-[#E4E4E7] text-left">
+                <div className="text-[10px] font-mono text-[#52525B] uppercase">Streak</div>
+                <div className="text-sm font-bold font-mono text-orange-600 flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 fill-orange-500" />
+                  {scorecard.streak}
                 </div>
               </div>
             </div>
-            <Link
-              href="/sign-in?redirect_url=/viva"
-              className="px-4 py-2 rounded-xl bg-[#2563EB] text-white hover:bg-blue-700 text-xs font-semibold font-sans transition-all inline-flex items-center justify-center gap-2 shadow-xs shrink-0 cursor-pointer"
-            >
-              <span>Sign in with SETGOI Account</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        ) : (
-          /* Active Input Bar */
-          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-2 sm:p-2.5 shadow-xs flex items-center gap-2 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-            {/* Tactile Mic Button */}
+
+            {/* Quick Session Reset */}
             <button
-              onClick={toggleListening}
-              disabled={isEvaluating}
-              className={`p-3 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${
-                isListening
-                  ? 'bg-rose-500 text-white animate-pulse shadow-md ring-4 ring-rose-100'
-                  : 'bg-zinc-100 text-[#09090B] hover:bg-zinc-200 border border-[#E4E4E7]'
-              }`}
-              title={isListening ? 'Stop listening' : `Speak answer (${language === 'hi' ? 'Hindi/Hinglish' : 'English'})`}
+              onClick={() => initializeSubject(subject, language)}
+              className="w-full py-2 px-3 rounded-xl border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-[#2563EB]" />}
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Session</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Conversational Chat Feed & Sticky Input Dock */}
+        <div className="md:col-span-8 lg:col-span-8 flex flex-col space-y-3">
+          {/* Scrollable Chat Feed */}
+          <div
+            ref={chatScrollRef}
+            className="w-full h-[480px] sm:h-[520px] overflow-y-auto bg-white border border-[#E4E4E7] rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs"
+          >
+            {messages.map((msg) => {
+              const isUser = msg.role === 'user';
+
+              if (isUser) {
+                return (
+                  <div key={msg.id} className="flex flex-col items-end space-y-1">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-[#52525B] pr-1">
+                      {msg.intent && msg.intent !== 'answer' && (
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 text-[#2563EB] font-semibold border border-blue-200/50 uppercase">
+                          {msg.intent}
+                        </span>
+                      )}
+                      <span>You</span>
+                      <span>•</span>
+                      <span>{msg.timestamp}</span>
+                    </div>
+                    <div className="bg-[#2563EB] text-white rounded-2xl rounded-tr-xs px-4 py-2.5 text-xs sm:text-sm font-sans max-w-[85%] sm:max-w-[75%] shadow-xs leading-relaxed">
+                      {msg.content}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={msg.id} className="flex flex-col items-start space-y-1">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-[#52525B] pl-1">
+                    <span className="font-bold text-[#09090B]">Viva Examiner</span>
+                    <span>•</span>
+                    <span>{msg.timestamp}</span>
+                    {msg.provider && (
+                      <span className="text-zinc-400">via {msg.provider}</span>
+                    )}
+                  </div>
+
+                  <div className="bg-[#F8FAFC] border border-[#E4E4E7] rounded-2xl rounded-tl-xs p-4 sm:p-5 text-xs sm:text-sm font-sans max-w-[95%] sm:max-w-[92%] shadow-2xs space-y-3.5">
+                    {/* Header Chips Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#E4E4E7]">
+                      <div className="flex items-center gap-1.5">
+                        {msg.topicTag && (
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] font-mono text-[10px] font-bold border border-blue-200/60">
+                            #{msg.topicTag}
+                          </span>
+                        )}
+
+                        {msg.isCorrect === true && (
+                          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono text-[10px] font-bold border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Correct ✓</span>
+                          </span>
+                        )}
+
+                        {msg.isCorrect === false && (
+                          <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-mono text-[10px] font-bold border border-rose-200 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-rose-600" />
+                            <span>Needs Review</span>
+                          </span>
+                        )}
+
+                        {msg.isCorrect === null && (
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold border border-slate-200 flex items-center gap-1">
+                            <Lightbulb className="w-3 h-3 text-amber-500" />
+                            <span>Guidance</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Replay Voice Button */}
+                      {(msg.reaction || msg.explanation) && (
+                        <button
+                          onClick={() => {
+                            const replayScript = `${msg.reaction || ''} ${msg.explanation || ''} ${msg.nextQuestion || ''}`;
+                            speakVoice(replayScript);
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono text-[#52525B] hover:text-[#09090B] hover:bg-white border border-transparent hover:border-[#E4E4E7] transition-all cursor-pointer"
+                          title="Replay Voice Audio"
+                        >
+                          <Volume2 className="w-3 h-3 text-[#2563EB]" />
+                          <span>Replay</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Witty Reaction Line */}
+                    {msg.reaction && (
+                      <div
+                        className={`p-3 rounded-xl border text-xs sm:text-sm font-medium ${
+                          msg.isCorrect === true
+                            ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                            : msg.isCorrect === false
+                            ? 'bg-rose-50/80 border-rose-200 text-rose-950'
+                            : 'bg-blue-50/80 border-blue-200 text-blue-950'
+                        }`}
+                      >
+                        {msg.reaction}
+                      </div>
+                    )}
+
+                    {/* Exact Technical Answer / Concept Box */}
+                    {msg.explanation && (
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-[#E4E4E7] space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#2563EB]">
+                            <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span>EXACT TECHNICAL ANSWER &amp; CONCEPT</span>
+                          </div>
+                          <button
+                            onClick={() => handleCopyConcept(msg.explanation || '', msg.id)}
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#52525B] hover:text-[#09090B] transition-colors cursor-pointer"
+                            title="Copy concept"
+                          >
+                            {copiedId === msg.id ? (
+                              <>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-emerald-600 font-semibold">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-xs sm:text-sm text-[#09090B] font-sans leading-relaxed">
+                          {msg.explanation}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Next Question Highlight Box */}
+                    {msg.nextQuestion && (
+                      <div className="p-3.5 rounded-xl bg-blue-50/40 border border-blue-200/60 space-y-1">
+                        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#2563EB]">
+                          Next Viva Question
+                        </div>
+                        <div className="text-xs sm:text-sm font-semibold text-[#09090B] font-display">
+                          &ldquo;{msg.nextQuestion}&rdquo;
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Typing Indicator */}
+            {isEvaluating && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-[#F8FAFC] border border-[#E4E4E7] text-xs font-mono text-[#52525B] animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-ping" />
+                <span>Viva Examiner is evaluating your answer...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Quick-Action Chips Row */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              onClick={handleAskHint}
+              disabled={isEvaluating}
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            >
+              <Lightbulb className="w-3 h-3 text-amber-500" />
+              <span>💡 Give a hint</span>
             </button>
 
-            {/* Answer Text Input */}
-            <input
-              type="text"
-              value={studentAnswer}
-              onChange={(e) => setStudentAnswer(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isEvaluating) {
-                  handleSubmitAnswer();
-                }
-              }}
+            <button
+              onClick={handleAskExample}
               disabled={isEvaluating}
-              placeholder={
-                isListening
-                  ? language === 'hi' ? 'Bolte rahiye, sun raha hu...' : 'Listening to your speech...'
-                  : language === 'hi'
-                  ? 'Apna jawab yaha likho ya mic daba ke bolo...'
-                  : 'Type your answer or click mic to speak (Press Enter)...'
-              }
-              className="flex-1 bg-transparent border-0 px-2 text-xs sm:text-sm text-[#09090B] placeholder:text-[#52525B]/60 focus:outline-hidden font-sans"
-            />
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            >
+              <BookOpen className="w-3 h-3 text-blue-500" />
+              <span>📝 Explain with example</span>
+            </button>
 
-            {/* Skip / I don't know button */}
+            <button
+              onClick={handleAskHarder}
+              disabled={isEvaluating}
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+            >
+              <Zap className="w-3 h-3 text-orange-500" />
+              <span>🔥 Ask harder</span>
+            </button>
+
             <button
               onClick={handleSkipQuestion}
               disabled={isEvaluating}
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-mono text-[#52525B] hover:text-[#09090B] hover:bg-zinc-100 transition-colors shrink-0 cursor-pointer"
-              title="Give up on this question and see the real answer"
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-zinc-300 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />
-              <span>I don&apos;t know</span>
-            </button>
-
-            {/* Stop Voice button if speaking */}
-            {isSpeaking && (
-              <button
-                onClick={stopVoice}
-                className="p-2 rounded-xl bg-zinc-100 text-[#52525B] hover:text-[#09090B] text-xs font-mono shrink-0 cursor-pointer"
-                title="Stop speech"
-              >
-                <VolumeX className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Submit Button */}
-            <button
-              onClick={() => handleSubmitAnswer()}
-              disabled={isEvaluating || !studentAnswer.trim()}
-              className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-sans text-xs font-semibold transition-all inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
-                studentAnswer.trim() && !isEvaluating
-                  ? 'bg-[#2563EB] text-white hover:bg-blue-700 shadow-xs'
-                  : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
-              }`}
-            >
-              <span className="hidden sm:inline">Answer</span>
-              <Send className="w-3.5 h-3.5" />
+              <HelpCircle className="w-3 h-3 text-zinc-400" />
+              <span>⏭️ Next question</span>
             </button>
           </div>
-        )}
 
-        {/* Subtle Bottom Helper Notes */}
-        <div className="flex items-center justify-between text-[11px] font-mono text-[#52525B] px-2">
-          <span>
-            Mode: {language === 'hi' ? 'हिंदी / Hinglish' : 'Indian English'} • {subject}
-          </span>
-          <span className="flex items-center gap-1">
-            <Link href="/tools" className="hover:text-[#2563EB] underline transition-colors">
-              Tools Hub
-            </Link>
-            <span>•</span>
-            <Link href="/notes" className="hover:text-[#2563EB] underline transition-colors">
-              Theory Notes
-            </Link>
-          </span>
+          {/* Bottom Sticky Input Dock */}
+          <div className="w-full space-y-2">
+            {isGuestLocked ? (
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-bold text-amber-950 font-sans">
+                      2 Free Practice Rounds Completed
+                    </div>
+                    <div className="text-xs text-amber-800 font-sans">
+                      Sign in with your SETGOI student account to unlock unlimited viva practice.
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href="/sign-in?redirect_url=/viva"
+                  className="px-4 py-2 rounded-xl bg-[#2563EB] text-white hover:bg-blue-700 text-xs font-semibold font-sans transition-all inline-flex items-center justify-center gap-2 shadow-xs shrink-0 cursor-pointer"
+                >
+                  <span>Sign in with SETGOI Account</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            ) : (
+              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-2 sm:p-2.5 shadow-xs flex items-center gap-2 focus-within:border-[#2563EB] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                {/* Tactile Mic Button */}
+                <button
+                  onClick={toggleListening}
+                  disabled={isEvaluating}
+                  className={`p-3 rounded-xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${
+                    isListening
+                      ? 'bg-rose-500 text-white animate-pulse shadow-md ring-4 ring-rose-100'
+                      : 'bg-zinc-100 text-[#09090B] hover:bg-zinc-200 border border-[#E4E4E7]'
+                  }`}
+                  title={isListening ? 'Stop listening' : `Speak answer (${language === 'hi' ? 'Hindi/Hinglish' : 'English'})`}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-[#2563EB]" />}
+                </button>
+
+                {/* Answer Text Input */}
+                <input
+                  type="text"
+                  value={studentAnswer}
+                  onChange={(e) => setStudentAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isEvaluating) {
+                      handleSendTurn();
+                    }
+                  }}
+                  disabled={isEvaluating}
+                  placeholder={
+                    isListening
+                      ? language === 'hi' ? 'Bolte rahiye, live sun raha hu...' : 'Listening to speech...'
+                      : language === 'hi'
+                      ? 'Apna jawab yaha likho ya mic daba ke bolo...'
+                      : 'Type your answer or click mic to speak (Press Enter)...'
+                  }
+                  className="flex-1 bg-transparent border-0 px-2 text-xs sm:text-sm text-[#09090B] placeholder:text-[#52525B]/60 focus:outline-hidden font-sans"
+                />
+
+                {/* Submit Button */}
+                <button
+                  onClick={() => handleSendTurn()}
+                  disabled={isEvaluating || !studentAnswer.trim()}
+                  className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-sans text-xs font-semibold transition-all inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
+                    studentAnswer.trim() && !isEvaluating
+                      ? 'bg-[#2563EB] text-white hover:bg-blue-700 shadow-xs'
+                      : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
+                  }`}
+                >
+                  <span className="hidden sm:inline">Answer</span>
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Subtle Bottom Helper Notes */}
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#52525B] px-2">
+              <span>
+                Mode: {language === 'hi' ? 'हिंदी / Hinglish' : 'Indian English'} • {subject}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Link href="/notes" className="hover:text-[#2563EB] underline transition-colors">
+                  Theory Notes
+                </Link>
+                <span>•</span>
+                <Link href="/tools" className="hover:text-[#2563EB] underline transition-colors">
+                  Lab Practicals
+                </Link>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* End-of-Session Viva Report Card Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white border border-[#E4E4E7] rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6 relative animate-in zoom-in-95 duration-200">
+            {/* Modal Close Button */}
+            <button
+              onClick={() => setShowReportModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full hover:bg-zinc-100 text-[#52525B] transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#2563EB] shadow-2xs">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 font-mono text-[10px] font-bold">
+                  SESSION ASSESSMENT
+                </span>
+                <h3 className="text-xl font-bold font-display text-[#09090B]">
+                  SETGOI Viva Report Card
+                </h3>
+                <p className="text-xs text-[#52525B] font-mono">
+                  {SUBJECT_CATALOG[subject].name} ({SUBJECT_CATALOG[subject].code})
+                </p>
+              </div>
+            </div>
+
+            {/* Scorecard Hero Banner */}
+            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4E4E7] text-center">
+              <div>
+                <div className="text-[11px] font-mono text-[#52525B]">TOTAL TESTED</div>
+                <div className="text-xl font-bold font-display text-[#09090B] mt-0.5">
+                  {scorecard.attempts}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-mono text-[#52525B]">CORRECT</div>
+                <div className="text-xl font-bold font-display text-emerald-600 mt-0.5">
+                  {scorecard.correct}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-mono text-[#52525B]">ACCURACY</div>
+                <div className="text-xl font-bold font-display text-[#2563EB] mt-0.5">
+                  {accuracyPct}%
+                </div>
+              </div>
+            </div>
+
+            {/* Grade Rating Badge */}
+            <div className={`p-3.5 rounded-xl border flex items-center justify-between ${gradeInfo.color}`}>
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 shrink-0" />
+                <div>
+                  <div className="text-xs font-bold font-sans">{gradeInfo.label}</div>
+                  <div className="text-[11px] font-mono opacity-80">Based on MAKAUT External Viva Rubric</div>
+                </div>
+              </div>
+              <div className="text-lg font-bold font-mono px-3 py-1 rounded-lg bg-white/80 border border-current">
+                {gradeInfo.grade}
+              </div>
+            </div>
+
+            {/* Weak Topics to Revise Section */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-mono font-bold text-[#09090B]">
+                <span className="flex items-center gap-1.5 text-rose-600">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>WEAK TOPICS TO REVISE IN NOTES</span>
+                </span>
+                <span className="text-[11px] text-[#52525B] font-normal">
+                  {weakTopics.length} topic{weakTopics.length !== 1 ? 's' : ''} detected
+                </span>
+              </div>
+
+              {weakTopics.length > 0 ? (
+                <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
+                  {weakTopics.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2.5 rounded-xl bg-white border border-[#E4E4E7] flex items-center justify-between gap-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                        <span className="font-semibold text-[#09090B] font-mono truncate">
+                          {item.topic}
+                        </span>
+                      </div>
+                      <Link
+                        href="/notes"
+                        className="text-[#2563EB] hover:text-blue-700 font-mono text-[11px] flex items-center gap-0.5 shrink-0 underline"
+                      >
+                        <span>Revise</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Flawless session! No incorrect answers were recorded.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation & Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2 border-t border-[#E4E4E7]">
+              <Link
+                href="/notes"
+                className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white font-sans text-xs font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Revise in Notes Vault →</span>
+              </Link>
+              <button
+                onClick={() => {
+                  setShowReportModal(false);
+                  initializeSubject(subject, language);
+                }}
+                className="w-full sm:w-auto py-2.5 px-4 rounded-xl border border-[#E4E4E7] hover:bg-zinc-100 text-xs font-mono text-[#09090B] transition-colors cursor-pointer"
+              >
+                Start New Viva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Centered Clerk Sign-In Modal when guest limit reached */}
       {showSignInModal && !isSignedIn && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-xl space-y-5 text-center relative animate-in zoom-in-95 duration-200">
+          <div className="bg-white border border-[#E4E4E7] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 text-center relative animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200/80 mx-auto flex items-center justify-center text-[#2563EB] shadow-2xs">
               <Lock className="w-6 h-6" />
             </div>
@@ -876,7 +1314,7 @@ export default function VivaStudioPage() {
                 Sign In to Continue Viva Studio
               </h3>
               <p className="text-xs sm:text-sm text-[#52525B] font-sans leading-relaxed">
-                You have completed your 2 free practice rounds. Sign in with your SETGOI student or faculty account to unlock unlimited viva sessions, custom question banks, and live feedback.
+                You have completed your 2 free practice rounds. Sign in with your SETGOI student account to unlock unlimited viva sessions, custom question banks, and live feedback.
               </p>
             </div>
 
