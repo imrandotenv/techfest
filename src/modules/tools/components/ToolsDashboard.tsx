@@ -7,21 +7,24 @@ import {
   ShieldCheck, 
   Bot, 
   Bell,
-  Sparkles
+  Sparkles,
+  GraduationCap
 } from 'lucide-react';
 import { SgpaCgpaCalculator } from './SgpaCgpaCalculator';
 import { AttendanceTracker } from './AttendanceTracker';
 import { NoticeBoard } from './NoticeBoard';
 import { AiStudyCompanion } from './AiStudyCompanion';
+import { TechFestBoard } from './TechFestBoard';
+import { StudentAcademicCockpit } from './StudentAcademicCockpit';
 
-export type ToolTab = 'calculator' | 'attendance' | 'notices' | 'ai-companion';
+export type ToolTab = 'dashboard' | 'calculator' | 'attendance' | 'events' | 'notices' | 'ai-companion';
 
 export function ToolsDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const tabParam = searchParams.get('tab') as ToolTab | null;
-  const validTabs: ToolTab[] = ['calculator', 'attendance', 'notices', 'ai-companion'];
+  const validTabs: ToolTab[] = ['dashboard', 'calculator', 'attendance', 'events', 'notices', 'ai-companion'];
   const [activeTab, setActiveTab] = useState<ToolTab>(
     tabParam && validTabs.includes(tabParam)
       ? tabParam
@@ -42,8 +45,10 @@ export function ToolsDashboard() {
   };
 
   const pillTabs = [
+    { id: 'dashboard' as ToolTab, label: 'Student Cockpit', icon: GraduationCap },
     { id: 'calculator' as ToolTab, label: 'SGPA / CGPA Calculator', icon: Calculator },
     { id: 'attendance' as ToolTab, label: '75% Attendance Tracker', icon: ShieldCheck },
+    { id: 'events' as ToolTab, label: 'Campus Events & TechFest', icon: Sparkles },
     { id: 'notices' as ToolTab, label: 'Notice Board & Exam Dates', icon: Bell },
     { id: 'ai-companion' as ToolTab, label: 'AI Syllabus Helper', icon: Bot },
   ];
@@ -64,7 +69,7 @@ export function ToolsDashboard() {
           Student Utilities &amp; Academic Calculators
         </h1>
         <p className="text-sm text-[#52525B] mt-1 max-w-3xl font-sans leading-relaxed">
-          Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, audit mandatory 75% attendance and safe bunks, track priority notices, and get real-time AI syllabus guidance.
+          Centralized high-performance engineering utilities for SETGOI Durgapur. Calculate exact MAKAUT credit-indexed grades, audit mandatory 75% attendance and safe bunks, register for campus TechFest events, and get real-time AI syllabus guidance.
         </p>
       </div>
 
@@ -92,8 +97,10 @@ export function ToolsDashboard() {
 
       {/* Tab Content Panes */}
       <div className="animate-in fade-in duration-150">
+        {activeTab === 'dashboard' && <StudentAcademicCockpit />}
         {activeTab === 'calculator' && <SgpaCgpaCalculator />}
         {activeTab === 'attendance' && <AttendanceTracker />}
+        {activeTab === 'events' && <TechFestBoard />}
         {activeTab === 'notices' && <NoticeBoard />}
         {activeTab === 'ai-companion' && <AiStudyCompanion />}
       </div>

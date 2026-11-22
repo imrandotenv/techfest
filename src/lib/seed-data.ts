@@ -574,7 +574,7 @@ export const ACADEMIC_CALENDAR_EVENTS: AcademicCalendarEvent[] = [
 ];
 
 // ========================================================
-// TECHFEST 2026 BOARD SEED
+// TECHFEST 2026 & CAMPUS EVENTS SEED (MERGED FROM SANAKA HUB)
 // ========================================================
 
 export const TECHFEST_EVENTS: TechFestEvent[] = [
@@ -582,30 +582,40 @@ export const TECHFEST_EVENTS: TechFestEvent[] = [
     id: 'fest-01',
     title: 'Tech Fest 2026 - Innovation & Code Sprint',
     category: 'technical',
-    dateString: '26 NOV 2026',
-    description: 'Flagship 12-hour hackathon, robotics arena challenges, web development battle, and technical paper presentations.',
+    dateString: '15 DEC 2026',
+    description: 'A flagship celebration of technology, creativity, innovation, 12-hour hackathon, robotics arena challenges, and student talent.',
     coordinators: ['Dr. Sourav Sengupta', 'Prof. Riya Karmakar', 'Imran Ahmad (Lead)'],
-    venue: 'Main College Building - Central Seminar Hall & Lab 02',
+    venue: 'SANAKA Campus - Central Seminar Hall & Lab 02',
     registrationOpen: true,
   },
   {
     id: 'fest-02',
-    title: 'SETGOI Annual Cultural Fiesta',
+    title: 'Annual Cultural Fest 2026',
     category: 'cultural',
-    dateString: '27-28 NOV 2026',
-    description: 'Two-day festival celebrating music, battle of the bands, dramatic arts, photography exhibitions, and celebrity artist night.',
-    coordinators: ['Prof. Anirban Mukherjee', 'Student Council Executives'],
-    venue: 'Open-Air Amphitheatre & Central Lawns',
+    dateString: '20 DEC 2026',
+    description: 'Celebrate music, dance, dramatics, fine arts, battle of the bands, and the diverse talents of our campus community.',
+    coordinators: ['Prof. Anirban Mukherjee', 'Student Cultural Council'],
+    venue: 'SANAKA Campus - Open-Air Amphitheatre & Central Lawns',
     registrationOpen: true,
   },
   {
     id: 'fest-03',
-    title: 'Applied AI & Next.js Full-Stack Masterclass',
+    title: 'Innovation Workshop: Prototyping & Modern Engineering',
     category: 'workshop',
-    dateString: '15 DEC 2026 (Tentative)',
-    description: 'Hands-on bootcamp on deploying LLM-powered applications, Edge middleware, and modern web architectures.',
+    dateString: 'To Be Announced (DEC 2026)',
+    description: 'An opportunity to explore creative problem-solving, hands-on rapid prototyping, AI integration, and practical engineering skills.',
     coordinators: ['Industry Tech Mentors', 'CSE Technical Society'],
-    venue: 'Virtual + Computer Lab 04',
+    venue: 'SANAKA Campus - Computer Center Lab 04',
+    registrationOpen: true,
+  },
+  {
+    id: 'fest-04',
+    title: 'MAKAUT Robowars & Autonomous Maze Challenge',
+    category: 'technical',
+    dateString: '16 DEC 2026',
+    description: 'High-intensity combat robotics arena, line-follower sprints, and autonomous drone obstacle navigation.',
+    coordinators: ['Dr. Debabrata Roy', 'Robotics Club Lead'],
+    venue: 'Mechanical Workshop Complex & Courtyard Arena',
     registrationOpen: true,
   },
 ];

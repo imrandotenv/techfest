@@ -16,7 +16,9 @@ import {
   CheckCheck,
   Building2,
   FileText,
-  Bot
+  Bot,
+  GraduationCap,
+  Sparkles
 } from 'lucide-react';
 
 export interface CommandItem {
@@ -145,6 +147,14 @@ const COMMAND_ITEMS: CommandItem[] = [
 
   // Engineering Tools
   {
+    id: 'tool-cockpit',
+    title: 'Student Academic Dashboard & Course Roster',
+    subtitle: 'Enrolled subjects, upcoming CA assessments & live metrics',
+    category: 'Engineering Tools',
+    href: '/tools?tab=dashboard',
+    icon: GraduationCap,
+  },
+  {
     id: 'tool-calculator',
     title: 'MAKAUT 10-Point SGPA / CGPA Calculator',
     subtitle: 'Calculate exact semester GPA, % formula & honours status',
@@ -159,6 +169,14 @@ const COMMAND_ITEMS: CommandItem[] = [
     category: 'Engineering Tools',
     href: '/tools?tab=attendance',
     icon: Percent,
+  },
+  {
+    id: 'tool-events',
+    title: 'TechFest 2026 & Campus Events Board',
+    subtitle: 'Hackathons, cultural fests, workshops & digital pass desk',
+    category: 'Engineering Tools',
+    href: '/tools?tab=events',
+    icon: Sparkles,
   },
   {
     id: 'tool-forum',

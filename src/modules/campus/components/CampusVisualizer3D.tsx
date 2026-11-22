@@ -205,12 +205,14 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
   const [isLoading, setIsLoading] = useState(true);
   const [cameraView, setCameraView] = useState<'iso' | 'front' | 'gate' | 'top'>('iso');
   const [isInspectDrawerOpen, setIsInspectDrawerOpen] = useState(false);
+  const [isCutawayView, setIsCutawayView] = useState(false);
   const [, startTransition] = useTransition();
 
   // Three.js internal references for interaction
   const controlsRef = useRef<OrbitControls | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const buildingMeshesRef = useRef<Map<string, THREE.Group>>(new Map());
+  const blueWallMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
   // Fly camera smoothly to a target
   const focusOnCoordinates = (coords: { x: number; y: number; z: number }) => {
@@ -268,6 +270,27 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
     }
     controls.update();
   };
+
+  // Keyboard shortcut 'C' for Interior Cutaway View (from Sanaka Hub campus-map.js)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      if (e.key.toLowerCase() === 'c' && tag !== 'input' && tag !== 'textarea') {
+        setIsCutawayView((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Update wall transparency on cutaway toggle
+  useEffect(() => {
+    if (blueWallMatRef.current) {
+      blueWallMatRef.current.transparent = isCutawayView;
+      blueWallMatRef.current.opacity = isCutawayView ? 0.35 : 1.0;
+      blueWallMatRef.current.needsUpdate = true;
+    }
+  }, [isCutawayView]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -348,6 +371,7 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
     const asphaltMat = new THREE.MeshStandardMaterial({ color: '#5C5F63', roughness: 0.9 });
     const walkwayMat = new THREE.MeshStandardMaterial({ color: '#E4DACD', roughness: 0.85 });
     const blueWallMat = new THREE.MeshStandardMaterial({ color: '#477FAD', roughness: 0.75 });
+    blueWallMatRef.current = blueWallMat;
     const blueTrimMat = new THREE.MeshStandardMaterial({ color: '#285779', roughness: 0.8 });
     const stoneWallMat = new THREE.MeshStandardMaterial({ color: '#D8D0C3', roughness: 0.9 });
     const metalMat = new THREE.MeshStandardMaterial({ color: '#89949A', metalness: 0.65, roughness: 0.35 });
@@ -453,38 +477,138 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
       }
     }
 
+    // Interior Central Library & Computer Labs (Visible in Cutaway View - Ported from Sanaka Hub)
+    const interiorGroup = new THREE.Group();
+    interiorGroup.name = 'InteriorCutawayGroup';
+
+    // Library Study Tables in Rear Wing (10 tables in 2 rows)
+    const woodMat = new THREE.MeshStandardMaterial({ color: '#8B5A2B', roughness: 0.8 });
+    const screenMat = new THREE.MeshStandardMaterial({ color: '#1E293B', roughness: 0.3 });
+    for (let row = 0; row < 2; row++) {
+      for (let col = -10; col <= 10; col += 5) {
+        addBoxMesh(interiorGroup, 2.2, 0.7, 1.4, col, 0.35, -16 + (row === 0 ? -1.8 : 1.8), woodMat);
+      }
+    }
+    // Library Book Stacks
+    for (const bx of [-12, -7, 7, 12]) {
+      addBoxMesh(interiorGroup, 0.8, 2.4, 4.5, bx, 1.2, -16, burgundyMat);
+    }
+
+    // Computer Lab Workstations (Right Wing)
+    for (let rz = -10; rz <= 6; rz += 3.5) {
+      addBoxMesh(interiorGroup, 4.5, 0.7, 1.2, 12, 0.35, rz, stoneWallMat);
+      // Dual monitors on bench
+      addBoxMesh(interiorGroup, 0.8, 0.5, 0.1, 11, 0.95, rz, screenMat);
+      addBoxMesh(interiorGroup, 0.8, 0.5, 0.1, 13, 0.95, rz, screenMat);
+    }
+    mainBuildingGroup.add(interiorGroup);
+
     scene.add(mainBuildingGroup);
     zoneGroups.push(mainBuildingGroup);
     meshesMap.set('zone-main', mainBuildingGroup);
 
-    // 2. MAIN ENTRANCE BUILDING & PORTAL
+    // 2. MAIN ENTRANCE ARCH FACADE & GATES (Ported from Sanaka Hub campus-map.js)
     const entranceGroup = new THREE.Group();
     entranceGroup.userData = { zoneId: 'zone-entrance', slug: 'entrance-portal' };
 
-    // Stone Portico structure
-    addBoxMesh(entranceGroup, 8, 8, 5, -8, 4, 30, stoneWallMat);
-    addBoxMesh(entranceGroup, 8, 8, 5, 8, 4, 30, stoneWallMat);
-    addBoxMesh(entranceGroup, 24, 2.5, 5, 0, 9.25, 30, stoneWallMat); // Header beam over arch
+    // Arch-shaped entrance facade with ExtrudeGeometry and circular opening
+    const facadeShape = new THREE.Shape();
+    facadeShape.moveTo(-14, 0);
+    facadeShape.lineTo(14, 0);
+    facadeShape.lineTo(14, 10);
+    facadeShape.lineTo(-14, 10);
+    facadeShape.closePath();
 
-    // Blue glass panels
-    addBoxMesh(entranceGroup, 6, 5.5, 0.15, -8, 4.2, 32.6, glassMat);
-    addBoxMesh(entranceGroup, 6, 5.5, 0.15, 8, 4.2, 32.6, glassMat);
+    const entranceOpening = new THREE.Path();
+    entranceOpening.moveTo(-5.5, 0);
+    entranceOpening.lineTo(-5.5, 4.5);
+    entranceOpening.absarc(0, 4.5, 5.5, Math.PI, 0, true);
+    entranceOpening.lineTo(5.5, 0);
+    entranceOpening.closePath();
+    facadeShape.holes.push(entranceOpening);
+
+    const facadeGeo = new THREE.ExtrudeGeometry(facadeShape, { depth: 4.5, bevelEnabled: false });
+    const entranceFacadeMesh = new THREE.Mesh(facadeGeo, stoneWallMat);
+    entranceFacadeMesh.position.set(0, 0, 27.5);
+    entranceFacadeMesh.castShadow = true;
+    entranceFacadeMesh.receiveShadow = true;
+    entranceGroup.add(entranceFacadeMesh);
+
+    // Blue glass side panels
+    addBoxMesh(entranceGroup, 4.5, 6.5, 0.2, -10.5, 5, 32.2, glassMat);
+    addBoxMesh(entranceGroup, 4.5, 6.5, 0.2, 10.5, 5, 32.2, glassMat);
 
     // Institutional Name Band
-    addBoxMesh(entranceGroup, 14, 0.9, 0.2, 0, 7.5, 32.65, blueTrimMat);
+    addBoxMesh(entranceGroup, 14, 0.9, 0.2, 0, 8.2, 32.3, blueTrimMat);
 
-    // Entry / Exit Gates
+    // Two vehicle pavements (left & right)
+    addBoxMesh(entranceGroup, 4.5, 0.15, 18, -4.5, 0.05, 35, asphaltMat);
+    addBoxMesh(entranceGroup, 4.5, 0.15, 18, 4.5, 0.05, 35, asphaltMat);
+
+    // Solid curved grass island in between pavements
+    const grassIslandShape = new THREE.Shape();
+    grassIslandShape.moveTo(-1.6, 0);
+    grassIslandShape.lineTo(-1.6, 12);
+    grassIslandShape.quadraticCurveTo(-1.6, 14, 0, 14);
+    grassIslandShape.quadraticCurveTo(1.6, 14, 1.6, 12);
+    grassIslandShape.lineTo(1.6, 0);
+    grassIslandShape.closePath();
+
+    const grassIslandGeo = new THREE.ShapeGeometry(grassIslandShape, 24);
+    const islandMat = new THREE.MeshStandardMaterial({ color: '#319447', roughness: 0.9 });
+    const grassIslandMesh = new THREE.Mesh(grassIslandGeo, islandMat);
+    grassIslandMesh.rotation.x = -Math.PI / 2;
+    grassIslandMesh.position.set(0, 0.12, 44);
+    grassIslandMesh.receiveShadow = true;
+    entranceGroup.add(grassIslandMesh);
+
+    // Sliding metal security gates with vertical bars
     for (const gx of [-4.5, 4.5]) {
-      addBoxMesh(entranceGroup, 5.2, 0.15, 0.15, gx, 2.1, 33.5, metalMat);
-      addBoxMesh(entranceGroup, 5.2, 0.15, 0.15, gx, 0.25, 33.5, metalMat);
-      for (let bar = -2.2; bar <= 2.2; bar += 0.5) {
-        addBoxMesh(entranceGroup, 0.1, 1.8, 0.1, gx + bar, 1.15, 33.5, metalMat);
+      addBoxMesh(entranceGroup, 4.8, 0.12, 0.12, gx, 2.2, 44.2, metalMat);
+      addBoxMesh(entranceGroup, 4.8, 0.12, 0.12, gx, 0.35, 44.2, metalMat);
+      for (let bar = -2.0; bar <= 2.0; bar += 0.5) {
+        addBoxMesh(entranceGroup, 0.08, 1.9, 0.08, gx + bar, 1.25, 44.2, metalMat);
       }
     }
+    // Central white gate divider
+    addBoxMesh(entranceGroup, 0.8, 2.6, 0.8, 0, 1.3, 44.2, stoneWallMat);
 
     scene.add(entranceGroup);
     zoneGroups.push(entranceGroup);
     meshesMap.set('zone-entrance', entranceGroup);
+
+    // Courtyard Shrine Feature (Ported from Sanaka Hub campus-map.js)
+    const shrineGroup = new THREE.Group();
+    addBoxMesh(shrineGroup, 4.2, 0.4, 4.2, 0, 0.2, -3, stoneWallMat); // Shrine Base
+    addBoxMesh(shrineGroup, 2.4, 2.6, 2.4, 0, 1.6, -3, burgundyMat);   // Shrine Structure
+    addBoxMesh(shrineGroup, 3.8, 0.45, 3.8, 0, 3.1, -3, stoneWallMat); // Tiered Roof
+    scene.add(shrineGroup);
+
+    // Garden Trees around courtyard and perimeter
+    const addTree = (tx: number, tz: number) => {
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.2, 0.3, 2.2, 8),
+        new THREE.MeshStandardMaterial({ color: '#5C4033', roughness: 0.9 })
+      );
+      trunk.position.set(tx, 1.1, tz);
+      trunk.castShadow = true;
+      scene.add(trunk);
+
+      const leaves = new THREE.Mesh(
+        new THREE.SphereGeometry(1.5, 10, 10),
+        new THREE.MeshStandardMaterial({ color: '#3F7848', roughness: 0.85 })
+      );
+      leaves.position.set(tx, 3.0, tz);
+      leaves.castShadow = true;
+      scene.add(leaves);
+    };
+
+    addTree(6, -6);
+    addTree(-6, -6);
+    addTree(6, 2);
+    addTree(-6, 2);
+    addTree(18, 14);
+    addTree(-18, 14);
 
     // 3. CENTRAL PARKING BAY
     const parkingGroup = new THREE.Group();
@@ -723,6 +847,16 @@ export function CampusVisualizer3D({ onSelectDepartment }: CampusVisualizer3DPro
               }`}
             >
               Plan (2D)
+            </button>
+            <button
+              onClick={() => setIsCutawayView((prev) => !prev)}
+              className={`px-2.5 py-1 text-xs font-mono rounded transition-colors inline-flex items-center gap-1.5 ${
+                isCutawayView ? 'bg-[#2563EB] text-white font-bold' : 'text-zinc-600 hover:bg-zinc-100'
+              }`}
+              title="Toggle interior labs & library cutaway (Press 'C')"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>{isCutawayView ? 'Exterior Shell' : 'Interior Cutaway'}</span>
             </button>
           </div>
 

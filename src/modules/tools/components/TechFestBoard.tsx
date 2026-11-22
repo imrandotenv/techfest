@@ -201,7 +201,7 @@ export function TechFestBoard() {
             onClick={() => setSelectedCategory('all')}
             className={`px-3 py-1.5 rounded-lg border transition-all ${
               selectedCategory === 'all'
-                ? 'bg-zinc-900 text-white border-zinc-900 font-bold'
+                ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
             }`}
           >
@@ -211,7 +211,7 @@ export function TechFestBoard() {
             onClick={() => setSelectedCategory('technical')}
             className={`px-3 py-1.5 rounded-lg border transition-all ${
               selectedCategory === 'technical'
-                ? 'bg-zinc-900 text-white border-zinc-900 font-bold'
+                ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
             }`}
           >
@@ -221,7 +221,7 @@ export function TechFestBoard() {
             onClick={() => setSelectedCategory('cultural')}
             className={`px-3 py-1.5 rounded-lg border transition-all ${
               selectedCategory === 'cultural'
-                ? 'bg-zinc-900 text-white border-zinc-900 font-bold'
+                ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
             }`}
           >
@@ -231,7 +231,7 @@ export function TechFestBoard() {
             onClick={() => setSelectedCategory('workshop')}
             className={`px-3 py-1.5 rounded-lg border transition-all ${
               selectedCategory === 'workshop'
-                ? 'bg-zinc-900 text-white border-zinc-900 font-bold'
+                ? 'bg-[#2563EB] text-white border-[#2563EB] font-bold'
                 : 'bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50'
             }`}
           >
@@ -241,7 +241,7 @@ export function TechFestBoard() {
 
         <button
           onClick={() => setShowPassesDrawer(true)}
-          className="text-xs text-sky-600 hover:text-sky-700 font-semibold inline-flex items-center gap-1"
+          className="text-xs text-[#2563EB] hover:text-blue-700 font-semibold inline-flex items-center gap-1"
         >
           <Ticket className="w-3.5 h-3.5" />
           View Stored Passes ({myPasses.length})
@@ -263,7 +263,7 @@ export function TechFestBoard() {
                   <span
                     className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
                       ev.category === 'technical'
-                        ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                        ? 'bg-blue-50 text-[#2563EB] border border-blue-200'
                         : ev.category === 'cultural'
                         ? 'bg-pink-50 text-pink-700 border border-pink-200'
                         : 'bg-amber-50 text-amber-700 border border-amber-200'
@@ -279,7 +279,7 @@ export function TechFestBoard() {
                 </div>
 
                 {/* Title & Description */}
-                <h3 className="text-base font-bold text-zinc-900 mt-3 group-hover:text-sky-600 transition-colors">
+                <h3 className="text-base font-bold text-zinc-900 mt-3 group-hover:text-[#2563EB] transition-colors">
                   {ev.title}
                 </h3>
                 <p className="text-xs text-zinc-600 mt-2 line-clamp-3 leading-relaxed">
@@ -324,7 +324,7 @@ export function TechFestBoard() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm ${
                     isRegistered
                       ? 'border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700'
-                      : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                      : 'bg-[#2563EB] hover:bg-blue-700 text-white'
                   }`}
                 >
                   {isRegistered ? 'View Pass Ticket' : 'Register Pass'}
@@ -341,7 +341,7 @@ export function TechFestBoard() {
           <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
               <div>
-                <p className="text-[11px] font-mono uppercase text-sky-600 font-bold">
+                <p className="text-[11px] font-mono uppercase text-[#2563EB] font-bold">
                   TechFest 2026 Registration
                 </p>
                 <h3 className="text-base font-bold text-zinc-900 mt-0.5">
@@ -502,7 +502,7 @@ export function TechFestBoard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-bold transition-colors shadow-sm"
+                  className="px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-blue-700 text-white font-bold transition-colors shadow-sm"
                 >
                   Confirm & Issue Pass Ticket
                 </button>
