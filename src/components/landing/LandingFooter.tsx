@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { GraduationCap, Phone, Shield, ArrowUpRight } from 'lucide-react';
+import { SetTechLogo } from '@/components/SetTechLogo';
 
 export function LandingFooter() {
   return (
@@ -12,15 +13,7 @@ export function LandingFooter() {
           {/* Column 1: Brand & Status (2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-zinc-950 flex items-center justify-center text-white">
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <span className="font-bold tracking-tight text-lg text-zinc-950 flex items-center">
-                <span>SET</span><span className="text-[#2563EB]">Tech</span>
-              </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-100 text-zinc-600 border border-zinc-200">
-                SETGOI
-              </span>
+              <SetTechLogo variant="full" size={24} textClassName="text-lg font-bold" subtitle="SETGOI" showSubtitle />
             </div>
 
             <p className="text-xs text-zinc-500 max-w-sm leading-relaxed">

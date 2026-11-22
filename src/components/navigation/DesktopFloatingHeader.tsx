@@ -7,6 +7,7 @@ import { UserButton, useUser } from '@clerk/nextjs';
 import { Menu, X, BookOpen, MessageSquare, Compass, Calculator, Home, Shield, Phone, ArrowRight, User, Search } from 'lucide-react';
 import { getResolvedRole, getDisplayRole, ROLE_CONFIGS } from '@/lib/auth-client';
 import { CommandPalette } from './CommandPalette';
+import { SetTechLogo } from '@/components/SetTechLogo';
 
 interface NavItem {
   href: string;
@@ -75,14 +76,13 @@ export function DesktopFloatingHeader() {
       {/* Top Floating Pill Navbar (Responsive for Desktop & Mobile) */}
       <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto max-w-[calc(100vw-24px)]">
         <div className="flex items-center justify-between gap-3 sm:gap-7 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/85 backdrop-blur-[12px] border border-[#E2E8F0] shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all">
-          {/* Brand Mark */}
+          {/* Brand Mark with Official Custom SVG Logo */}
           <Link
             href="/"
-            className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#0F172A] hover:opacity-80 transition-opacity shrink-0"
+            className="flex items-center hover:opacity-85 transition-opacity shrink-0"
+            aria-label="SETTech Homepage"
           >
-            <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
-            <span className="font-semibold tracking-tight text-[#09090B]">SET</span>
-            <span className="font-semibold tracking-tight text-[#2563EB]">Tech</span>
+            <SetTechLogo variant="full" size={20} textClassName="text-sm font-bold" />
           </Link>
 
           {/* Active indicator badge on mobile */}
@@ -218,14 +218,7 @@ export function DesktopFloatingHeader() {
             {/* Drawer Header */}
             <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
-                <span className="font-display font-bold text-base text-[#0F172A] flex items-center">
-                  <span className="text-[#09090B]">SET</span>
-                  <span className="text-[#2563EB]">Tech</span>
-                </span>
-                <span className="text-[10px] font-mono text-[#475569] bg-slate-100 px-2 py-0.5 rounded border border-[#E2E8F0]">
-                  SETGOI
-                </span>
+                <SetTechLogo variant="full" size={20} textClassName="text-base font-bold" subtitle="SETGOI" showSubtitle />
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
