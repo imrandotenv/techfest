@@ -6,6 +6,7 @@ import { AcademicVaultGrid } from '@/components/landing/AcademicVaultGrid';
 import { DarkBentoSection } from '@/components/landing/DarkBentoSection';
 import { GradientCtaBanner } from '@/components/landing/GradientCtaBanner';
 import { HeroQuickSearch } from '@/components/landing/HeroQuickSearch';
+import { ExamCountdown } from '@/components/ExamCountdown';
 
 export const metadata = {
   title: 'SanakaHub | Centralized SETGOI Student Utility & Academic Vault',
@@ -33,12 +34,15 @@ export default function HomePage() {
 
       {/* Section 1: Above-the-Fold Hero & Live Vault Preview */}
       <section className="relative z-10 pt-16 md:pt-28 pb-12 sm:pb-14 px-6 text-center max-w-6xl mx-auto w-full">
-        {/* Eyebrow Pill */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs mb-3.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-mono uppercase tracking-wider text-[#475569] font-medium">
-            SETGOI DURGAPUR • STUDENT PORTAL
-          </span>
+        {/* Eyebrow & Live MAKAUT Exam Countdown Pill */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-3.5">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-mono uppercase tracking-wider text-[#475569] font-medium">
+              SETGOI DURGAPUR • STUDENT PORTAL
+            </span>
+          </div>
+          <ExamCountdown variant="pill" />
         </div>
 
         {/* Display Headline */}

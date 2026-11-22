@@ -10,3 +10,5 @@ export * from './components/NotesTable';
 export * from './components/UploadNoteModal';
 export * from './components/VerificationQueue';
 export * from './components/NotePreviewModal';
+export * from './components/LabPracticalsView';
+export * from './data/lab-practicals-data';

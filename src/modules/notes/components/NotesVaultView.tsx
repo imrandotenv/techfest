@@ -17,6 +17,8 @@ import { NoteCard } from './NoteCard';
 import { UploadNoteModal } from './UploadNoteModal';
 import { VerificationQueue } from './VerificationQueue';
 import { NotePreviewModal } from './NotePreviewModal';
+import { LabPracticalsView } from './LabPracticalsView';
+import { LAB_PRACTICALS } from '../data/lab-practicals-data';
 import { 
   Laptop, 
   Cpu, 
@@ -33,7 +35,8 @@ import {
   RotateCcw,
   Sparkles,
   FileText,
-  X
+  X,
+  FlaskConical
 } from 'lucide-react';
 
 interface BranchConfig {
@@ -123,6 +126,7 @@ export function NotesVaultView() {
   const [searchQuery, setSearchQuery] = useState<string>(initialQ);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewQueue, setViewQueue] = useState<boolean>(false);
+  const [activeVaultTab, setActiveVaultTab] = useState<'theory' | 'practicals'>('theory');
 
   // Modals
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -187,6 +191,15 @@ export function NotesVaultView() {
         (n.departmentCode === branch || n.departmentCode === 'ALL') &&
         n.semester === sem
     ).length;
+  };
+
+  // Lab practicals count helpers
+  const getBranchLabsCount = (code: BranchCode) => {
+    return LAB_PRACTICALS.filter((l) => l.departmentCode === code).length;
+  };
+
+  const getSemesterLabsCount = (branch: BranchCode, sem: number) => {
+    return LAB_PRACTICALS.filter((l) => l.departmentCode === branch && l.semester === sem).length;
   };
 
   // Filtered Notes for Step 3
@@ -331,6 +344,36 @@ export function NotesVaultView() {
         </div>
       )}
 
+      {/* Top Vault Mode Switcher: Theory Notes & PYQs vs Lab Practicals & Viva */}
+      {!viewQueue && !isDirectSearch && (
+        <div className="flex items-center justify-center pb-6 sm:pb-8">
+          <div className="inline-flex items-center bg-zinc-100 p-1 rounded-full border border-[#E4E4E7] shadow-2xs">
+            <button
+              onClick={() => setActiveVaultTab('theory')}
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold font-sans transition-all cursor-pointer ${
+                activeVaultTab === 'theory'
+                  ? 'bg-white text-[#09090B] shadow-xs border border-zinc-200/80'
+                  : 'text-[#52525B] hover:text-[#09090B]'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>Theory Notes &amp; PYQs</span>
+            </button>
+            <button
+              onClick={() => setActiveVaultTab('practicals')}
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold font-sans transition-all cursor-pointer ${
+                activeVaultTab === 'practicals'
+                  ? 'bg-white text-[#09090B] shadow-xs border border-zinc-200/80'
+                  : 'text-[#52525B] hover:text-[#09090B]'
+              }`}
+            >
+              <FlaskConical className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>Lab Practicals &amp; Viva</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Verification Queue View for College / Admin if active */}
       {viewQueue ? (
         <div className="space-y-6">
@@ -445,14 +488,25 @@ export function NotesVaultView() {
           {/* Centered Heading */}
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 text-xs font-mono font-medium">
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>MAKAUT ACADEMIC VAULT</span>
+              {activeVaultTab === 'practicals' ? (
+                <>
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  <span>MAKAUT LAB PRACTICALS &amp; VIVA HUB</span>
+                </>
+              ) : (
+                <>
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>MAKAUT ACADEMIC VAULT</span>
+                </>
+              )}
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#09090B] font-display">
-              Select your B.Tech Branch
+              {activeVaultTab === 'practicals' ? 'Select Branch for Lab Practicals' : 'Select your B.Tech Branch'}
             </h1>
             <p className="text-sm text-[#52525B] font-sans leading-relaxed">
-              Curated lecture notes, solved 10-year MAKAUT question papers, and lab manuals organized by engineering discipline.
+              {activeVaultTab === 'practicals'
+                ? 'Departmental laboratory manuals, experiment instructions, and top 5 External Examiner Viva Q&As.'
+                : 'Curated lecture notes, solved 10-year MAKAUT question papers, and lab manuals organized by engineering discipline.'}
             </p>
           </div>
 
@@ -461,6 +515,7 @@ export function NotesVaultView() {
             {BTECH_BRANCHES.map((b) => {
               const Icon = b.icon;
               const count = getBranchNotesCount(b.code);
+              const labCount = getBranchLabsCount(b.code);
               return (
                 <div
                   key={b.code}
@@ -490,7 +545,15 @@ export function NotesVaultView() {
 
                   <div className="mt-6 pt-4 border-t border-[#E4E4E7] flex items-center justify-between text-xs">
                     <span className="text-[#52525B] font-mono">
-                      {count} {count === 1 ? 'Resource' : 'Resources'}
+                      {activeVaultTab === 'practicals' ? (
+                        <>
+                          <strong className="text-[#09090B]">{labCount}</strong> {labCount === 1 ? 'Lab' : 'Labs'} &amp; Viva
+                        </>
+                      ) : (
+                        <>
+                          <strong className="text-[#09090B]">{count}</strong> {count === 1 ? 'Resource' : 'Resources'}
+                        </>
+                      )}
                     </span>
                     <span className="inline-flex items-center gap-1 font-medium text-[#2563EB] group-hover:translate-x-0.5 transition-transform">
                       Select Branch
@@ -565,13 +628,15 @@ export function NotesVaultView() {
           {/* Centered Heading */}
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200/60 text-xs font-mono font-medium">
-              <span>{selectedBranch} CURRICULUM</span>
+              <span>{selectedBranch} {activeVaultTab === 'practicals' ? 'LAB PRACTICALS' : 'CURRICULUM'}</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#09090B] font-display">
-              Select Semester for {selectedBranch}
+              {activeVaultTab === 'practicals' ? `Select Semester for ${selectedBranch} Labs` : `Select Semester for ${selectedBranch}`}
             </h1>
             <p className="text-sm text-[#52525B] font-sans leading-relaxed">
-              Choose an academic semester to view curated lecture notes, syllabus modules, and solved papers.
+              {activeVaultTab === 'practicals'
+                ? 'Choose an academic semester to view laboratory manuals, hardware setups, and viva Q&A pairs.'
+                : 'Choose an academic semester to view curated lecture notes, syllabus modules, and solved papers.'}
             </p>
           </div>
 
@@ -579,6 +644,8 @@ export function NotesVaultView() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             {SEMESTERS.map((s) => {
               const count = getSemesterNotesCount(selectedBranch, s.num);
+              const labCount = getSemesterLabsCount(selectedBranch, s.num);
+              const displayCount = activeVaultTab === 'practicals' ? labCount : count;
               return (
                 <div
                   key={s.num}
@@ -597,10 +664,16 @@ export function NotesVaultView() {
                   <div className="mt-4 pt-3 border-t border-[#E4E4E7] flex items-center justify-between text-xs">
                     <span
                       className={`font-mono text-[11px] ${
-                        count > 0 ? 'text-[#2563EB] font-semibold' : 'text-[#52525B]/70'
+                        displayCount > 0 ? 'text-[#2563EB] font-semibold' : 'text-[#52525B]/70'
                       }`}
                     >
-                      {count > 0 ? `${count} ${count === 1 ? 'Note' : 'Notes'}` : '0 Notes'}
+                      {activeVaultTab === 'practicals'
+                        ? displayCount > 0
+                          ? `${displayCount} ${displayCount === 1 ? 'Lab' : 'Labs'}`
+                          : '0 Labs'
+                        : displayCount > 0
+                        ? `${displayCount} ${displayCount === 1 ? 'Note' : 'Notes'}`
+                        : '0 Notes'}
                     </span>
                     <ArrowRight className="w-3 h-3 text-[#52525B] group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-transform" />
                   </div>
@@ -656,8 +729,17 @@ export function NotesVaultView() {
             </div>
           </div>
 
-          {/* Section Toolbar: Search + Category Pills + Upload CTA */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-[#E4E4E7] rounded-2xl p-3.5 shadow-xs">
+          {activeVaultTab === 'practicals' ? (
+            /* LAB PRACTICALS & VIVA HUB VIEW */
+            <LabPracticalsView
+              branch={selectedBranch}
+              semester={selectedSemester}
+              onOpenUpload={handleOpenUpload}
+            />
+          ) : (
+            <>
+              {/* Section Toolbar: Search + Category Pills + Upload CTA */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-[#E4E4E7] rounded-2xl p-3.5 shadow-xs">
             {/* Search Input */}
             <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 text-[#52525B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -758,6 +840,8 @@ export function NotesVaultView() {
                 />
               ))}
             </div>
+          )}
+            </>
           )}
         </div>
       )}

@@ -14,6 +14,7 @@ import {
   Tag
 } from 'lucide-react';
 import { CampusNotice } from '@/modules/rbac/actions';
+import { ExamCountdown } from '@/components/ExamCountdown';
 
 interface NoticeBoardProps {
   initialNotices?: CampusNotice[];
@@ -92,6 +93,9 @@ export function NoticeBoard({ initialNotices = DEFAULT_NOTICES }: NoticeBoardPro
 
   return (
     <div className="space-y-6">
+      {/* Live MAKAUT Semester Exam Countdown Strip */}
+      <ExamCountdown variant="strip" />
+
       {/* Header & Controls */}
       <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
