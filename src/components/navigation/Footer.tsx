@@ -168,24 +168,43 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
+        <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
           <div>
-            <span>SanakaHub © 2026 • Sanaka Educational Trust&apos;s Group of Institutions</span>
+            <span>SanakaHub © 2026 • Independent Student Initiative (SETGOI B.Tech • MAKAUT)</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-zinc-600">
             <span className="flex items-center gap-1.5 text-zinc-900 font-medium">
               <Phone className="w-3.5 h-3.5 text-rose-500" />
-              <span>National Ragging Prevention Helpline</span>
+              <span>Anti-Ragging: 1800-180-5522</span>
             </span>
-            <span>•</span>
-            <Link href="/terms" className="hover:text-zinc-900 transition-colors">
-              Terms
-            </Link>
-            <span>•</span>
-            <Link href="/privacy" className="hover:text-zinc-900 transition-colors">
+            <span className="text-zinc-300">|</span>
+            <Link href="/privacy" className="hover:text-zinc-950 transition-colors">
               Privacy
             </Link>
+            <span className="text-zinc-300">|</span>
+            <Link href="/terms" className="hover:text-zinc-950 transition-colors">
+              Terms
+            </Link>
+            <span className="text-zinc-300">|</span>
+            <Link href="/cookies" className="hover:text-zinc-950 transition-colors">
+              Cookies
+            </Link>
+            <span className="text-zinc-300">|</span>
+            <Link href="/disclaimer" className="hover:text-zinc-950 transition-colors">
+              Disclaimer
+            </Link>
+            <span className="text-zinc-300">|</span>
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('sanakahub:open-cookie-settings'));
+                }
+              }}
+              className="text-blue-600 hover:text-blue-800 transition-colors underline underline-offset-2 cursor-pointer font-medium"
+            >
+              Cookie Settings
+            </button>
           </div>
         </div>
       </div>

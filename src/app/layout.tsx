@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Footer } from "@/components/navigation/Footer";
+import { CookieBanner } from "@/components/CookieBanner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -69,6 +70,7 @@ export default function RootLayout({
           <FloatingNav />
           <main className="flex-1 w-full">{children}</main>
           <Footer />
+          <CookieBanner />
         </body>
       </html>
     </ClerkProvider>

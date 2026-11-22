@@ -25,3 +25,9 @@ Always activate and adhere to the `floating-navigation-dock` skill for all navig
    - Must use a **detached floating bottom thumb-zone dock** centered at the bottom of the screen (`fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-40 md:hidden w-[92%] max-w-sm pointer-events-auto rounded-full p-1.5 shadow-xl bg-white/95 backdrop-blur-2xl border border-zinc-200/90`).
    - Must incorporate iOS Home Indicator safe-area padding (`env(safe-area-inset-bottom)`), minimum 48x48px touch targets, and slide-up drawer/sheet integration for secondary links and RBAC portals.
    - Main page layout must always include generous top buffer (`pt-16 md:pt-20`) and bottom buffer (`pb-28 md:pb-12`) so content and interactive elements are never obscured by the floating pills.
+
+## Rule 3: Legal, Privacy & Cookie Policy Synchronization (`.agent/rules/legal-sync.md`)
+Whenever adding or updating any third-party API (LLMs, TTS, auth), database (Prisma, Neon, Supabase), telemetry tool, or client storage item (`localStorage`, `cookie`):
+- **ALWAYS** update `src/config/legal.ts` (`LEGAL_CONFIG.processors`, `LEGAL_CONFIG.storageItems`, `LEGAL_CONFIG.policyVersion`, `LEGAL_CONFIG.lastUpdated`).
+- Maintain compliance with India's **DPDP Act, 2023** and **IT Act, 2000**.
+- Verify that `/privacy`, `/terms`, `/cookies`, and `/disclaimer` remain public routes in `src/middleware.ts` and accurately reflect the updated inventory without code drift.
