@@ -15,7 +15,7 @@ import { getCurrentAuthUser } from '@/lib/rbac';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: '403 Restricted Access | SanakaHub',
+  title: '403 Restricted Access | SETTech',
   description: 'Role-based access restriction. Requires elevated SETGOI faculty or super-admin clearance.',
 };
 
@@ -109,7 +109,7 @@ export default async function UnauthorizedPage() {
               className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#E4E4E7] text-[#09090B] hover:bg-zinc-50 font-sans text-xs font-medium inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Home className="w-3.5 h-3.5 text-[#52525B]" />
-              <span>SanakaHub Home</span>
+              <span>SETTech Home</span>
             </Link>
           </div>
         </div>

@@ -17,8 +17,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SanakaHub | Centralized SETGOI Student Utility & Campus Portal",
+  title: "SETTech | Centralized SETGOI Student Utility & Campus Portal",
   description: "Ultra-fast student utility, MAKAUT PYQ vault, SGPA calculator, campus directory, and discussion portal for Sanaka Educational Trust's Group of Institutions, Durgapur.",
+  applicationName: "SETTech",
+  openGraph: {
+    title: "SETTech | Centralized SETGOI Student Utility & Campus Portal",
+    description: "Ultra-fast student utility, MAKAUT PYQ vault, SGPA calculator, campus directory, and discussion portal for SETGOI School of Engineering.",
+    siteName: "SETTech",
+  },
 };
 
 export default function RootLayout({

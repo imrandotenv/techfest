@@ -16,7 +16,7 @@ export function CookieBanner() {
   // Initialize and check localStorage on client mount
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem('sanakahub_cookie_consent');
+    const stored = localStorage.getItem('settech_cookie_consent') || localStorage.getItem('sanakahub_cookie_consent');
     if (!stored) {
       setHasConsent(false);
     } else {
@@ -29,8 +29,10 @@ export function CookieBanner() {
       setIsModalOpen(true);
     };
 
+    window.addEventListener('settech:open-cookie-settings', handleOpenSettings);
     window.addEventListener('sanakahub:open-cookie-settings', handleOpenSettings);
     return () => {
+      window.removeEventListener('settech:open-cookie-settings', handleOpenSettings);
       window.removeEventListener('sanakahub:open-cookie-settings', handleOpenSettings);
     };
   }, []);
@@ -42,7 +44,7 @@ export function CookieBanner() {
   }
 
   const saveConsent = (choice: 'all' | 'essential') => {
-    localStorage.setItem('sanakahub_cookie_consent', choice);
+    localStorage.setItem('settech_cookie_consent', choice);
     setHasConsent(true);
     setIsModalOpen(false);
   };
@@ -79,7 +81,7 @@ export function CookieBanner() {
                     <span>Cookie &amp; Privacy Choices</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   </h3>
-                  <p className="text-[11px] font-mono text-zinc-400">SanakaHub • SETGOI B.Tech</p>
+                  <p className="text-[11px] font-mono text-zinc-400">SETTech • SETGOI B.Tech</p>
                 </div>
               </div>
 
@@ -202,7 +204,7 @@ export function CookieBanner() {
               {/* Notice regarding Advertising */}
               <div className="p-3 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 text-zinc-500 text-[11px] flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Zero Advertising, Marketing, or Tracking Pixels exist on SanakaHub.</span>
+                <span>Zero Advertising, Marketing, or Tracking Pixels exist on SETTech.</span>
               </div>
             </div>
 

@@ -41,7 +41,7 @@ export function RoleSelector({ onRoleSelected, showSignedInProfile = true }: Rol
     } else {
       // Persist in localStorage for when user signs up / signs in
       if (typeof window !== 'undefined') {
-        localStorage.setItem('sanakahub_preferred_role', role);
+        localStorage.setItem('settech_preferred_role', role);
       }
       setSyncStatus(`Onboarding role set to ${getDisplayRole(role)}`);
       setTimeout(() => setSyncStatus(null), 3000);

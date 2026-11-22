@@ -692,7 +692,7 @@ export function CollegeVerificationDashboard({
               Broadcast Official Campus Notice
             </h3>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Notices published here are displayed across SanakaHub overview cards, campus alerts, and student feeds.
+              Notices published here are displayed across SETTech overview cards, campus alerts, and student feeds.
             </p>
           </div>
 

@@ -11,17 +11,19 @@ export default function CookiesPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sanakahub_cookie_consent');
+      const stored = localStorage.getItem('settech_cookie_consent') || localStorage.getItem('sanakahub_cookie_consent');
       setCurrentConsent(stored);
     }
   }, []);
 
   const handleResetPreferences = () => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('settech_cookie_consent');
       localStorage.removeItem('sanakahub_cookie_consent');
       setCurrentConsent(null);
       setResetMessage('Cookie preferences have been reset. Re-opening preferences banner...');
       // Dispatch custom event to tell CookieBanner to re-open
+      window.dispatchEvent(new CustomEvent('settech:open-cookie-settings'));
       window.dispatchEvent(new CustomEvent('sanakahub:open-cookie-settings'));
       setTimeout(() => {
         setResetMessage(null);
@@ -31,12 +33,13 @@ export default function CookiesPage() {
 
   const handleOpenSettings = () => {
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('settech:open-cookie-settings'));
       window.dispatchEvent(new CustomEvent('sanakahub:open-cookie-settings'));
     }
   };
 
   const tldr = [
-    'No Advertising Cookies: SanakaHub uses zero ad trackers, commercial marketing pixels, or third-party behavioral cookies.',
+    'No Advertising Cookies: SETTech uses zero ad trackers, commercial marketing pixels, or third-party behavioral cookies.',
     'Strictly Necessary: Session authentication cookies (__session, __client_uat) are required by Clerk to keep your login secure.',
     'Local Preferences: Features like the MAKAUT exam countdown and AI viva preview count store minimal state in localStorage on your device.',
     'Full User Control: You can review, modify, or completely reset your cookie choices at any time using the Reset button below.',
@@ -45,7 +48,7 @@ export default function CookiesPage() {
   return (
     <LegalLayout
       title="Cookie & Local Storage Policy"
-      subtitle="Complete inventory of cookies, browser local storage keys, session markers, and student preference controls utilized by SanakaHub."
+      subtitle="Complete inventory of cookies, browser local storage keys, session markers, and student preference controls utilized by SETTech."
       badgeLabel="COOKIE TRANSPARENCY"
       tldrItems={tldr}
     >
@@ -56,7 +59,7 @@ export default function CookiesPage() {
           <h2>1. What Are Cookies &amp; Local Storage?</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          Cookies and HTML5 Local Storage are small text files or key-value pairs stored on your computer or mobile device when you browse SanakaHub. They allow the platform to remember your active sign-in session, prevent repeated logins across tabs, and store your semester examination target dates without burdening a remote database.
+          Cookies and HTML5 Local Storage are small text files or key-value pairs stored on your computer or mobile device when you browse SETTech. They allow the platform to remember your active sign-in session, prevent repeated logins across tabs, and store your semester examination target dates without burdening a remote database.
         </p>
       </section>
 

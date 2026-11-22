@@ -177,7 +177,7 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
   const handleSaveExamDate = (e: React.FormEvent) => {
     e.preventDefault();
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sanakahub_exam_target_date', examDate);
+      localStorage.setItem('settech_exam_target_date', examDate);
     }
     setExamSaved(true);
     setTimeout(() => setExamSaved(false), 3000);

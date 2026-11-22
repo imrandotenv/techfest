@@ -17,7 +17,7 @@ export default function SignUpPage() {
             className="inline-flex items-center gap-2 text-xs font-mono font-medium text-zinc-500 hover:text-zinc-900 transition-colors group"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            <span>Back to SanakaHub</span>
+            <span>Back to SETTech</span>
           </Link>
         </div>
 
@@ -27,8 +27,9 @@ export default function SignUpPage() {
           <div className="mb-6 space-y-2">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
-              <span className="font-display font-bold text-lg text-zinc-900">
-                SanakaHub
+              <span className="font-display font-bold text-lg text-zinc-900 flex items-center">
+                <span className="text-[#09090B]">SET</span>
+                <span className="text-[#2563EB]">Tech</span>
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
                 SETGOI Durgapur
@@ -77,7 +78,7 @@ export default function SignUpPage() {
         {/* Footer Disclaimer */}
         <div className="text-center pt-4">
           <p className="text-[11px] text-zinc-500">
-            By registering, you agree to SanakaHub&apos;s{' '}
+            By registering, you agree to SETTech&apos;s{' '}
             <Link href="/terms" className="underline hover:text-zinc-900">Terms of Service</Link> and{' '}
             <Link href="/privacy" className="underline hover:text-zinc-900">Privacy Policy</Link>.
           </p>

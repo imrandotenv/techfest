@@ -1,4 +1,4 @@
-# SanakaHub (Techfest Project)
+# SETTech (Techfest Project)
 > **Centralized Academic Vault, Campus Directory & Student Utility Portal** for Sanaka Educational Trust Group of Institutions (SETGOI) Durgapur (MAKAUT Affiliated).
 
 Built with **Next.js 16 (App Router + Turbopack)**, **TypeScript**, **Tailwind CSS**, **Clerk Authentication (3-Role RBAC)**, and **Swiss Editorial Minimalism**.

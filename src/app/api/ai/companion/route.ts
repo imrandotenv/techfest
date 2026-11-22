@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { auth } from '@clerk/nextjs/server';
 
 const CAMPUS_SYSTEM_INSTRUCTION = `
-You are the SanakaHub AI Study & Campus Companion for Sanaka Educational Trust's Group of Institutions (SETGOI), Durgapur, affiliated with Maulana Abul Kalam Azad University of Technology (MAKAUT).
+You are the SETTech AI Study & Campus Companion for Sanaka Educational Trust's Group of Institutions (SETGOI), Durgapur, affiliated with Maulana Abul Kalam Azad University of Technology (MAKAUT).
 
 Your responsibilities:
 1. MAKAUT CURRICULUM & GRADING:
@@ -53,7 +53,7 @@ Here are the key dates for SETGOI students:
 - **Practical & Viva Examinations:** 21 Dec 2026 – 24 Dec 2026.
 - **Even Semester Commencement:** 04 Jan 2027.
 
-*Tip: You can filter these events live on the **Academic Calendar** tab in SanakaHub!*`;
+*Tip: You can filter these events live on the **Academic Calendar** tab in SETTech!*`;
   }
 
   if (p.includes('bus') || p.includes('transport') || p.includes('route') || p.includes('timing') || p.includes('raniganj') || p.includes('asansol')) {
@@ -124,7 +124,7 @@ MAKAUT follows the Choice Based Credit System (CBCS):
 *You can register and download your Digital Entry Pass instantly on the **TechFest 2026** tab!*`;
   }
 
-  return `### 🌟 SanakaHub Campus & Academic Assistant
+  return `### 🌟 SETTech Campus & Academic Assistant
 
 I am here to assist SETGOI students with:
 - **MAKAUT Curriculum & Notes:** Subject codes (e.g. \`PCC-CS301\`, \`ESC301\`), credit weights, and PYQ solutions.
@@ -154,7 +154,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const messages = body.messages || [];
     const latestMessage =
-      messages[messages.length - 1]?.content || body.prompt || 'Hello SanakaHub';
+      messages[messages.length - 1]?.content || body.prompt || 'Hello SETTech';
 
     const apiKey = process.env.GEMINI_API_KEY;
 

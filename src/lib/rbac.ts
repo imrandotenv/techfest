@@ -103,7 +103,7 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
       // Check for development/QA preview cookie
       try {
         const cookieStore = await cookies();
-        const previewRole = cookieStore.get('sanakahub_preview_role')?.value as UserRole | undefined;
+        const previewRole = (cookieStore.get('settech_preview_role')?.value || cookieStore.get('sanakahub_preview_role')?.value) as UserRole | undefined;
         if (previewRole && (previewRole === 'admin' || previewRole === 'faculty' || previewRole === 'student')) {
           return {
             userId: `qa_${previewRole}_01`,

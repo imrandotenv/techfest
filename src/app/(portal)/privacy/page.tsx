@@ -5,9 +5,9 @@ import { LEGAL_CONFIG } from '@/config/legal';
 import { Shield, Lock, Eye, Database, Cpu, UserCheck, AlertCircle, FileCheck, ArrowUpRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy & Student Data Governance | SanakaHub',
+  title: 'Privacy Policy & Student Data Governance | SETTech',
   description:
-    'Complete student privacy policy, DPDP Act 2023 compliance, Clerk authentication, AI viva voice processing, and third-party processor transparency for SanakaHub at SETGOI Durgapur.',
+    'Complete student privacy policy, DPDP Act 2023 compliance, Clerk authentication, AI viva voice processing, and third-party processor transparency for SETTech at SETGOI Durgapur.',
 };
 
 export default function PrivacyPage() {
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
   return (
     <LegalLayout
       title="Privacy Policy & Student Data Governance"
-      subtitle="How SanakaHub protects student privacy, handles authentication, processes AI viva sessions, and complies with India's Digital Personal Data Protection (DPDP) Act, 2023."
+      subtitle="How SETTech protects student privacy, handles authentication, processes AI viva sessions, and complies with India's Digital Personal Data Protection (DPDP) Act, 2023."
       badgeLabel="DATA PRIVACY"
       tldrItems={tldr}
     >
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           <h2>1. Introduction &amp; Commitment to Student Privacy</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          SanakaHub (<span className="font-mono text-zinc-800">sanakahub.dev</span>) is an independent, engineer-first academic companion built exclusively for B.Tech engineering students, research scholars, and faculty at Sanaka Educational Trust&apos;s Group of Institutions (SETGOI), Durgapur.
+          SETTech (<span className="font-mono text-zinc-800">settech.dev</span>) is an independent, engineer-first academic companion built exclusively for B.Tech engineering students, research scholars, and faculty at Sanaka Educational Trust&apos;s Group of Institutions (SETGOI), Durgapur.
         </p>
         <p className="text-sm text-zinc-600 leading-relaxed">
           We operate under a strict principle of minimal data collection. We do not monetize student attention, run advertising networks, or deploy commercial tracking pixels. Any information collected is strictly necessary to authenticate your academic identity, facilitate peer discussions, provide AI oral viva evaluations, or access curated MAKAUT study vaults.
@@ -85,14 +85,14 @@ export default function PrivacyPage() {
           <h2>3. AI Viva Studio &amp; Voice Privacy</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          SanakaHub provides an interactive AI Viva Studio (<code className="font-mono text-zinc-800">/viva</code>) for B.Tech students practicing for university oral examinations.
+          SETTech provides an interactive AI Viva Studio (<code className="font-mono text-zinc-800">/viva</code>) for B.Tech students practicing for university oral examinations.
         </p>
 
         <div className="space-y-3 text-xs sm:text-sm text-zinc-600 leading-relaxed">
           <div className="flex items-start gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
             <p>
-              <strong className="text-zinc-900">Zero Audio Server Storage:</strong> Microphone voice input uses the client browser&apos;s native Web Speech API (<code className="font-mono text-xs">webkitSpeechRecognition</code>). Your spoken voice is converted to text on your local device. SanakaHub does NOT record, save, or store raw voice audio files on any server.
+              <strong className="text-zinc-900">Zero Audio Server Storage:</strong> Microphone voice input uses the client browser&apos;s native Web Speech API (<code className="font-mono text-xs">webkitSpeechRecognition</code>). Your spoken voice is converted to text on your local device. SETTech does NOT record, save, or store raw voice audio files on any server.
             </p>
           </div>
           <div className="flex items-start gap-2">
@@ -210,7 +210,7 @@ export default function PrivacyPage() {
           <h2>6. Data Security &amp; Encryption Standards</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          All client-to-server traffic is transmitted over <strong className="text-zinc-900">TLS 1.3 / HTTPS encryption</strong>. Authentication sessions utilize secure HTTP-only cookies where applicable with strict SameSite protection. Passwords are never seen, stored, or processed in plaintext by SanakaHub servers.
+          All client-to-server traffic is transmitted over <strong className="text-zinc-900">TLS 1.3 / HTTPS encryption</strong>. Authentication sessions utilize secure HTTP-only cookies where applicable with strict SameSite protection. Passwords are never seen, stored, or processed in plaintext by SETTech servers.
         </p>
       </section>
 

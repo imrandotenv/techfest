@@ -16,7 +16,7 @@ import { PageHeader } from '@/components/PageHeader';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Executive Admin Console | SanakaHub',
+  title: 'Executive Admin Console | SETTech',
   description: 'SETGOI Super Admin Control Panel & Role Management.',
 };
 

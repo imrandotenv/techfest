@@ -74,7 +74,7 @@ function resolveRoleFromClaims(sessionClaims: any): 'admin' | 'faculty' | 'stude
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
   const isApi = url.pathname.startsWith('/api');
-  const previewRole = req.cookies.get('sanakahub_preview_role')?.value;
+  const previewRole = req.cookies.get('settech_preview_role')?.value || req.cookies.get('sanakahub_preview_role')?.value;
 
   // 1. Check Admin Routes
   if (isAdminRoute(req)) {

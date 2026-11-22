@@ -20,7 +20,7 @@ export function AiStudyCompanion() {
     {
       id: 'welcome-msg',
       role: 'assistant',
-      content: `Hello! I am your **SanakaHub AI Study & Campus Companion**.
+      content: `Hello! I am your **SETTech AI Study & Campus Companion**.
 
 I can help you with:
 - **MAKAUT Exam Schedules & CA/PCA dates**
@@ -226,7 +226,7 @@ What would you like to check today?`,
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3 pb-1.5 mb-1.5 border-b border-black/10 dark:border-white/10 text-[10px] opacity-70">
-                    <span className="font-semibold">{isUser ? 'You' : 'SanakaHub AI'}</span>
+                    <span className="font-semibold">{isUser ? 'You' : 'SETTech AI'}</span>
                     <div className="flex items-center gap-2">
                       <span>{msg.timestamp}</span>
                       {!isUser && msg.content && (

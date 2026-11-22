@@ -57,7 +57,7 @@ export function getResolvedRole(user: any): CustomUserRole {
   const roleVal =
     user.unsafeMetadata?.role ||
     user.publicMetadata?.role ||
-    (typeof window !== 'undefined' ? localStorage.getItem('sanakahub_preferred_role') : null);
+    (typeof window !== 'undefined' ? (localStorage.getItem('settech_preferred_role') || localStorage.getItem('sanakahub_preferred_role')) : null);
   return normalizeRole(roleVal as string);
 }
 
@@ -77,7 +77,7 @@ export function getDisplayRole(role: CustomUserRole | string): 'Student' | 'Facu
 export async function setUserRole(user: any, targetRole: 'student' | 'faculty' | 'admin' | CustomUserRole): Promise<boolean> {
   const normalized = normalizeRole(targetRole);
   if (typeof window !== 'undefined') {
-    localStorage.setItem('sanakahub_preferred_role', normalized);
+    localStorage.setItem('settech_preferred_role', normalized);
   }
 
   if (!user) return true;

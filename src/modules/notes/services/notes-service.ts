@@ -2,7 +2,8 @@ import { NoteItem, CustomUserRole, VerificationStatus } from '@/types';
 import { COMPREHENSIVE_MOCK_NOTES } from '../data/mock-notes';
 import { NoteFilterState, UploadNoteFormData } from '../types';
 
-const STORAGE_KEY = 'sanakahub_notes_vault_v1';
+const STORAGE_KEY = 'settech_notes_vault_v1';
+const LEGACY_STORAGE_KEY = 'sanakahub_notes_vault_v1';
 
 // In-memory fallback / cache
 let inMemoryNotes: NoteItem[] = [...COMPREHENSIVE_MOCK_NOTES];
@@ -10,7 +11,7 @@ let inMemoryNotes: NoteItem[] = [...COMPREHENSIVE_MOCK_NOTES];
 export function getInitialNotes(): NoteItem[] {
   if (typeof window !== 'undefined') {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {

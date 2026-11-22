@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { NoticeBoard } from '@/modules/tools/components/NoticeBoard';
 
 export const metadata: Metadata = {
-  title: 'SETGOI Priority Notice Board & MAKAUT Circulars | SanakaHub',
+  title: 'SETGOI Priority Notice Board & MAKAUT Circulars | SETTech',
   description:
     'Official academic notices, examination cell announcements, lab schedules, transport updates, and placement circulars for SETGOI Durgapur students and faculty.',
 };

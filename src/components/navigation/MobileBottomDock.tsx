@@ -74,8 +74,8 @@ export function MobileBottomDock() {
 
             <div className="flex items-center justify-between pb-4 border-b border-zinc-100 mb-4">
               <div>
-                <span className="text-sm font-semibold text-zinc-950">
-                  SanakaHub
+                <span className="text-sm font-semibold tracking-tight text-zinc-950 flex items-center">
+                  <span>SET</span><span className="text-[#2563EB]">Tech</span>
                 </span>
                 <p className="text-xs text-zinc-500 font-mono">
                   SETGOI Durgapur • Directory

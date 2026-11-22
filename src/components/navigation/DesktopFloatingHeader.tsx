@@ -81,7 +81,8 @@ export function DesktopFloatingHeader() {
             className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#0F172A] hover:opacity-80 transition-opacity shrink-0"
           >
             <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
-            <span>SanakaHub</span>
+            <span className="font-semibold tracking-tight text-[#09090B]">SET</span>
+            <span className="font-semibold tracking-tight text-[#2563EB]">Tech</span>
           </Link>
 
           {/* Active indicator badge on mobile */}
@@ -216,10 +217,11 @@ export function DesktopFloatingHeader() {
 
             {/* Drawer Header */}
             <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
-                <span className="font-display font-bold text-base text-[#0F172A]">
-                  SanakaHub
+                <span className="font-display font-bold text-base text-[#0F172A] flex items-center">
+                  <span className="text-[#09090B]">SET</span>
+                  <span className="text-[#2563EB]">Tech</span>
                 </span>
                 <span className="text-[10px] font-mono text-[#475569] bg-slate-100 px-2 py-0.5 rounded border border-[#E2E8F0]">
                   SETGOI
@@ -258,7 +260,7 @@ export function DesktopFloatingHeader() {
                 </div>
               ) : (
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-xs text-[#475569] font-sans">SanakaHub Account</span>
+                  <span className="text-xs text-[#475569] font-sans">SETTech Account</span>
                   <Link
                     href="/sign-in"
                     onClick={() => setMobileMenuOpen(false)}

@@ -46,7 +46,7 @@ struct Node* rightRotate(struct Node *y) {
     return x;
 }
 \`\`\`
-Refer to module 3 & 4 lecture notes uploaded in SanakaHub Notes Vault under PCC-CS301.`,
+Refer to module 3 & 4 lecture notes uploaded in SETTech Notes Vault under PCC-CS301.`,
         authorId: 'user-faculty-01',
         authorName: 'Dr. Sourav Sengupta',
         authorRole: 'college',

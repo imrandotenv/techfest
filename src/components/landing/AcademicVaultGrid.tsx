@@ -140,7 +140,7 @@ export function AcademicVaultGrid() {
           {/* Testimonial Quote Pill matching Hashnode */}
           <div className="p-5 rounded-2xl border border-[#E2E8F0] bg-white shadow-2xs text-xs text-[#475569] leading-relaxed">
             <p className="italic text-slate-700 font-sans">
-              &ldquo;SanakaHub&apos;s vault made studying for MAKAUT end-sems straightforward. Having verified handwritten notes and past questions in one spot saved hours of frantic hunting.&rdquo;
+              &ldquo;SETTech&apos;s vault made studying for MAKAUT end-sems straightforward. Having verified handwritten notes and past questions in one spot saved hours of frantic hunting.&rdquo;
             </p>
             <div className="mt-3 flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white font-mono text-xs flex items-center justify-center font-bold">

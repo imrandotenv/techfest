@@ -1,5 +1,5 @@
 /**
- * Centralized Legal & Privacy Configuration for SanakaHub
+ * Centralized Legal & Privacy Configuration for SETTech
  * Tailored for SETGOI School of Engineering (B.Tech) & MAKAUT Academic Portal
  *
  * NOTE FOR AI AGENTS & DEVELOPERS:
@@ -50,17 +50,17 @@ export interface LegalConfig {
 }
 
 export const LEGAL_CONFIG: LegalConfig = {
-  platformName: 'SanakaHub',
+  platformName: 'SETTech',
   tagline: 'Engineer-First Academic Platform for SETGOI B.Tech Students',
   scope: 'Independent Student-Led Academic Platform — Not an Official College or MAKAUT Administration Portal',
-  contactEmail: 'legal@sanakahub.dev',
-  grievanceEmail: 'grievance@sanakahub.dev',
+  contactEmail: 'legal@settech.dev',
+  grievanceEmail: 'grievance@settech.dev',
   grievanceOfficer: {
     title: 'Grievance Redressal Officer (Student Portal)',
-    desk: 'SanakaHub Engineering Desk',
+    desk: 'SETTech Engineering Desk',
     address: 'SETGOI Campus, Malandighi, Durgapur, Paschim Bardhaman, West Bengal 713212, India',
   },
-  policyVersion: '1.1.0',
+  policyVersion: '1.2.0',
   lastUpdated: 'November 22, 2026',
   governingLaw: 'Information Technology Act, 2000 & Digital Personal Data Protection (DPDP) Act, 2023 of the Republic of India',
 
@@ -115,7 +115,7 @@ export const LEGAL_CONFIG: LegalConfig = {
       provider: 'Client-Side Web Browser Native Engine',
       category: 'Speech Processing',
       purpose: 'Speech-to-text viva voice input (SpeechRecognition) and real-time audio voice output (SpeechSynthesis).',
-      dataProcessed: 'Audio input processed locally in-browser. Zero raw audio recordings are stored on or uploaded to SanakaHub backend servers.',
+      dataProcessed: 'Audio input processed locally in-browser. Zero raw audio recordings are stored on or uploaded to SETTech backend servers.',
       retention: 'Real-time client memory only (cleared upon tab close).',
       privacyUrl: 'https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API',
       location: 'Local Student Device / Browser Engine',
@@ -128,7 +128,7 @@ export const LEGAL_CONFIG: LegalConfig = {
       purpose: 'Encrypted persistence for verified MAKAUT notes catalog, peer question forum threads, answers, and upvotes.',
       dataProcessed: 'User ID reference, thread titles, verified notes metadata, and peer reactions.',
       retention: 'Retained while content remains active and beneficial to academic study.',
-      privacyUrl: 'https://sanakahub.dev/privacy',
+      privacyUrl: 'https://settech.dev/privacy',
       location: 'India / Asia-South Region',
     },
   ],
@@ -156,50 +156,40 @@ export const LEGAL_CONFIG: LegalConfig = {
     },
     {
       id: 'cookie-consent',
-      name: 'sanakahub_cookie_consent',
+      name: 'settech_cookie_consent',
       type: 'localStorage',
       category: 'preferences',
-      provider: 'SanakaHub',
+      provider: 'SETTech',
       purpose: 'Saves your cookie consent selection ("all" or "essential") so the banner is not shown repeatedly.',
       duration: '180 Days / Persistent until cleared',
       defaultStatus: 'Optional',
     },
     {
       id: 'viva-free-count',
-      name: 'sanakahub_viva_free_count',
+      name: 'settech_viva_free_count',
       type: 'localStorage',
       category: 'functional',
-      provider: 'SanakaHub AI Viva',
+      provider: 'SETTech AI Viva',
       purpose: 'Remembers the 2 free practice viva question attempts for guest students before requiring Clerk sign-in.',
       duration: 'Persistent until browser cache reset',
       defaultStatus: 'Optional',
     },
     {
-      id: 'exam-target-theory',
-      name: 'sanakahub_exam_target',
+      id: 'exam-targets',
+      name: 'settech_exam_targets',
       type: 'localStorage',
       category: 'functional',
-      provider: 'SanakaHub Tools',
-      purpose: 'Stores your custom countdown target date for upcoming MAKAUT semester theory examinations.',
-      duration: 'Persistent until manually changed',
-      defaultStatus: 'Optional',
-    },
-    {
-      id: 'exam-target-practical',
-      name: 'sanakahub_exam_practical_target',
-      type: 'localStorage',
-      category: 'functional',
-      provider: 'SanakaHub Tools',
-      purpose: 'Stores your custom countdown target date for upcoming MAKAUT semester lab/practical examinations.',
+      provider: 'SETTech Tools',
+      purpose: 'Stores your custom countdown target dates for upcoming MAKAUT semester theory and lab/practical examinations.',
       duration: 'Persistent until manually changed',
       defaultStatus: 'Optional',
     },
     {
       id: 'preferred-role',
-      name: 'sanakahub_preferred_role',
+      name: 'settech_preferred_role',
       type: 'localStorage',
       category: 'functional',
-      provider: 'SanakaHub RBAC',
+      provider: 'SETTech RBAC',
       purpose: 'Caches your active workspace role view (Student/Faculty/Admin) for instantaneous UI rendering.',
       duration: 'Persistent until role switch',
       defaultStatus: 'Optional',

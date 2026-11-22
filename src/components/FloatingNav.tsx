@@ -87,11 +87,12 @@ export function FloatingNav() {
           {/* Brand Mark + Subtle SETGOI Dot Indicator */}
           <Link
             href="/"
-            className="flex items-center gap-2 font-display font-bold text-sm tracking-tight text-[#09090B] hover:opacity-85 transition-opacity shrink-0 px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full"
-            aria-label="SanakaHub Homepage"
+            className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#09090B] hover:opacity-85 transition-opacity shrink-0 px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full"
+            aria-label="SETTech Homepage"
           >
             <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
-            <span className="font-semibold">SanakaHub</span>
+            <span className="font-semibold tracking-tight text-[#09090B]">SET</span>
+            <span className="font-semibold tracking-tight text-[#2563EB]">Tech</span>
           </Link>
 
           {/* Desktop Primary Route Links */}
@@ -196,11 +197,12 @@ export function FloatingNav() {
           {/* Brand Mark */}
           <Link
             href="/"
-            className="flex items-center gap-2 font-display font-bold text-sm tracking-tight text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full px-1"
-            aria-label="SanakaHub Homepage"
+            className="flex items-center gap-1.5 font-display font-bold text-sm tracking-tight text-[#09090B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] rounded-full px-1"
+            aria-label="SETTech Homepage"
           >
             <span className="w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
-            <span className="font-semibold">SanakaHub</span>
+            <span className="font-semibold tracking-tight text-[#09090B]">SET</span>
+            <span className="font-semibold tracking-tight text-[#2563EB]">Tech</span>
           </Link>
 
           {/* Right Action Cluster */}

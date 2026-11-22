@@ -102,7 +102,7 @@ export const COMPREHENSIVE_MOCK_NOTES: NoteItem[] = [
     uploaderName: 'Prof. Ananya Sen',
     uploaderRole: 'college',
     verifiedById: 'user-admin-01',
-    verifiedByName: 'Admin SanakaHub',
+    verifiedByName: 'Admin SETTech',
     verifiedAt: '2026-01-10T10:00:00Z',
     createdAt: '2026-01-08T14:30:00Z',
   },

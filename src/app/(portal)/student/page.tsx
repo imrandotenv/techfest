@@ -22,7 +22,7 @@ import { PageHeader } from '@/components/PageHeader';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Student Academic Workspace | SanakaHub',
+  title: 'Student Academic Workspace | SETTech',
   description: 'Centralized B.Tech student academic cockpit for SETGOI Durgapur.',
 };
 

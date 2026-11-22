@@ -24,7 +24,7 @@ export function DarkBentoSection() {
           <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-blue-200/80 text-[#2563EB] text-xs font-mono shadow-2xs font-medium">
               <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span>Do more with SanakaHub Tools</span>
+              <span>Do more with SETTech Tools</span>
             </div>
             <Link
               href="/viva"
@@ -39,7 +39,7 @@ export function DarkBentoSection() {
           </h2>
 
           <p className="mt-3 text-[#52525B] font-sans text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-            SanakaHub tools help students and faculty move faster through semesters with 100% MAKAUT precision.
+            SETTech tools help students and faculty move faster through semesters with 100% MAKAUT precision.
           </p>
         </div>
 
@@ -203,10 +203,10 @@ export function DarkBentoSection() {
           </div>
         </div>
 
-        {/* 3 Reasons to Choose SanakaHub */}
+        {/* 3 Reasons to Choose SETTech */}
         <div className="mb-10 sm:mb-12">
           <h3 className="text-center text-lg sm:text-2xl font-display font-bold tracking-tight text-[#09090B] mb-6">
-            3 reasons to choose SanakaHub.
+            3 reasons to choose SETTech.
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

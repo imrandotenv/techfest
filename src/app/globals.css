@@ -40,6 +40,7 @@ body {
 }
 
 /* Architectural Subtle Dot Grid Background */
+.settech-dot-grid,
 .sanaka-dot-grid {
   background-image: radial-gradient(rgba(148, 163, 184, 0.22) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -97,6 +98,7 @@ pre,
 }
 
 /* Tactile Elevated Surfaces (Linear + Vercel Light Mode Craft) */
+.settech-card,
 .sanaka-card {
   background-color: #ffffff;
   border: 1px solid rgba(228, 228, 231, 0.9);
@@ -104,6 +106,7 @@ pre,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 3px rgba(9, 9, 11, 0.04);
 }
 
+.settech-card-interactive,
 .sanaka-card-interactive {
   background-color: #ffffff;
   border: 1px solid rgba(228, 228, 231, 0.9);
@@ -112,6 +115,7 @@ pre,
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.settech-card-interactive:hover,
 .sanaka-card-interactive:hover {
   transform: translateY(-2px);
   border-color: rgba(212, 212, 216, 1);
@@ -119,6 +123,7 @@ pre,
 }
 
 /* Tactile Primary Button */
+.settech-btn-primary,
 .sanaka-btn-primary {
   background-color: #2563eb;
   color: #ffffff;
@@ -128,15 +133,18 @@ pre,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.15s ease-in-out;
 }
+.settech-btn-primary:hover,
 .sanaka-btn-primary:hover {
   background-color: #1d4ed8;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px rgba(37, 99, 235, 0.25);
 }
+.settech-btn-primary:active,
 .sanaka-btn-primary:active {
   transform: scale(0.98);
 }
 
 /* Tactile Secondary Button */
+.settech-btn-secondary,
 .sanaka-btn-secondary {
   background-color: #ffffff;
   color: #09090b;
@@ -147,15 +155,18 @@ pre,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(9, 9, 11, 0.03);
   transition: all 0.15s ease-in-out;
 }
+.settech-btn-secondary:hover,
 .sanaka-btn-secondary:hover {
   background-color: #f4f4f5;
   border-color: #d4d4d8;
 }
+.settech-btn-secondary:active,
 .sanaka-btn-secondary:active {
   transform: scale(0.98);
 }
 
 /* Consistent Input Field Standard */
+.settech-input,
 .sanaka-input {
   height: 2.625rem;
   background-color: #ffffff;
@@ -168,15 +179,18 @@ pre,
   box-shadow: 0 1px 2px rgba(9, 9, 11, 0.02);
   transition: all 0.15s ease-in-out;
 }
+.settech-input::placeholder,
 .sanaka-input::placeholder {
   color: rgba(82, 82, 91, 0.6);
 }
+.settech-input:focus,
 .sanaka-input:focus {
   outline: none;
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+.settech-cobalt-highlight,
 .sanaka-cobalt-highlight {
   color: #2563eb;
 }

@@ -4,14 +4,14 @@ import { LegalLayout } from '@/components/LegalLayout';
 import { BookOpen, CheckCircle, ShieldAlert, Award, FileText, Ban, Users, Scale } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service & Academic Honor Code | SanakaHub',
+  title: 'Terms of Service & Academic Honor Code | SETTech',
   description:
-    'Terms of service, student community guidelines, academic honor code, and vault contribution rules for SanakaHub at SETGOI Durgapur.',
+    'Terms of service, student community guidelines, academic honor code, and vault contribution rules for SETTech at SETGOI Durgapur.',
 };
 
 export default function TermsPage() {
   const tldr = [
-    'Purely Academic Use: SanakaHub is strictly dedicated to engineering study, syllabus guidance, and MAKAUT exam preparation.',
+    'Purely Academic Use: SETTech is strictly dedicated to engineering study, syllabus guidance, and MAKAUT exam preparation.',
     'Zero Cheating / Live Exam Misconduct: Using the platform during active university examinations or soliciting live exam answers is strictly forbidden and results in immediate ban.',
     'Respect & Anti-Ragging: Defamation, harassment, hate speech, and ragging facilitation violate our terms and will be reported to SETGOI administration and law enforcement.',
     'Honor Code on Uploads: Only upload authentic personal lecture notes, faculty-approved summaries, or public syllabus/PYQ documents.',
@@ -21,7 +21,7 @@ export default function TermsPage() {
   return (
     <LegalLayout
       title="Terms of Service & Academic Honor Code"
-      subtitle="The community standards, contribution guidelines, and code of conduct governing all engineering students, faculty, and users of SanakaHub."
+      subtitle="The community standards, contribution guidelines, and code of conduct governing all engineering students, faculty, and users of SETTech."
       badgeLabel="TERMS & CODE"
       tldrItems={tldr}
     >
@@ -32,10 +32,10 @@ export default function TermsPage() {
           <h2>1. Acceptance of Terms &amp; Scope</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          By accessing or using SanakaHub, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service, along with our <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a> and <a href="/disclaimer" className="text-blue-600 hover:underline">Academic Disclaimer</a>.
+          By accessing or using SETTech, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service, along with our <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a> and <a href="/disclaimer" className="text-blue-600 hover:underline">Academic Disclaimer</a>.
         </p>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          SanakaHub is an independent academic utility operated by student engineers of SETGOI Durgapur. If you do not agree to these terms, you must refrain from using the platform and its tools.
+          SETTech is an independent academic utility operated by student engineers of SETGOI Durgapur. If you do not agree to these terms, you must refrain from using the platform and its tools.
         </p>
       </section>
 
@@ -46,7 +46,7 @@ export default function TermsPage() {
           <h2>2. Academic Honor Code &amp; Prohibited Conduct</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          SanakaHub exists to elevate the engineering caliber and peer collaboration of SETGOI students. We maintain zero tolerance for activities that compromise academic integrity or campus safety:
+          SETTech exists to elevate the engineering caliber and peer collaboration of SETGOI students. We maintain zero tolerance for activities that compromise academic integrity or campus safety:
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-700">
@@ -99,7 +99,7 @@ export default function TermsPage() {
           <h2>3. Role-Based Access Control (RBAC) Rules</h2>
         </div>
         <p className="text-sm text-zinc-600 leading-relaxed">
-          SanakaHub enforces strict Zero-Trust RBAC to protect institutional workflows:
+          SETTech enforces strict Zero-Trust RBAC to protect institutional workflows:
         </p>
 
         <div className="space-y-3 text-xs sm:text-sm text-zinc-600">

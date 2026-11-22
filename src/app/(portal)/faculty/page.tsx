@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/PageHeader';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Faculty Academic Desk | SanakaHub',
+  title: 'Faculty Academic Desk | SETTech',
   description: 'SETGOI Department Professor & Faculty Moderation Desk.',
 };
 

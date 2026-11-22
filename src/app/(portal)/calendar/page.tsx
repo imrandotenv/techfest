@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import { AcademicCalendarTimeline } from '@/modules/tools/components/AcademicCalendarTimeline';
 
 export const metadata: Metadata = {
-  title: 'MAKAUT Academic Calendar 2026-2027 | SanakaHub SETGOI',
+  title: 'MAKAUT Academic Calendar 2026-2027 | SETTech SETGOI',
   description:
     'Official MAKAUT university academic timeline, odd and even semester examination schedules, CA/PCA class assessment dates, and semester recess for SETGOI Durgapur.',
 };

@@ -1,4 +1,4 @@
-# Antigravity Workspace Directives: SanakaHub
+# Antigravity Workspace Directives: SETTech
 
 ## Architecture & Compliance Rules
 

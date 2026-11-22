@@ -15,8 +15,8 @@ export function LandingFooter() {
               <div className="w-7 h-7 rounded-lg bg-zinc-950 flex items-center justify-center text-white">
                 <GraduationCap className="w-4 h-4" />
               </div>
-              <span className="font-bold tracking-tight text-lg text-zinc-950">
-                SanakaHub
+              <span className="font-bold tracking-tight text-lg text-zinc-950 flex items-center">
+                <span>SET</span><span className="text-[#2563EB]">Tech</span>
               </span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-100 text-zinc-600 border border-zinc-200">
                 SETGOI
@@ -128,7 +128,7 @@ export function LandingFooter() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
           <div>
-            <span>SanakaHub © 2026 — Independent Student Portal • SETGOI B.Tech • MAKAUT</span>
+            <span>SETTech © 2026 — Independent Student Portal • SETGOI B.Tech • MAKAUT</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 text-zinc-600">
@@ -159,6 +159,7 @@ export function LandingFooter() {
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('settech:open-cookie-settings'));
                   window.dispatchEvent(new CustomEvent('sanakahub:open-cookie-settings'));
                 }
               }}

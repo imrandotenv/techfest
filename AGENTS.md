@@ -8,14 +8,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# SanakaHub Architecture & Design Rules
+# SETTech Architecture & Design Rules
 
 ## Rule 1: Module Isolation & Clerk RBAC
 - Keep feature modules strictly isolated under `src/modules/{rbac,campus,notes,forum,tools}`.
 - All protected routes must be verified at the edge in `middleware.ts` via `sessionClaims.metadata.role` and guarded server-side on mutations.
 
 ## Rule 2: Dual Floating Navigation Standard (`floating-navigation-dock`)
-Always activate and adhere to the `floating-navigation-dock` skill for all navigation structures across SanakaHub:
+Always activate and adhere to the `floating-navigation-dock` skill for all navigation structures across SETTech:
 1. **Desktop Viewports (>= 768px)**:
    - Must use a **detached floating glassmorphic pill navbar** pinned at top-center (`fixed top-4 sm:top-5 left-1/2 -translate-x-1/2 w-[94%] max-w-5xl z-50 pointer-events-auto`).
    - Must use translucent frosted glass (`backdrop-blur-md bg-white/80 border border-zinc-200/80 shadow-md shadow-black/5 rounded-full px-5 py-2.5`).

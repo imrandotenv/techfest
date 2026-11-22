@@ -228,7 +228,7 @@ export default function VivaStudioPage() {
   // Load free guest count from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sanakahub_viva_free_count');
+      const stored = localStorage.getItem('settech_viva_free_count') || localStorage.getItem('sanakahub_viva_free_count');
       if (stored) {
         setFreeCount(parseInt(stored, 10) || 0);
       }
@@ -442,7 +442,7 @@ export default function VivaStudioPage() {
           const nextCount = freeCount + 1;
           setFreeCount(nextCount);
           if (typeof window !== 'undefined') {
-            localStorage.setItem('sanakahub_viva_free_count', nextCount.toString());
+            localStorage.setItem('settech_viva_free_count', nextCount.toString());
           }
           if (nextCount >= FREE_GUEST_LIMIT) {
             setTimeout(() => setShowSignInModal(true), 3500);
@@ -816,7 +816,7 @@ export default function VivaStudioPage() {
               {/* Finish & Report Button */}
               <button
                 onClick={() => setShowReportModal(true)}
-                className="sanaka-btn-primary px-3.5 py-1.5 text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="settech-btn-primary px-3.5 py-1.5 text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Report Card</span>

@@ -43,7 +43,7 @@ export function LegalLayout({
             className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-500 hover:text-zinc-900 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to SanakaHub</span>
+            <span>Back to SETTech</span>
           </Link>
 
           <div className="inline-flex items-center gap-2 text-[11px] font-mono text-zinc-400">
@@ -133,7 +133,7 @@ export function LegalLayout({
                 {LEGAL_CONFIG.scope}
               </p>
               <p className="text-zinc-500 text-[11px] mt-0.5">
-                SanakaHub is maintained by student engineers to assist with study materials, attendance calculation, and MAKAUT exam preparation.
+                SETTech is maintained by student engineers to assist with study materials, attendance calculation, and MAKAUT exam preparation.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">

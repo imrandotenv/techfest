@@ -26,7 +26,8 @@ export function Footer() {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
               <span className="font-display font-bold tracking-tight text-lg text-zinc-900">
-                SanakaHub
+                <span className="text-[#09090B]">SET</span>
+                <span className="text-[#2563EB]">Tech</span>
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-200/70 text-zinc-700 border border-zinc-300">
                 B.Tech SETGOI
@@ -170,7 +171,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
           <div>
-            <span>SanakaHub © 2026 • Independent Student Initiative (SETGOI B.Tech • MAKAUT)</span>
+            <span>SETTech © 2026 • Independent Student Initiative (SETGOI B.Tech • MAKAUT)</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 text-zinc-600">
@@ -198,6 +199,7 @@ export function Footer() {
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('settech:open-cookie-settings'));
                   window.dispatchEvent(new CustomEvent('sanakahub:open-cookie-settings'));
                 }
               }}

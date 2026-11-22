@@ -109,7 +109,7 @@ export function ExamCountdown({ variant = 'strip', className = '' }: ExamCountdo
   useEffect(() => {
     setMounted(true);
     try {
-      const stored = localStorage.getItem('sanakahub_exam_targets');
+      const stored = localStorage.getItem('settech_exam_targets') || localStorage.getItem('sanakahub_exam_targets');
       if (stored) {
         setCustomDates(JSON.parse(stored));
       }
@@ -135,7 +135,7 @@ export function ExamCountdown({ variant = 'strip', className = '' }: ExamCountdo
     const newCustom = { ...customDates, [activeTarget.id]: new Date(tempEditDate).toISOString() };
     setCustomDates(newCustom);
     try {
-      localStorage.setItem('sanakahub_exam_targets', JSON.stringify(newCustom));
+      localStorage.setItem('settech_exam_targets', JSON.stringify(newCustom));
     } catch {}
     setIsEditing(false);
   };
@@ -146,7 +146,7 @@ export function ExamCountdown({ variant = 'strip', className = '' }: ExamCountdo
     delete updated[activeTarget.id];
     setCustomDates(updated);
     try {
-      localStorage.setItem('sanakahub_exam_targets', JSON.stringify(updated));
+      localStorage.setItem('settech_exam_targets', JSON.stringify(updated));
     } catch {}
     setIsEditing(false);
   };

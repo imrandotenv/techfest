@@ -99,7 +99,7 @@ export function NotesVaultView() {
       ? 'SETGOI Faculty'
       : activeRole === 'admin'
       ? 'SETGOI Admin'
-      : 'Sanaka Student');
+      : 'SETGOI Student');
 
   const searchParams = useSearchParams();
   const initialQ = searchParams?.get('q') || searchParams?.get('search') || '';

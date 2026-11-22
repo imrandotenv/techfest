@@ -59,7 +59,7 @@ export function AppWindowPreview() {
 
         {/* Address / Search Bar Pill */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white border border-[#E2E8F0] rounded-md text-xs font-mono text-[#475569] w-80 max-w-full justify-between shadow-2xs">
-          <span className="truncate">sanakahub.durgapur.dev/notes/vault</span>
+          <span className="truncate">settech.dev/notes/vault</span>
           <span className="text-[10px] text-slate-400 font-sans">v2.4</span>
         </div>
 

@@ -61,7 +61,7 @@ export function TechFestBoard() {
   // Load registered passes from localStorage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('sanakahub_techfest_registrations');
+      const stored = localStorage.getItem('settech_techfest_registrations') || localStorage.getItem('sanakahub_techfest_registrations');
       if (stored) {
         setMyPasses(JSON.parse(stored));
       }
@@ -144,7 +144,7 @@ export function TechFestBoard() {
     const updatedPasses = [newPass, ...myPasses];
     setMyPasses(updatedPasses);
     try {
-      localStorage.setItem('sanakahub_techfest_registrations', JSON.stringify(updatedPasses));
+      localStorage.setItem('settech_techfest_registrations', JSON.stringify(updatedPasses));
     } catch (e) {
       console.warn('Unable to persist pass to localStorage');
     }

@@ -9,7 +9,7 @@ import { HeroQuickSearch } from '@/components/landing/HeroQuickSearch';
 import { ExamCountdown } from '@/components/ExamCountdown';
 
 export const metadata = {
-  title: 'SanakaHub | Centralized SETGOI Student Utility & Academic Vault',
+  title: 'SETTech | Centralized SETGOI Student Utility & Academic Vault',
   description:
     'Effortlessly access MAKAUT notes, solved PYQs, 10-point SGPA calculators, and 3D campus navigation for Sanaka Educational Trust Group of Institutions (SETGOI) Durgapur.',
 };
@@ -82,7 +82,7 @@ export default function HomePage() {
           MAKAUT affiliated • 100% Free for SETGOI students • No subscription required
         </p>
 
-        {/* Elevated SanakaHub App Window Preview */}
+        {/* Elevated SETTech App Window Preview */}
         <div className="mt-8 sm:mt-10">
           <AppWindowPreview />
         </div>

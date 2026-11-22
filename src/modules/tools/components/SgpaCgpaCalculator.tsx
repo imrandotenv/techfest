@@ -159,7 +159,7 @@ export function SgpaCgpaCalculator() {
   const handleCopyReport = () => {
     const lines = [
       `MAKAUT ACADEMIC PERFORMANCE AUDIT (SETGOI)`,
-      `Generated via SanakaHub Utilities • ${new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+      `Generated via SETTech Utilities • ${new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`,
       `------------------------------------------`,
       `Cumulative CGPA: ${cumulativeSummary.cgpa.toFixed(2)} / 10.00`,
       `MAKAUT Equivalent: ${cumulativeSummary.percentage}%`,
