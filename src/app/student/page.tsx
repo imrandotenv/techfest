@@ -27,6 +27,7 @@ import { BTechBranch, getBranchDetails, getSemesterSubjects } from '@/config/cur
 import { prisma } from '@/lib/prisma';
 import { StudentStatsModal } from '@/components/StudentStatsModal';
 import { AcademicStats } from '@/app/api/student/stats/route';
+import { WorkspaceShell } from '@/components/WorkspaceShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,13 +100,22 @@ export default async function StudentWorkspacePage() {
     : 0;
 
   return (
-    <div className="w-full min-h-screen bg-[#F7F8FA] relative">
-      {/* Subtle Architectural Dot Grid Pattern in Header Zone */}
-      <div
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black_30%,transparent_80%)] opacity-40"
-        aria-hidden="true"
-      />
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-20 md:pt-24 pb-20 space-y-8">
+    <WorkspaceShell
+      breadcrumbs={[
+        { label: 'SETTech', href: '/' },
+        { label: 'Student Workspace', href: '/student' },
+        { label: 'Academic Cockpit' },
+      ]}
+      roleTitle="Student"
+      currentRole="student"
+      userName={studentName}
+      userEmail={user.email || undefined}
+      primaryAction={{
+        label: '+ Upload Note',
+        href: '/notes?action=upload',
+        variant: 'primary',
+      }}
+    >
       {/* =========================================================================
           WORKSPACE WELCOME BANNER
           ========================================================================= */}
@@ -551,7 +561,6 @@ export default async function StudentWorkspacePage() {
           </div>
         )}
       </div>
-    </div>
-  </div>
-);
+    </WorkspaceShell>
+  );
 }

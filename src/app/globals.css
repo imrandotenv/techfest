@@ -5,7 +5,7 @@
   --font-sans: var(--font-sans), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --color-canvas: #f7f8fa;
+  --color-canvas: #fafafa;
   --color-card: #ffffff;
   --color-border: #e4e4e7;
   --color-primary: #09090b;
@@ -18,7 +18,7 @@
   --font-sans: var(--font-sans), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: var(--font-mono), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --background: #f7f8fa;
+  --background: #fafafa;
   --foreground: #09090b;
   --card: #ffffff;
   --card-foreground: #09090b;
@@ -31,7 +31,7 @@
 /* Base Global Typography & Surface Standards */
 html,
 body {
-  background-color: #f7f8fa;
+  background-color: #fafafa;
   color: #09090b;
   font-family: var(--font-sans);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -50,11 +50,14 @@ body {
 h1,
 h2,
 h3,
-h4 {
+h4,
+h5,
+h6 {
   font-family: var(--font-display);
   color: #09090b;
-  line-height: 1.08;
+  line-height: 1.12;
   font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 h1 {
@@ -66,8 +69,10 @@ h2 {
 }
 
 h3,
-h4 {
-  letter-spacing: -0.015em;
+h4,
+h5,
+h6 {
+  letter-spacing: -0.02em;
 }
 
 /* Body Copy, Navigation, Buttons & Form Inputs */
@@ -91,8 +96,12 @@ pre,
 .semester-tag,
 .sgpa-number,
 .timestamp-tag,
-.status-badge {
+.status-badge,
+.tabular-nums,
+table td,
+table th {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Tactile Elevated Surfaces (Linear + Vercel Light Mode Craft) */

@@ -53,12 +53,16 @@ export function FloatingNav() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Hide floating navigation strictly on auth screens and onboarding flows
+  // Hide floating navigation strictly on auth screens, onboarding flows, and workspace cockpit routes
   if (
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up') ||
     pathname.startsWith('/onboarding') ||
-    pathname.startsWith('/auth-callback')
+    pathname.startsWith('/auth-callback') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/faculty') ||
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/dashboard')
   ) {
     return null;
   }

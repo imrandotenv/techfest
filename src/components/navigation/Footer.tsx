@@ -9,7 +9,7 @@ import { SetTechLogo } from '@/components/SetTechLogo';
 export function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on auth screens, onboarding, dedicated zero-scroll studios like /viva, and management consoles
+  // Hide footer on auth screens, onboarding, dedicated zero-scroll studios like /viva, and workspace cockpits
   if (
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up') ||
@@ -17,6 +17,8 @@ export function Footer() {
     pathname.startsWith('/auth-callback') ||
     pathname.startsWith('/faculty') ||
     pathname.startsWith('/admin') ||
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/dashboard') ||
     pathname.startsWith('/viva')
   ) {
     return null;

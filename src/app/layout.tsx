@@ -9,7 +9,7 @@ import "./globals.css";
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -23,7 +23,7 @@ const inter = Inter({
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -116,7 +116,7 @@ export default function RootLayout({
         lang="en"
         className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
       >
-        <body className="min-h-screen flex flex-col bg-[#F7F8FA] text-[#09090B] font-sans antialiased selection:bg-[#2563EB] selection:text-white">
+        <body className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#09090B] font-sans antialiased selection:bg-[#2563EB] selection:text-white">
           <FloatingNav />
           <main className="flex-1 w-full">{children}</main>
           <Footer />
