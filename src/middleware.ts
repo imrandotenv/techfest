@@ -213,11 +213,6 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default function middleware(req: NextRequest, ev: any) {
-  // If public route, immediately proceed with zero external network overhead
-  if (isPublicRoute(req)) {
-    return NextResponse.next();
-  }
-
   // If unresolvable Clerk dev domain, guard admin and faculty locally
   if (!hasResolvableClerk) {
     if (isAdminRoute(req) || isFacultyRoute(req)) {

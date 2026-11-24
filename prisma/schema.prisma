@@ -14,7 +14,7 @@ model User {
   email               String   @unique
   fullName            String?
   role                String   @default("STUDENT") // "STUDENT" | "FACULTY" | "ADMIN"
-  degree              String   @default("B.Tech") // strictly B.Tech
+  degree              String   @default("B.Tech")  // strictly B.Tech
   branch              String?  // "CSE" | "ECE" | "EE" | "ME" | "CE" | "IT" | "AIML"
   semester            Int?     // 1 to 8
   passoutYear         Int?     // e.g. 2026–2030
@@ -23,98 +23,61 @@ model User {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  notes        Note[]
+  forumPosts   ForumPost[]
+  forumReplies ForumReply[]
+  vivaSessions VivaSession[]
+
   @@index([clerkId])
   @@index([email])
   @@index([branch, semester])
 }
 
-enum UserRole {
-  student
-  college
-  admin
-}
-
-enum VerificationStatus {
-  pending
-  approved
-  rejected
-}
-
-enum NoteCategory {
-  LECTURE_NOTE
-  MAKAUT_PYQ
-  LAB_MANUAL
-  SYLLABUS_COPY
-  CHEAT_SHEET
-}
-
-model UserProfile {
-  id            String       @id // Clerk User ID (e.g. user_2...)
-  email         String       @unique
-  fullName      String
-  role          UserRole     @default(student)
-  studentId     String?      // e.g. "SH2026001"
-  department    String?      // e.g. "CSE", "ECE"
-  semester      Int?         // 1 to 8
-  avatarUrl     String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  notesUploaded NoteItem[]   @relation("UserNotes")
-  forumPosts    ForumPost[]
-  forumReplies  ForumReply[]
-  notesVerified NoteItem[]   @relation("VerifierNotes")
-
-  @@index([role])
-  @@index([department])
-}
-
-model NoteItem {
-  id              String             @id @default(cuid())
-  title           String
-  subjectCode     String             // e.g. "PCC-CS301", "ESC301"
-  subjectName     String
-  department      String             // e.g. "CSE"
-  semester        Int                // 1-8
-  category        NoteCategory       @default(LECTURE_NOTE)
-  academicYear    String             // e.g. "2026-2027"
-  fileUrl         String
-  fileSize        Int                // in bytes
-  downloadsCount  Int                @default(0)
-  status          VerificationStatus @default(pending)
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  subjectCode String   // e.g. "PCC-CS301", "ESC301"
+  subjectName String?
+  branch      String   // e.g. "CSE"
+  semester    Int      // 1 to 8
+  fileUrl     String
+  fileKey     String
+  fileSize    Int?     @default(0)
+  verified    Boolean  @default(false)
   
-  uploaderId      String
-  uploader        UserProfile        @relation("UserNotes", fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
   
-  verifiedById    String?
-  verifiedBy      UserProfile?       @relation("VerifierNotes", fields: [verifiedById], references: [id])
-  verifiedAt      DateTime?
-  
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([subjectCode])
-  @@index([department, semester])
-  @@index([status])
+  @@index([branch, semester])
+  @@index([verified])
+  @@index([uploaderId])
 }
 
 model ForumPost {
-  id           String       @id @default(cuid())
-  title        String
-  content      String       @db.Text
-  category     String       // "Academic", "TechFest", "Campus Life", "Placements", "Hostel"
-  upvotesCount Int          @default(0)
-  authorId     String
-  author       UserProfile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  isPinned     Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  replies      ForumReply[]
-  upvotes      PostUpvote[]
+  id        String       @id @default(cuid())
+  title     String
+  content   String       @db.Text
+  tags      String?      // comma-separated tags or json
+  category  String?      @default("Academic")
+  branch    String?      // optional branch targeting e.g. "CSE"
+  semester  Int?         // optional semester e.g. 3
+  upvotes   Int          @default(0)
+  
+  authorId  String
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  replies   ForumReply[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([category])
+  @@index([branch, semester])
   @@index([createdAt])
+  @@index([authorId])
 }
 
 model ForumReply {
@@ -123,9 +86,9 @@ model ForumReply {
   postId           String
   post             ForumPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId         String
-  author           UserProfile  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author           User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   isOfficialAnswer Boolean      @default(false)
-  upvotesCount     Int          @default(0)
+  upvotes          Int          @default(0)
   parentId         String?
   parent           ForumReply?  @relation("NestedReplies", fields: [parentId], references: [id], onDelete: Cascade)
   children         ForumReply[] @relation("NestedReplies")
@@ -133,15 +96,42 @@ model ForumReply {
   updatedAt        DateTime     @updatedAt
 
   @@index([postId])
+  @@index([authorId])
 }
 
-model PostUpvote {
-  id        String    @id @default(cuid())
-  postId    String
-  userId    String
-  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+model VivaSession {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject        String        // e.g. "DSA", "COA", "OS"
+  language       String        @default("en") // "en" | "hi"
+  score          Int?          @default(0)
+  totalQuestions Int?          @default(0)
+  weakTopics     String?       @db.Text // JSON or comma-separated weak topics
+  messages       VivaMessage[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  @@unique([postId, userId])
+  @@index([userId])
+  @@index([subject])
+  @@index([createdAt])
+}
+
+model VivaMessage {
+  id          String      @id @default(cuid())
+  sessionId   String
+  session     VivaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role        String      // "user" | "assistant"
+  content     String      @db.Text
+  reaction    String?     @db.Text
+  explanation String?     @db.Text
+  emotion     String?     @default("idle") // "idle" | "happy" | "shocked" | "thinking"
+  isCorrect   Boolean?
+  topicTag    String?
+  createdAt   DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
 }
 
 model CampusFacility {
@@ -155,4 +145,52 @@ model CampusFacility {
   contactEmail String?
   meta         Json?
   createdAt    DateTime @default(now())
+}
+
+model UserProfile {
+  id            String       @id // Clerk User ID (e.g. user_2...)
+  email         String       @unique
+  fullName      String
+  role          String       @default("student")
+  studentId     String?      // e.g. "SH2026001"
+  department    String?      // e.g. "CSE", "ECE"
+  semester      Int?         // 1 to 8
+  avatarUrl     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  notesUploaded NoteItem[]   @relation("UserNotes")
+  notesVerified NoteItem[]   @relation("VerifierNotes")
+
+  @@index([role])
+  @@index([department])
+}
+
+model NoteItem {
+  id              String       @id @default(cuid())
+  title           String
+  subjectCode     String       // e.g. "PCC-CS301", "ESC301"
+  subjectName     String
+  department      String       // e.g. "CSE"
+  semester        Int          // 1-8
+  category        String       @default("LECTURE_NOTE")
+  academicYear    String       // e.g. "2026-2027"
+  fileUrl         String
+  fileSize        Int          // in bytes
+  downloadsCount  Int          @default(0)
+  status          String       @default("pending") // "pending" | "approved" | "rejected"
+  
+  uploaderId      String
+  uploader        UserProfile  @relation("UserNotes", fields: [uploaderId], references: [id], onDelete: Cascade)
+  
+  verifiedById    String?
+  verifiedBy      UserProfile? @relation("VerifierNotes", fields: [verifiedById], references: [id])
+  verifiedAt      DateTime?
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([subjectCode])
+  @@index([department, semester])
+  @@index([status])
 }

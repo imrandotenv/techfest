@@ -198,6 +198,7 @@ export default function VivaStudioPage() {
 
   // Chat stream messages
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [dbSessionId, setDbSessionId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Free attempts for guest users
@@ -601,6 +602,30 @@ export default function VivaStudioPage() {
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
+
+        // Asynchronously persist turn to Neon PostgreSQL if student is signed in
+        if (isSignedIn) {
+          fetch('/api/viva/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: dbSessionId || undefined,
+              subject,
+              language,
+              score: scorecard.correct + (data.isCorrect ? 1 : 0),
+              totalQuestions: scorecard.attempts + (data.isCorrect !== null ? 1 : 0),
+              weakTopics: data.isCorrect === false ? (data.topicTag || subject) : undefined,
+              messages: [userMsg, assistantMsg],
+            }),
+          })
+            .then((r) => r.json())
+            .then((sData) => {
+              if (sData?.sessionId && !dbSessionId) {
+                setDbSessionId(sData.sessionId);
+              }
+            })
+            .catch((sErr) => console.warn('[Viva Sessions Sync] Note:', sErr));
+        }
 
         // Update active question for next turn
         if (data.nextQuestion) {

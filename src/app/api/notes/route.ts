@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COMPREHENSIVE_MOCK_NOTES } from '@/modules/notes/data/mock-notes';
 import { NoteItem, CustomUserRole, NoteCategory, VerificationStatus } from '@/types';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,7 +11,46 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status');
   const q = searchParams.get('q');
 
-  let results: NoteItem[] = [...COMPREHENSIVE_MOCK_NOTES];
+  // 1. Fetch live notes from Neon PostgreSQL
+  let dbNotes: NoteItem[] = [];
+  try {
+    const records = await prisma.note.findMany({
+      include: {
+        uploader: {
+          select: {
+            id: true,
+            fullName: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    dbNotes = records.map((n) => ({
+      id: n.id,
+      title: n.title,
+      subjectCode: n.subjectCode,
+      subjectName: n.subjectName || n.title,
+      departmentCode: n.branch,
+      semester: n.semester,
+      category: 'LECTURE_NOTE' as NoteCategory,
+      academicYear: '2026-2027',
+      fileUrl: n.fileUrl,
+      fileSize: n.fileSize || 2048000,
+      downloadsCount: 0,
+      status: (n.verified ? 'approved' : 'pending') as VerificationStatus,
+      uploaderId: n.uploaderId,
+      uploaderName: n.uploader?.fullName || 'SETGOI Contributor',
+      uploaderRole: (n.uploader?.role?.toLowerCase() || 'student') as CustomUserRole,
+      createdAt: n.createdAt.toISOString(),
+    }));
+  } catch (err: any) {
+    console.warn('[Notes API] Neon Postgres read note:', err?.message || err);
+  }
+
+  // Combine live Neon notes with comprehensive mock catalog
+  let results: NoteItem[] = [...dbNotes, ...COMPREHENSIVE_MOCK_NOTES];
 
   if (branch && branch !== 'ALL') {
     results = results.filter((n) => n.departmentCode === branch);

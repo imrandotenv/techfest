@@ -60,8 +60,8 @@ export const LEGAL_CONFIG: LegalConfig = {
     desk: 'SETTech Engineering Desk',
     address: 'SETGOI Campus, Malandighi, Durgapur, Paschim Bardhaman, West Bengal 713212, India',
   },
-  policyVersion: '1.3.0',
-  lastUpdated: 'November 22, 2026',
+  policyVersion: '1.4.0',
+  lastUpdated: 'November 24, 2026',
   governingLaw: 'Information Technology Act, 2000 & Digital Personal Data Protection (DPDP) Act, 2023 of the Republic of India',
 
   processors: [
@@ -77,15 +77,15 @@ export const LEGAL_CONFIG: LegalConfig = {
       location: 'United States & Global Edge CDN',
     },
     {
-      id: 'neon-postgres',
-      name: 'Neon Serverless PostgreSQL (Prisma ORM)',
+      id: 'neon-cloud',
+      name: 'Neon Cloud (PostgreSQL & Object Storage via S3 API)',
       provider: 'Neon, Inc.',
       category: 'Database & Storage',
-      purpose: 'Persistent cloud PostgreSQL database storing B.Tech academic profiles (branch, semester, passout year, roll number) and user onboarding states.',
-      dataProcessed: 'Clerk User ID, institutional/personal email address, full student name, B.Tech engineering branch, semester, graduation passout year, MAKAUT university roll number.',
-      retention: 'Retained for the duration of active student enrollment; deleted upon account deletion request under DPDP Act 2023.',
+      purpose: 'Persistent cloud PostgreSQL database and S3-compatible Object Storage storing B.Tech academic profiles (branch, semester, passout year, roll number), user onboarding states, MAKAUT PDF lecture notes/lab manuals, student forum threads, and account-wise AI Viva chat transcripts.',
+      dataProcessed: 'Clerk User ID, institutional/personal email address, full student name, B.Tech engineering branch, semester, graduation passout year, MAKAUT university roll number, uploaded PDF notes, campus forum discussions, and AI Viva practice transcripts.',
+      retention: 'Retained for active student account lifecycle; erased upon student deletion request under DPDP Act 2023.',
       privacyUrl: 'https://neon.tech/privacy-policy',
-      location: 'AWS Cloud Infrastructure (Asia-South / Global High-Availability)',
+      location: 'AWS Cloud Infrastructure (Asia-South / ap-southeast-1 Global High-Availability)',
     },
     {
       id: 'groq-whisper',

@@ -46,6 +46,7 @@ export function UploadNoteModal({
   const [category, setCategory] = useState<NoteCategory>('LECTURE_NOTE');
   const [academicYear, setAcademicYear] = useState<string>('2026-2027');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [fileObject, setFileObject] = useState<File | null>(null);
   const [fileSize, setFileSize] = useState<number>(3450000);
   const [error, setError] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -109,6 +110,7 @@ export function UploadNoteModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setFileObject(file);
       setSelectedFileName(file.name);
       setFileSize(file.size);
       if (!title) {
@@ -122,6 +124,7 @@ export function UploadNoteModal({
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
+      setFileObject(file);
       setSelectedFileName(file.name);
       setFileSize(file.size);
       if (!title) {
@@ -149,6 +152,7 @@ export function UploadNoteModal({
       semester,
       category,
       academicYear,
+      file: fileObject,
       fileSize,
       fileUrl: `/mock-files/${subjectCode.toLowerCase()}-${Date.now()}.pdf`,
     });

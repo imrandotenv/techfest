@@ -349,7 +349,7 @@ export function NotesVaultView() {
     showToast(`Rejected "${targetNote?.title}".`);
   };
 
-  const handleUploadSubmit = (formData: UploadNoteFormData) => {
+  const handleUploadSubmit = async (formData: UploadNoteFormData) => {
     const uploader = {
       id: user?.id || `uploader-${activeRole}`,
       name: userName,
@@ -362,6 +362,36 @@ export function NotesVaultView() {
       showToast(`Resource "${newNote.title}" published!`);
     } else {
       showToast(`Resource "${newNote.title}" submitted to verification queue!`);
+    }
+
+    // If a physical file was provided, upload to Neon Object Storage
+    if (formData.file) {
+      try {
+        const bodyData = new FormData();
+        bodyData.append('file', formData.file);
+        bodyData.append('title', formData.title);
+        bodyData.append('subjectCode', formData.subjectCode);
+        bodyData.append('subjectName', formData.subjectName);
+        bodyData.append('branch', formData.departmentCode);
+        bodyData.append('semester', String(formData.semester));
+
+        const res = await fetch('/api/notes/upload', {
+          method: 'POST',
+          body: bodyData,
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.note) {
+            setNotes((prev) =>
+              prev.map((n) => (n.id === newNote.id ? { ...n, fileUrl: json.note.fileUrl, id: json.note.id } : n))
+            );
+            showToast(`Uploaded to Neon Object Storage!`);
+          }
+        }
+      } catch (err) {
+        console.warn('[Notes Upload] Cloud sync note:', err);
+      }
     }
   };
 
