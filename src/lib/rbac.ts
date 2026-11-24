@@ -245,7 +245,12 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
       onboardingCompleted: resolvedOnboardingCompleted,
     };
   } catch (err: any) {
-    if (err?.digest === 'DYNAMIC_SERVER_USAGE' || err?.message?.includes('Dynamic server usage')) {
+    if (
+      err?.digest === 'DYNAMIC_SERVER_USAGE' ||
+      err?.message?.includes('Dynamic server usage') ||
+      err?.digest?.startsWith('NEXT_REDIRECT') ||
+      err?.message === 'NEXT_REDIRECT'
+    ) {
       throw err;
     }
     console.error('[RBAC] Error resolving user context:', err);

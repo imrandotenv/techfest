@@ -2,13 +2,13 @@ import { ReactNode } from 'react';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { isSuperAdminEmail } from '@/lib/rbac';
+import { isSuperAdminEmail, normalizeUserRole } from '@/lib/rbac';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  // Check development preview cookie bypass
+  // 1. Check development preview cookie bypass
   try {
     const cookieStore = await cookies();
     const previewRole =
@@ -19,6 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     }
   } catch {}
 
+  // 2. Authentication check
   const { userId } = await auth();
   if (!userId) {
     redirect('/sign-in?redirect_url=/admin');
@@ -29,12 +30,17 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     user?.emailAddresses.find((e) => e.id === user?.primaryEmailAddressId)?.emailAddress ||
     user?.emailAddresses[0]?.emailAddress;
 
-  // Super admins by email are always authorized
+  // 3. Super admins by email whitelist are always authorized
   if (isSuperAdminEmail(primaryEmail)) {
     return <>{children}</>;
   }
 
-  // Check Neon DB
+  // 4. Resolve effective role from Clerk and Neon DB
+  const metadata = (user?.publicMetadata || {}) as { role?: string; isSuperAdmin?: boolean };
+  if (metadata.isSuperAdmin || normalizeUserRole(metadata.role) === 'admin') {
+    return <>{children}</>;
+  }
+
   let dbUser = null;
   try {
     dbUser = await prisma.user.findUnique({
@@ -44,8 +50,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     console.warn('[admin/layout] Neon DB check note:', err);
   }
 
-  const role = (dbUser?.role || '').toUpperCase();
-  if (role !== 'ADMIN') {
+  const role = normalizeUserRole(dbUser?.role);
+  if (role !== 'admin') {
     redirect('/unauthorized');
   }
 

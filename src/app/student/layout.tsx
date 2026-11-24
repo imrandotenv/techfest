@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 
 export default async function StudentLayout({ children }: { children: ReactNode }) {
-  // Check development preview cookie bypass
+  // 1. Check development preview cookie bypass
   try {
     const cookieStore = await cookies();
     const previewRole =
@@ -19,6 +19,7 @@ export default async function StudentLayout({ children }: { children: ReactNode 
     }
   } catch {}
 
+  // 2. Authentication check
   const { userId } = await auth();
   if (!userId) {
     redirect('/sign-in?redirect_url=/student');
@@ -29,12 +30,21 @@ export default async function StudentLayout({ children }: { children: ReactNode 
     user?.emailAddresses.find((e) => e.id === user?.primaryEmailAddressId)?.emailAddress ||
     user?.emailAddresses[0]?.emailAddress;
 
-  // Super admins are never blocked by student onboarding
+  // 3. Super admins are never blocked by onboarding
   if (isSuperAdminEmail(primaryEmail)) {
     return <>{children}</>;
   }
 
-  // Authoritative Neon DB check: if user has not completed onboarding, strictly redirect to /onboarding
+  // 4. Check Clerk metadata first
+  const metadata = (user?.publicMetadata || {}) as {
+    onboardingCompleted?: boolean;
+    role?: string;
+    branch?: string;
+    semester?: number;
+  };
+  const isCompletedInClerk = Boolean(metadata.onboardingCompleted);
+
+  // 5. Check Neon PostgreSQL
   let dbUser = null;
   try {
     dbUser = await prisma.user.findUnique({
@@ -44,7 +54,32 @@ export default async function StudentLayout({ children }: { children: ReactNode 
     console.warn('[student/layout] Neon DB check note:', err);
   }
 
-  if (!dbUser || !dbUser.onboardingCompleted) {
+  const isCompletedInDb = Boolean(dbUser?.onboardingCompleted);
+
+  // If user completed onboarding in Clerk but record is missing in Neon DB, self-heal in background
+  if (isCompletedInClerk && !dbUser) {
+    try {
+      await prisma.user.upsert({
+        where: { clerkId: userId },
+        update: { onboardingCompleted: true },
+        create: {
+          clerkId: userId,
+          email: primaryEmail || `${userId}@student.setgoi.ac.in`,
+          fullName: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'SETGOI Student',
+          role: 'STUDENT',
+          degree: 'B.Tech',
+          branch: metadata.branch || 'CSE',
+          semester: Number(metadata.semester) || 3,
+          onboardingCompleted: true,
+        },
+      });
+    } catch (healErr) {
+      console.warn('[student/layout] Self-heal note:', healErr);
+    }
+  }
+
+  // Only redirect to /onboarding if NEITHER Clerk NOR DB shows completion
+  if (!isCompletedInClerk && !isCompletedInDb) {
     redirect('/onboarding');
   }
 

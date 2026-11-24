@@ -2,13 +2,13 @@ import { ReactNode } from 'react';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { isSuperAdminEmail } from '@/lib/rbac';
+import { isSuperAdminEmail, normalizeUserRole } from '@/lib/rbac';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export default async function FacultyLayout({ children }: { children: ReactNode }) {
-  // Check development preview cookie bypass
+  // 1. Check development preview cookie bypass
   try {
     const cookieStore = await cookies();
     const previewRole =
@@ -19,6 +19,7 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
     }
   } catch {}
 
+  // 2. Authentication check
   const { userId } = await auth();
   if (!userId) {
     redirect('/sign-in?redirect_url=/faculty');
@@ -29,12 +30,13 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
     user?.emailAddresses.find((e) => e.id === user?.primaryEmailAddressId)?.emailAddress ||
     user?.emailAddresses[0]?.emailAddress;
 
-  // Super admins have universal clearance
+  // 3. Super admins have universal clearance
   if (isSuperAdminEmail(primaryEmail)) {
     return <>{children}</>;
   }
 
-  // Check Neon DB
+  // 4. Resolve effective role from Clerk and Neon DB
+  const metadata = (user?.publicMetadata || {}) as { role?: string };
   let dbUser = null;
   try {
     dbUser = await prisma.user.findUnique({
@@ -44,12 +46,8 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
     console.warn('[faculty/layout] Neon DB check note:', err);
   }
 
-  if (!dbUser || !dbUser.onboardingCompleted) {
-    redirect('/onboarding');
-  }
-
-  const role = (dbUser.role || '').toUpperCase();
-  if (role !== 'FACULTY' && role !== 'ADMIN') {
+  const effectiveRole = normalizeUserRole(dbUser?.role || metadata.role);
+  if (effectiveRole !== 'faculty' && effectiveRole !== 'admin') {
     redirect('/unauthorized');
   }
 
