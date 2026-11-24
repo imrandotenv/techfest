@@ -38,10 +38,30 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
       select: { academicStats: true, fullName: true, branch: true, semester: true },
     });
+
+    if (!user) {
+      const clerkUser = await currentUser();
+      const primaryEmail =
+        clerkUser?.emailAddresses.find((e) => e.id === clerkUser?.primaryEmailAddressId)?.emailAddress ||
+        clerkUser?.emailAddresses[0]?.emailAddress;
+      if (primaryEmail) {
+        const byEmail = await prisma.user.findFirst({
+          where: { email: { equals: primaryEmail, mode: 'insensitive' } },
+          select: { id: true, academicStats: true, fullName: true, branch: true, semester: true },
+        });
+        if (byEmail) {
+          user = await prisma.user.update({
+            where: { id: byEmail.id },
+            data: { clerkId: userId },
+            select: { academicStats: true, fullName: true, branch: true, semester: true },
+          });
+        }
+      }
+    }
 
     const stats = (user?.academicStats as AcademicStats | null) || DEFAULT_ACADEMIC_STATS;
 
@@ -77,11 +97,25 @@ export async function PATCH(req: NextRequest) {
       `${userId}@student.setgoi.ac.in`;
     const fullName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || 'SETGOI Student';
 
-    // Fetch existing stats to merge
-    const existingUser = await prisma.user.findUnique({
+    // Fetch existing stats to merge (with Dev-to-Prod clerkId healing)
+    let existingUser = await prisma.user.findUnique({
       where: { clerkId: userId },
-      select: { academicStats: true },
+      select: { id: true, academicStats: true },
     });
+
+    if (!existingUser && primaryEmail) {
+      const byEmail = await prisma.user.findFirst({
+        where: { email: { equals: primaryEmail, mode: 'insensitive' } },
+        select: { id: true, academicStats: true },
+      });
+      if (byEmail) {
+        existingUser = await prisma.user.update({
+          where: { id: byEmail.id },
+          data: { clerkId: userId },
+          select: { id: true, academicStats: true },
+        });
+      }
+    }
 
     const currentStats = (existingUser?.academicStats as AcademicStats | null) || DEFAULT_ACADEMIC_STATS;
 
@@ -109,23 +143,30 @@ export async function PATCH(req: NextRequest) {
       lastUpdated: new Date().toISOString(),
     };
 
-    const updatedUser = await prisma.user.upsert({
-      where: { clerkId: userId },
-      update: {
-        academicStats: mergedStats as any,
-      },
-      create: {
-        clerkId: userId,
-        email: primaryEmail,
-        fullName,
-        role: 'STUDENT',
-        degree: 'B.Tech',
-        branch: 'CSE',
-        semester: 3,
-        onboardingCompleted: true,
-        academicStats: mergedStats as any,
-      },
-    });
+    let updatedUser;
+    if (existingUser) {
+      updatedUser = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          clerkId: userId,
+          academicStats: mergedStats as any,
+        },
+      });
+    } else {
+      updatedUser = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: primaryEmail,
+          fullName,
+          role: 'STUDENT',
+          degree: 'B.Tech',
+          branch: 'CSE',
+          semester: 3,
+          onboardingCompleted: true,
+          academicStats: mergedStats as any,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

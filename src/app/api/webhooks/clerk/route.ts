@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { Webhook } from 'svix';
 import { prisma } from '@/lib/prisma';
+import { isSuperAdminEmail } from '@/lib/rbac';
 
 export const runtime = 'nodejs';
 
@@ -70,31 +71,51 @@ export async function POST(req: NextRequest) {
         const universityRoll = public_metadata?.universityRoll || undefined;
         const onboardingCompleted = Boolean(public_metadata?.onboardingCompleted);
 
-        await prisma.user.upsert({
+        const isWhitelisted = isSuperAdminEmail(primaryEmail);
+        const targetRole = isWhitelisted ? 'ADMIN' : (role || 'STUDENT');
+
+        // Look up by clerkId first; if not found, auto-heal by email
+        let existingUser = await prisma.user.findUnique({
           where: { clerkId: id },
-          update: {
-            email: primaryEmail,
-            fullName,
-            role,
-            ...(branch ? { branch } : {}),
-            ...(semester !== undefined ? { semester } : {}),
-            ...(passoutYear !== undefined ? { passoutYear } : {}),
-            ...(universityRoll !== undefined ? { universityRoll } : {}),
-            onboardingCompleted,
-          },
-          create: {
-            clerkId: id,
-            email: primaryEmail,
-            fullName,
-            role,
-            degree: 'B.Tech',
-            branch: branch || 'CSE',
-            semester: semester || 3,
-            passoutYear: passoutYear || new Date().getFullYear() + 2,
-            universityRoll,
-            onboardingCompleted,
-          },
         });
+
+        if (!existingUser && primaryEmail) {
+          existingUser = await prisma.user.findFirst({
+            where: { email: { equals: primaryEmail, mode: 'insensitive' } },
+          });
+        }
+
+        if (existingUser) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              clerkId: id,
+              email: primaryEmail,
+              fullName,
+              role: targetRole,
+              ...(branch ? { branch } : {}),
+              ...(semester !== undefined ? { semester } : {}),
+              ...(passoutYear !== undefined ? { passoutYear } : {}),
+              ...(universityRoll !== undefined ? { universityRoll } : {}),
+              onboardingCompleted: isWhitelisted ? true : (onboardingCompleted || existingUser.onboardingCompleted),
+            },
+          });
+        } else {
+          await prisma.user.create({
+            data: {
+              clerkId: id,
+              email: primaryEmail,
+              fullName,
+              role: targetRole,
+              degree: 'B.Tech',
+              branch: branch || 'CSE',
+              semester: semester || 3,
+              passoutYear: passoutYear || new Date().getFullYear() + 2,
+              universityRoll,
+              onboardingCompleted: isWhitelisted || onboardingCompleted,
+            },
+          });
+        }
         break;
       }
 

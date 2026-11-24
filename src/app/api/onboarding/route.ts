@@ -27,34 +27,47 @@ export async function POST(req: NextRequest) {
       `${userId}@student.setgoi.ac.in`;
     const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'SETGOI Student';
 
-    // 1. Persist to Neon Postgres
+    // 1. Persist to Neon Postgres (auto-healing Dev-to-Prod clerkId by email)
     let dbUser = null;
     try {
-      dbUser = await prisma.user.upsert({
-        where: { clerkId: userId },
-        update: {
-          email: primaryEmail,
-          fullName,
-          branch,
-          semester,
-          passoutYear,
-          universityRoll: universityRoll || undefined,
-          degree: 'B.Tech',
-          onboardingCompleted: true,
-        },
-        create: {
-          clerkId: userId,
-          email: primaryEmail,
-          fullName,
-          role: 'STUDENT',
-          degree: 'B.Tech',
-          branch,
-          semester,
-          passoutYear,
-          universityRoll: universityRoll || undefined,
-          onboardingCompleted: true,
-        },
-      });
+      let existingUser = await prisma.user.findUnique({ where: { clerkId: userId } });
+      if (!existingUser && primaryEmail) {
+        existingUser = await prisma.user.findFirst({
+          where: { email: { equals: primaryEmail, mode: 'insensitive' } },
+        });
+      }
+
+      if (existingUser) {
+        dbUser = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            clerkId: userId,
+            email: primaryEmail,
+            fullName,
+            branch,
+            semester,
+            passoutYear,
+            universityRoll: universityRoll || undefined,
+            degree: 'B.Tech',
+            onboardingCompleted: true,
+          },
+        });
+      } else {
+        dbUser = await prisma.user.create({
+          data: {
+            clerkId: userId,
+            email: primaryEmail,
+            fullName,
+            role: 'STUDENT',
+            degree: 'B.Tech',
+            branch,
+            semester,
+            passoutYear,
+            universityRoll: universityRoll || undefined,
+            onboardingCompleted: true,
+          },
+        });
+      }
     } catch (dbErr: any) {
       console.warn('[Onboarding API] Neon Postgres query note:', dbErr?.message || dbErr);
     }

@@ -60,24 +60,62 @@ const hasResolvableClerk =
   Boolean(process.env.CLERK_SECRET_KEY) && 
   !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('durgapur.dev');
 
-function resolveRoleFromClaims(sessionClaims: any): 'admin' | 'faculty' | 'student' {
-  if (!sessionClaims) return 'student';
-  const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { role?: string };
-  const rawRole = (metadata.role || sessionClaims?.role || '').toString().toLowerCase().trim();
+const DEFAULT_SUPER_ADMIN_EMAILS = [
+  'mail@ceimran.in',
+  'mdimransps955@gmail.com',
+  'principal@setgoi.ac.in',
+  'admin@setgoi.ac.in',
+];
+
+function resolveRoleFromClaims(sessionClaims: any): 'admin' | 'faculty' | 'student' | null {
+  if (!sessionClaims) return null;
+
+  // Check all possible locations of role in Clerk claims (case-insensitive)
+  const metadata = (
+    sessionClaims?.metadata || 
+    sessionClaims?.publicMetadata || 
+    sessionClaims?.public_metadata || 
+    sessionClaims?.user_metadata || 
+    {}
+  ) as { role?: string; isSuperAdmin?: boolean };
+
+  const rawRole = (
+    metadata.role || 
+    sessionClaims?.role || 
+    sessionClaims?.org_role || 
+    ''
+  ).toString().toUpperCase().trim();
 
   // Check email in session claims against super admin whitelist
-  const userEmail = (sessionClaims?.email || sessionClaims?.primary_email || '').toString().toLowerCase().trim();
+  const userEmail = (
+    sessionClaims?.email || 
+    sessionClaims?.primary_email || 
+    sessionClaims?.email_address || 
+    sessionClaims?.emails?.[0] || 
+    ''
+  ).toString().toLowerCase().trim();
+
   const superAdminEnv = process.env.SUPER_ADMIN_EMAILS || '';
-  if (userEmail && superAdminEnv) {
-    const list = superAdminEnv.split(',').map((e) => e.trim().toLowerCase());
-    if (list.includes(userEmail)) {
-      return 'admin';
-    }
+  const superAdminList = Array.from(new Set([
+    ...DEFAULT_SUPER_ADMIN_EMAILS.map((e) => e.toLowerCase()),
+    ...superAdminEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
+  ]));
+
+  if (userEmail && superAdminList.includes(userEmail)) {
+    return 'admin';
   }
 
-  if (rawRole === 'admin' || rawRole === 'superadmin') return 'admin';
-  if (rawRole === 'faculty' || rawRole === 'college' || rawRole === 'teacher' || rawRole === 'professor') return 'faculty';
-  return 'student';
+  if (rawRole === 'ADMIN' || rawRole === 'SUPERADMIN' || rawRole === 'SUPER_ADMIN' || metadata.isSuperAdmin) {
+    return 'admin';
+  }
+  if (rawRole === 'FACULTY' || rawRole === 'COLLEGE' || rawRole === 'TEACHER' || rawRole === 'PROFESSOR') {
+    return 'faculty';
+  }
+  if (rawRole === 'STUDENT') {
+    return 'student';
+  }
+
+  return null;
 }
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
@@ -102,9 +140,16 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
-    const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { onboardingCompleted?: boolean };
-    if (metadata.onboardingCompleted) {
-      return NextResponse.redirect(new URL('/student', req.url));
+    const role = resolveRoleFromClaims(sessionClaims);
+    const metadata = (
+      sessionClaims?.metadata || 
+      sessionClaims?.publicMetadata || 
+      sessionClaims?.public_metadata || 
+      {}
+    ) as { onboardingCompleted?: boolean };
+
+    if (metadata.onboardingCompleted || role === 'admin') {
+      return NextResponse.redirect(new URL(role === 'admin' ? '/admin' : '/student', req.url));
     }
     return NextResponse.next();
   }
@@ -130,12 +175,15 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const role = resolveRoleFromClaims(sessionClaims);
-    if (role !== 'admin') {
+    // Explicit student or faculty role is forbidden from admin routes
+    if (role === 'student' || role === 'faculty') {
       if (isApi) {
         return NextResponse.json({ error: 'Forbidden: Admin clearance required.' }, { status: 403 });
       }
       return NextResponse.redirect(new URL('/unauthorized', req.url));
     }
+    // If role is 'admin' or null (unspecified in JWT session claims), allow request to reach
+    // Server Component AdminLayout or API route handler, which resolves and heals user in Neon DB.
     return NextResponse.next();
   }
 
@@ -160,7 +208,8 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const role = resolveRoleFromClaims(sessionClaims);
-    if (role !== 'faculty' && role !== 'admin') {
+    // Explicit student role is forbidden from faculty routes
+    if (role === 'student') {
       if (isApi) {
         return NextResponse.json({ error: 'Forbidden: Faculty clearance required.' }, { status: 403 });
       }
@@ -183,7 +232,13 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const role = resolveRoleFromClaims(sessionClaims);
-    const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { onboardingCompleted?: boolean };
+    const metadata = (
+      sessionClaims?.metadata || 
+      sessionClaims?.publicMetadata || 
+      sessionClaims?.public_metadata || 
+      {}
+    ) as { onboardingCompleted?: boolean };
+
     if (role !== 'admin' && metadata.onboardingCompleted === false) {
       return NextResponse.redirect(new URL('/onboarding', req.url));
     }

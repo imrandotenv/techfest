@@ -46,8 +46,9 @@ export function normalizeUserRole(roleInput?: string | null): UserRole {
  */
 export function getSuperAdminEmails(): string[] {
   const envEmails = process.env.SUPER_ADMIN_EMAILS;
+  const defaultList = DEFAULT_SUPER_ADMIN_EMAILS.map((e) => e.trim().toLowerCase());
   if (!envEmails) {
-    return DEFAULT_SUPER_ADMIN_EMAILS.map((e) => e.trim().toLowerCase());
+    return defaultList;
   }
 
   const parsed = envEmails
@@ -55,7 +56,7 @@ export function getSuperAdminEmails(): string[] {
     .map((e) => e.trim().toLowerCase())
     .filter((e) => e.length > 0 && e.includes('@'));
 
-  return parsed.length > 0 ? parsed : DEFAULT_SUPER_ADMIN_EMAILS.map((e) => e.trim().toLowerCase());
+  return Array.from(new Set([...defaultList, ...parsed]));
 }
 
 /**
@@ -96,6 +97,145 @@ export interface AuthUserContext {
   passoutYear?: number;
   universityRoll?: string;
   onboardingCompleted?: boolean;
+}
+
+export interface ResolveAndHealOptions {
+  clerkUserId: string;
+  email?: string | null;
+  fullName?: string | null;
+  defaultRole?: string;
+  autoCreate?: boolean;
+}
+
+/**
+ * Auto-heals Clerk Development-to-Production migration mismatches:
+ * 1. Looks up the user by clerkId in Neon PostgreSQL.
+ * 2. If not found, looks up by verified primary email.
+ * 3. If found by email with a stale/dev clerkId, updates clerkId to current production userId.
+ * 4. Ensures super admins are elevated to ADMIN and synchronized back to Clerk publicMetadata.
+ * 5. If autoCreate is true and user is not in DB, creates a new record safely.
+ */
+export async function resolveAndHealUser({
+  clerkUserId,
+  email,
+  fullName,
+  defaultRole = 'STUDENT',
+  autoCreate = false,
+}: ResolveAndHealOptions) {
+  if (!clerkUserId) return null;
+
+  const normalizedEmail = email?.trim().toLowerCase() || null;
+  const isWhitelisted = isSuperAdminEmail(normalizedEmail);
+
+  // 1. Try finding by clerkId first
+  let dbUser = await prisma.user.findUnique({
+    where: { clerkId: clerkUserId },
+  });
+
+  // 2. If not found by clerkId, try finding by email (auto-heal Dev-to-Prod migration)
+  if (!dbUser && normalizedEmail) {
+    const userByEmail = await prisma.user.findFirst({
+      where: {
+        email: { equals: normalizedEmail, mode: 'insensitive' },
+      },
+    });
+
+    if (userByEmail) {
+      console.info(
+        `[AuthSync] Auto-healing Dev-to-Prod clerkId for ${normalizedEmail}: ${userByEmail.clerkId} -> ${clerkUserId}`
+      );
+
+      const targetRole = isWhitelisted
+        ? 'ADMIN'
+        : userByEmail.role
+        ? userByEmail.role.toUpperCase()
+        : 'STUDENT';
+
+      dbUser = await prisma.user.update({
+        where: { id: userByEmail.id },
+        data: {
+          clerkId: clerkUserId,
+          ...(fullName && !userByEmail.fullName ? { fullName } : {}),
+          role: targetRole,
+          ...(isWhitelisted ? { onboardingCompleted: true } : {}),
+        },
+      });
+
+      // Synchronize role back to Clerk publicMetadata
+      try {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(clerkUserId, {
+          publicMetadata: {
+            role: dbUser.role.toLowerCase(),
+            isSuperAdmin: dbUser.role.toUpperCase() === 'ADMIN',
+            onboardingCompleted: dbUser.onboardingCompleted,
+            branch: dbUser.branch || undefined,
+            semester: dbUser.semester || undefined,
+            passoutYear: dbUser.passoutYear || undefined,
+            universityRoll: dbUser.universityRoll || undefined,
+          },
+        });
+      } catch (clerkErr) {
+        console.warn('[AuthSync] Clerk publicMetadata sync note:', clerkErr);
+      }
+    }
+  }
+
+  // 3. If whitelisted super admin, ensure ADMIN role in DB and Clerk
+  if (dbUser && isWhitelisted && dbUser.role.toUpperCase() !== 'ADMIN') {
+    dbUser = await prisma.user.update({
+      where: { id: dbUser.id },
+      data: {
+        role: 'ADMIN',
+        onboardingCompleted: true,
+      },
+    });
+
+    try {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(clerkUserId, {
+        publicMetadata: {
+          role: 'admin',
+          isSuperAdmin: true,
+          onboardingCompleted: true,
+        },
+      });
+    } catch (clerkErr) {
+      console.warn('[AuthSync] Clerk super admin metadata sync note:', clerkErr);
+    }
+  }
+
+  // 4. Auto-create if requested or if super admin bootstrap
+  if (!dbUser && (autoCreate || isWhitelisted) && normalizedEmail) {
+    const assignedRole = isWhitelisted ? 'ADMIN' : defaultRole.toUpperCase();
+    try {
+      dbUser = await prisma.user.create({
+        data: {
+          clerkId: clerkUserId,
+          email: normalizedEmail,
+          fullName: fullName || (isWhitelisted ? 'Super Admin' : 'SETGOI Member'),
+          role: assignedRole,
+          degree: 'B.Tech',
+          onboardingCompleted: isWhitelisted,
+        },
+      });
+
+      try {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(clerkUserId, {
+          publicMetadata: {
+            role: assignedRole.toLowerCase(),
+            isSuperAdmin: assignedRole === 'ADMIN',
+            onboardingCompleted: isWhitelisted,
+          },
+        });
+      } catch {}
+    } catch (createErr: any) {
+      console.warn('[AuthSync] Failed to auto-create user in Neon DB:', createErr?.message || createErr);
+    }
+  }
+
+  return dbUser;
 }
 
 /**
@@ -199,13 +339,18 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
       }
     }
 
-    // Database reconciliation with Neon PostgreSQL
+    // Database reconciliation with Neon PostgreSQL (Auto-healing clerkId by email)
     let dbUser = null;
     try {
-      dbUser = await prisma.user.findUnique({
-        where: { clerkId: clerkUser.id },
+      dbUser = await resolveAndHealUser({
+        clerkUserId: clerkUser.id,
+        email: primaryEmail,
+        fullName,
+        autoCreate: isWhitelisted,
       });
-    } catch {}
+    } catch (dbErr) {
+      console.warn('[RBAC] resolveAndHealUser warning:', dbErr);
+    }
 
     const resolvedRole: UserRole = isWhitelisted
       ? 'admin'

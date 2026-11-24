@@ -1,8 +1,7 @@
 import { ReactNode } from 'react';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
-import { isSuperAdminEmail, normalizeUserRole } from '@/lib/rbac';
+import { isSuperAdminEmail, normalizeUserRole, resolveAndHealUser } from '@/lib/rbac';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
@@ -31,9 +30,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const primaryEmail =
     user?.emailAddresses.find((e) => e.id === user?.primaryEmailAddressId)?.emailAddress ||
     user?.emailAddresses[0]?.emailAddress;
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'SETGOI Member';
 
-  // 3. Super admins by email whitelist are always authorized
+  // 3. Super admins by email whitelist are always authorized & auto-healed in DB
   if (isSuperAdminEmail(primaryEmail)) {
+    await resolveAndHealUser({
+      clerkUserId: userId,
+      email: primaryEmail,
+      fullName,
+      autoCreate: true,
+    }).catch((err) => console.warn('[admin/layout] Super admin auto-heal note:', err));
     return <>{children}</>;
   }
 
@@ -43,16 +49,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     return <>{children}</>;
   }
 
-  let dbUser = null;
-  try {
-    dbUser = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    });
-  } catch (err) {
+  const dbUser = await resolveAndHealUser({
+    clerkUserId: userId,
+    email: primaryEmail,
+    fullName,
+  }).catch((err) => {
     console.warn('[admin/layout] Neon DB check note:', err);
-  }
+    return null;
+  });
 
-  const role = normalizeUserRole(dbUser?.role);
+  const role = normalizeUserRole(dbUser?.role || metadata.role);
   if (role !== 'admin') {
     redirect('/unauthorized');
   }

@@ -1,7 +1,6 @@
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
-import { isSuperAdminEmail } from '@/lib/rbac';
+import { isSuperAdminEmail, resolveAndHealUser } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,36 +20,14 @@ export default async function AuthCallbackPage() {
     user?.username ||
     'SETGOI Member';
 
-  // 1. Super Admin Check: Immediate elevation & direct routing to /admin
+  // 1. Super Admin Check: Immediate elevation, Dev-to-Prod clerkId healing & direct routing to /admin
   if (isSuperAdminEmail(primaryEmail)) {
     try {
-      // Ensure role = "ADMIN" and onboardingCompleted in Neon DB
-      await prisma.user.upsert({
-        where: { clerkId: userId },
-        update: {
-          role: 'ADMIN',
-          email: primaryEmail || `${userId}@admin.setgoi.ac.in`,
-          fullName,
-          onboardingCompleted: true,
-        },
-        create: {
-          clerkId: userId,
-          email: primaryEmail || `${userId}@admin.setgoi.ac.in`,
-          fullName,
-          role: 'ADMIN',
-          degree: 'B.Tech',
-          onboardingCompleted: true,
-        },
-      });
-
-      // Ensure role = "admin" in Clerk publicMetadata
-      const client = await clerkClient();
-      await client.users.updateUserMetadata(userId, {
-        publicMetadata: {
-          role: 'admin',
-          isSuperAdmin: true,
-          onboardingCompleted: true,
-        },
+      await resolveAndHealUser({
+        clerkUserId: userId,
+        email: primaryEmail,
+        fullName,
+        autoCreate: true,
       });
     } catch (err) {
       console.warn('[auth-callback] Super Admin bootstrap warning:', err);
@@ -59,11 +36,13 @@ export default async function AuthCallbackPage() {
     redirect('/admin');
   }
 
-  // 2. Regular User: Check Neon DB for existing user & onboarding status
+  // 2. Regular User: Check Neon DB for existing user & onboarding status (with Dev-to-Prod healing)
   let dbUser = null;
   try {
-    dbUser = await prisma.user.findUnique({
-      where: { clerkId: userId },
+    dbUser = await resolveAndHealUser({
+      clerkUserId: userId,
+      email: primaryEmail,
+      fullName,
     });
   } catch (e: any) {
     console.warn('[auth-callback] Neon DB query note:', e?.message || e);
@@ -82,6 +61,7 @@ export default async function AuthCallbackPage() {
     await client.users.updateUserMetadata(userId, {
       publicMetadata: {
         role: userRole.toLowerCase(),
+        isSuperAdmin: userRole === 'ADMIN',
         onboardingCompleted: true,
         branch: dbUser.branch || undefined,
         semester: dbUser.semester || undefined,

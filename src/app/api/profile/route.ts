@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { BTechBranch } from '@/config/curriculum';
+import { resolveAndHealUser } from '@/lib/rbac';
 
 export async function GET() {
   try {
@@ -18,15 +19,15 @@ export async function GET() {
     const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'SETGOI Member';
     const metadata = (user?.publicMetadata || {}) as Record<string, any>;
 
-    // Try reading from Postgres first
-    let dbUser = null;
-    try {
-      dbUser = await prisma.user.findUnique({
-        where: { clerkId: userId },
-      });
-    } catch (e: any) {
+    // Try reading from Postgres first (auto-healing Dev-to-Prod clerkId by email)
+    const dbUser = await resolveAndHealUser({
+      clerkUserId: userId,
+      email: primaryEmail,
+      fullName,
+    }).catch((e: any) => {
       console.warn('[Profile API] Database read note:', e?.message || e);
-    }
+      return null;
+    });
 
     const profile = {
       clerkId: userId,
@@ -73,30 +74,43 @@ export async function PATCH(req: NextRequest) {
       `${userId}@student.setgoi.ac.in`;
     const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'SETGOI Member';
 
-    // 1. Update Neon Postgres
+    // 1. Update Neon Postgres (auto-healing Dev-to-Prod clerkId by email)
     let dbUser = null;
     try {
-      dbUser = await prisma.user.upsert({
-        where: { clerkId: userId },
-        update: {
-          ...(branch ? { branch } : {}),
-          ...(semester !== undefined ? { semester } : {}),
-          ...(passoutYear !== undefined ? { passoutYear } : {}),
-          ...(universityRoll !== undefined ? { universityRoll } : {}),
-        },
-        create: {
-          clerkId: userId,
-          email: primaryEmail,
-          fullName,
-          role: 'STUDENT',
-          degree: 'B.Tech',
-          branch: branch || 'CSE',
-          semester: semester || 3,
-          passoutYear: passoutYear || new Date().getFullYear() + 2,
-          universityRoll: universityRoll || undefined,
-          onboardingCompleted: true,
-        },
-      });
+      let existingUser = await prisma.user.findUnique({ where: { clerkId: userId } });
+      if (!existingUser && primaryEmail) {
+        existingUser = await prisma.user.findFirst({
+          where: { email: { equals: primaryEmail, mode: 'insensitive' } },
+        });
+      }
+
+      if (existingUser) {
+        dbUser = await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            clerkId: userId,
+            ...(branch ? { branch } : {}),
+            ...(semester !== undefined ? { semester } : {}),
+            ...(passoutYear !== undefined ? { passoutYear } : {}),
+            ...(universityRoll !== undefined ? { universityRoll } : {}),
+          },
+        });
+      } else {
+        dbUser = await prisma.user.create({
+          data: {
+            clerkId: userId,
+            email: primaryEmail,
+            fullName,
+            role: 'STUDENT',
+            degree: 'B.Tech',
+            branch: branch || 'CSE',
+            semester: semester || 3,
+            passoutYear: passoutYear || new Date().getFullYear() + 2,
+            universityRoll: universityRoll || undefined,
+            onboardingCompleted: true,
+          },
+        });
+      }
     } catch (dbErr: any) {
       console.warn('[Profile API PATCH] Database write note:', dbErr?.message || dbErr);
     }

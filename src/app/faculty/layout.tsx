@@ -1,8 +1,7 @@
 import { ReactNode } from 'react';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
-import { isSuperAdminEmail, normalizeUserRole } from '@/lib/rbac';
+import { isSuperAdminEmail, normalizeUserRole, resolveAndHealUser } from '@/lib/rbac';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +30,7 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
   const primaryEmail =
     user?.emailAddresses.find((e) => e.id === user?.primaryEmailAddressId)?.emailAddress ||
     user?.emailAddresses[0]?.emailAddress;
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'SETGOI Member';
 
   // 3. Super admins have universal clearance
   if (isSuperAdminEmail(primaryEmail)) {
@@ -39,14 +39,14 @@ export default async function FacultyLayout({ children }: { children: ReactNode 
 
   // 4. Resolve effective role from Clerk and Neon DB
   const metadata = (user?.publicMetadata || {}) as { role?: string };
-  let dbUser = null;
-  try {
-    dbUser = await prisma.user.findUnique({
-      where: { clerkId: userId },
-    });
-  } catch (err) {
+  const dbUser = await resolveAndHealUser({
+    clerkUserId: userId,
+    email: primaryEmail,
+    fullName,
+  }).catch((err) => {
     console.warn('[faculty/layout] Neon DB check note:', err);
-  }
+    return null;
+  });
 
   const effectiveRole = normalizeUserRole(dbUser?.role || metadata.role);
   if (effectiveRole !== 'faculty' && effectiveRole !== 'admin') {
