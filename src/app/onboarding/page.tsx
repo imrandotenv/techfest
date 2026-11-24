@@ -25,9 +25,17 @@ export default async function OnboardingPage({
     redirect('/sign-in?redirect_url=/onboarding');
   }
 
-  // If already marked completed in metadata or DB, and not in preview mode, redirect to student portal
+  // Helper to route already-onboarded user to their respective dashboard
+  const getRoleDashboard = (role?: string | null) => {
+    const cleanRole = (role || '').toUpperCase();
+    if (cleanRole === 'ADMIN') return '/admin';
+    if (cleanRole === 'FACULTY') return '/faculty';
+    return '/student';
+  };
+
+  // If already marked completed in metadata or DB, and not in preview mode, redirect to appropriate portal
   if (!isDevPreview && user.onboardingCompleted) {
-    redirect('/student');
+    redirect(getRoleDashboard(user.role));
   }
 
   if (!isDevPreview && user.userId) {
@@ -37,7 +45,7 @@ export default async function OnboardingPage({
         where: { clerkId: user.userId },
       });
       if (dbUser?.onboardingCompleted) {
-        redirect('/student');
+        redirect(getRoleDashboard(dbUser.role));
       }
     } catch (err: any) {
       console.warn('[onboarding-page] DB check warning:', err?.message || err);

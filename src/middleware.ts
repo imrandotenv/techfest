@@ -176,8 +176,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
+    const role = resolveRoleFromClaims(sessionClaims);
     const metadata = (sessionClaims?.metadata || sessionClaims?.publicMetadata || {}) as { onboardingCompleted?: boolean };
-    if (metadata.onboardingCompleted === false) {
+    if (role !== 'admin' && metadata.onboardingCompleted === false) {
       return NextResponse.redirect(new URL('/onboarding', req.url));
     }
 
@@ -193,20 +194,13 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const authObject = await auth();
-    const { userId, sessionClaims, redirectToSignIn } = authObject;
+    const { userId, redirectToSignIn } = authObject;
 
     if (!userId) {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
-    const role = resolveRoleFromClaims(sessionClaims);
-    if (role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', req.url));
-    } else if (role === 'faculty') {
-      return NextResponse.redirect(new URL('/faculty', req.url));
-    } else {
-      return NextResponse.redirect(new URL('/student', req.url));
-    }
+    return NextResponse.redirect(new URL('/auth-callback', req.url));
   }
 
   return NextResponse.next();

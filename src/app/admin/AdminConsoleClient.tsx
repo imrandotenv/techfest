@@ -154,10 +154,10 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
     );
 
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: newRole }),
+        body: JSON.stringify({ role: newRole }),
       });
 
       const data = await res.json();
@@ -165,7 +165,7 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
         setStatusMessage({ text: data.error || 'Failed to update role', isError: true });
         fetchUsers(); // Revert
       } else {
-        setStatusMessage({ text: `Role updated to ${newRole.toUpperCase()} successfully!` });
+        setStatusMessage({ text: `Role updated to ${newRole.toUpperCase()} successfully across Neon DB & Clerk!` });
       }
     } catch (err: any) {
       setStatusMessage({ text: err?.message || 'Network error updating role', isError: true });
@@ -338,15 +338,15 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
                       </td>
                       <td className="py-3 px-3 text-right">
                         <select
-                          value={u.role}
+                          value={u.role.toLowerCase()}
                           onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
                           disabled={isCurrentAdmin}
-                          className="px-2.5 py-1 rounded-lg bg-white border border-[#E4E4E7] text-xs font-mono text-[#09090B] focus:outline-hidden focus:border-[#2563EB] cursor-pointer disabled:bg-zinc-100 disabled:cursor-not-allowed"
+                          className="px-2.5 py-1 rounded-lg bg-white border border-[#E4E4E7] text-xs font-mono font-medium text-[#09090B] focus:outline-hidden focus:border-[#2563EB] cursor-pointer disabled:bg-zinc-100 disabled:cursor-not-allowed"
                           title={isCurrentAdmin ? 'Self-demotion protection active' : 'Select role'}
                         >
-                          <option value="student">Student</option>
-                          <option value="faculty">Faculty</option>
-                          <option value="admin">Admin</option>
+                          <option value="student">STUDENT</option>
+                          <option value="faculty">FACULTY</option>
+                          <option value="admin">ADMIN</option>
                         </select>
                       </td>
                     </tr>

@@ -1,6 +1,7 @@
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
 
 export type UserRole = 'admin' | 'faculty' | 'student';
 
@@ -198,21 +199,50 @@ export async function getCurrentAuthUser(): Promise<AuthUserContext> {
       }
     }
 
+    // Database reconciliation with Neon PostgreSQL
+    let dbUser = null;
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { clerkId: clerkUser.id },
+      });
+    } catch {}
+
+    const resolvedRole: UserRole = isWhitelisted
+      ? 'admin'
+      : dbUser?.role
+      ? normalizeUserRole(dbUser.role)
+      : effectiveRole;
+
+    const resolvedBranch = metadata.branch || dbUser?.branch || undefined;
+    const resolvedSemester = metadata.semester
+      ? Number(metadata.semester)
+      : dbUser?.semester
+      ? Number(dbUser.semester)
+      : undefined;
+    const resolvedPassoutYear = metadata.passoutYear
+      ? Number(metadata.passoutYear)
+      : dbUser?.passoutYear
+      ? Number(dbUser.passoutYear)
+      : undefined;
+    const resolvedUniversityRoll = metadata.universityRoll || dbUser?.universityRoll || undefined;
+    const resolvedOnboardingCompleted =
+      metadata.onboardingCompleted ?? dbUser?.onboardingCompleted ?? false;
+
     return {
       userId: clerkUser.id,
-      email: primaryEmail,
-      fullName,
-      role: effectiveRole,
-      isSuperAdmin,
-      department: metadata.department,
-      studentId: metadata.studentId,
+      email: primaryEmail || dbUser?.email || null,
+      fullName: fullName || dbUser?.fullName || 'SETGOI Member',
+      role: resolvedRole,
+      isSuperAdmin: isSuperAdmin || resolvedRole === 'admin',
+      department: metadata.department || (resolvedBranch ? `B.Tech ${resolvedBranch}` : undefined),
+      studentId: metadata.studentId || resolvedUniversityRoll,
       avatarUrl: clerkUser.imageUrl,
       isAuthenticated: true,
-      branch: metadata.branch,
-      semester: metadata.semester ? Number(metadata.semester) : undefined,
-      passoutYear: metadata.passoutYear ? Number(metadata.passoutYear) : undefined,
-      universityRoll: metadata.universityRoll,
-      onboardingCompleted: metadata.onboardingCompleted,
+      branch: resolvedBranch,
+      semester: resolvedSemester,
+      passoutYear: resolvedPassoutYear,
+      universityRoll: resolvedUniversityRoll,
+      onboardingCompleted: resolvedOnboardingCompleted,
     };
   } catch (err: any) {
     if (err?.digest === 'DYNAMIC_SERVER_USAGE' || err?.message?.includes('Dynamic server usage')) {
