@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { BTechBranch } from '@/config/curriculum';
+import { isSuperAdminEmail } from '@/lib/rbac';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      const isWhitelisted = isSuperAdminEmail(primaryEmail);
+
       if (existingUser) {
         dbUser = await prisma.user.update({
           where: { id: existingUser.id },
@@ -50,6 +53,7 @@ export async function POST(req: NextRequest) {
             universityRoll: universityRoll || undefined,
             degree: 'B.Tech',
             onboardingCompleted: true,
+            ...(isWhitelisted ? { role: 'ADMIN' } : {}),
           },
         });
       } else {
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
             clerkId: userId,
             email: primaryEmail,
             fullName,
-            role: 'STUDENT',
+            role: isWhitelisted ? 'ADMIN' : 'STUDENT',
             degree: 'B.Tech',
             branch,
             semester,
@@ -74,6 +78,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Persist to Clerk publicMetadata
     try {
+      const isWhitelisted = isSuperAdminEmail(primaryEmail);
       const client = await clerkClient();
       const clerkUserRecord = await client.users.getUser(userId);
       const existingMeta = clerkUserRecord.publicMetadata || {};
@@ -87,7 +92,8 @@ export async function POST(req: NextRequest) {
           semester,
           passoutYear,
           universityRoll: universityRoll || null,
-          role: existingMeta.role || 'student',
+          role: isWhitelisted ? 'admin' : (existingMeta.role || 'student'),
+          isSuperAdmin: isWhitelisted ? true : existingMeta.isSuperAdmin,
         },
       });
     } catch (clerkErr: any) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { BTechBranch } from '@/config/curriculum';
-import { resolveAndHealUser } from '@/lib/rbac';
+import { resolveAndHealUser, isSuperAdminEmail } from '@/lib/rbac';
 
 export async function GET() {
   try {
@@ -84,6 +84,8 @@ export async function PATCH(req: NextRequest) {
         });
       }
 
+      const isWhitelisted = isSuperAdminEmail(primaryEmail);
+
       if (existingUser) {
         dbUser = await prisma.user.update({
           where: { id: existingUser.id },
@@ -93,6 +95,7 @@ export async function PATCH(req: NextRequest) {
             ...(semester !== undefined ? { semester } : {}),
             ...(passoutYear !== undefined ? { passoutYear } : {}),
             ...(universityRoll !== undefined ? { universityRoll } : {}),
+            ...(isWhitelisted ? { role: 'ADMIN' } : {}),
           },
         });
       } else {
@@ -101,7 +104,7 @@ export async function PATCH(req: NextRequest) {
             clerkId: userId,
             email: primaryEmail,
             fullName,
-            role: 'STUDENT',
+            role: isWhitelisted ? 'ADMIN' : 'STUDENT',
             degree: 'B.Tech',
             branch: branch || 'CSE',
             semester: semester || 3,

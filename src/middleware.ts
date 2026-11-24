@@ -55,11 +55,6 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ]);
 
-const hasResolvableClerk = 
-  Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) && 
-  Boolean(process.env.CLERK_SECRET_KEY) && 
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('durgapur.dev');
-
 const DEFAULT_SUPER_ADMIN_EMAILS = [
   'mail@ceimran.in',
   'mdimransps955@gmail.com',
@@ -154,7 +149,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
-  // 1. Check Admin Routes
+// 1. Check Admin Routes
   if (isAdminRoute(req)) {
     if (previewRole) {
       if (previewRole !== 'admin') {
@@ -165,7 +160,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const authObject = await auth();
-    const { userId, sessionClaims, redirectToSignIn } = authObject;
+    const { userId, redirectToSignIn } = authObject;
 
     if (!userId) {
       if (isApi) {
@@ -174,16 +169,10 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
-    const role = resolveRoleFromClaims(sessionClaims);
-    // Explicit student or faculty role is forbidden from admin routes
-    if (role === 'student' || role === 'faculty') {
-      if (isApi) {
-        return NextResponse.json({ error: 'Forbidden: Admin clearance required.' }, { status: 403 });
-      }
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
-    }
-    // If role is 'admin' or null (unspecified in JWT session claims), allow request to reach
-    // Server Component AdminLayout or API route handler, which resolves and heals user in Neon DB.
+    // Security & RBAC: Pass authenticated users to AdminLayout (pages) or /api/admin/* (APIs)
+    // for authoritative clearance verification against Neon DB and Clerk backend API.
+    // Edge middleware sessionClaims lack email addresses by default and can contain stale JWT metadata,
+    // which caused false 403 lockouts for whitelisted admins.
     return NextResponse.next();
   }
 
@@ -198,7 +187,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     }
 
     const authObject = await auth();
-    const { userId, sessionClaims, redirectToSignIn } = authObject;
+    const { userId, redirectToSignIn } = authObject;
 
     if (!userId) {
       if (isApi) {
@@ -207,14 +196,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
-    const role = resolveRoleFromClaims(sessionClaims);
-    // Explicit student role is forbidden from faculty routes
-    if (role === 'student') {
-      if (isApi) {
-        return NextResponse.json({ error: 'Forbidden: Faculty clearance required.' }, { status: 403 });
-      }
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
-    }
+    // Pass authenticated users to FacultyLayout for authoritative verification
     return NextResponse.next();
   }
 
@@ -268,10 +250,15 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default function middleware(req: NextRequest, ev: any) {
-  // If unresolvable Clerk dev domain, guard admin and faculty locally
-  if (!hasResolvableClerk) {
+  // If Clerk publishable key is missing (e.g. offline dev/mock mode without Clerk)
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     if (isAdminRoute(req) || isFacultyRoute(req)) {
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
+      const previewRole =
+        req.cookies.get('settech_preview_role')?.value ||
+        req.cookies.get('sanakahub_preview_role')?.value;
+      if (previewRole !== 'admin' && !(isFacultyRoute(req) && previewRole === 'faculty')) {
+        return NextResponse.redirect(new URL('/unauthorized', req.url));
+      }
     }
     return NextResponse.next();
   }
