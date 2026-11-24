@@ -8,16 +8,18 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 
 export default async function StudentLayout({ children }: { children: ReactNode }) {
-  // 1. Check development preview cookie bypass
-  try {
-    const cookieStore = await cookies();
-    const previewRole =
-      cookieStore.get('settech_preview_role')?.value ||
-      cookieStore.get('sanakahub_preview_role')?.value;
-    if (previewRole) {
-      return <>{children}</>;
-    }
-  } catch {}
+  // 1. Check development preview cookie bypass (strictly disabled in production)
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const cookieStore = await cookies();
+      const previewRole =
+        cookieStore.get('settech_preview_role')?.value ||
+        cookieStore.get('sanakahub_preview_role')?.value;
+      if (previewRole) {
+        return <>{children}</>;
+      }
+    } catch {}
+  }
 
   // 2. Authentication check
   const { userId } = await auth();

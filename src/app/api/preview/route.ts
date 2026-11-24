@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  // Security: Kill preview bypass completely in production
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   const { searchParams } = new URL(req.url);
   const role = searchParams.get('role') || 'student';
   const redirectPath =

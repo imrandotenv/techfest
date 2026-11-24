@@ -27,6 +27,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Security: Validate file type (PDF and images only)
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const fileNameLower = (file.name || '').toLowerCase();
+    const hasAllowedExt = fileNameLower.endsWith('.pdf') || fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg') || fileNameLower.endsWith('.png') || fileNameLower.endsWith('.webp');
+
+    if (!allowedTypes.includes(file.type) && !hasAllowedExt) {
+      return NextResponse.json(
+        { error: 'Security validation failed: Only PDF and image files (.pdf, .jpg, .png, .webp) are permitted.' },
+        { status: 400 }
+      );
+    }
+
+    // Security: Validate file size (max 25MB)
+    const MAX_SIZE_BYTES = 25 * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: `Security validation failed: File size (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the maximum allowed 25MB limit.` },
+        { status: 400 }
+      );
+    }
+
     // 1. Convert file to buffer and upload to Neon Object Storage
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);

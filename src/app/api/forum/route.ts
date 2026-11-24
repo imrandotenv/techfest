@@ -89,6 +89,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Authentication required to create forum posts' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { title, content, category, authorName, authorRole, authorDepartment, tags, branch, semester } = body;
 
@@ -100,33 +107,32 @@ export async function POST(req: NextRequest) {
     }
 
     let dbPost = null;
-    let authorIdToUse = 'anon-user';
+    let authorIdToUse = userId;
 
-    if (userId) {
-      try {
-        const clerkUser = await currentUser();
-        const primaryEmail =
-          clerkUser?.emailAddresses.find((e) => e.id === clerkUser?.primaryEmailAddressId)?.emailAddress ||
-          clerkUser?.emailAddresses[0]?.emailAddress ||
-          `${userId}@student.setgoi.ac.in`;
-        const fullName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || authorName || 'SETGOI Student';
+    try {
+      const clerkUser = await currentUser();
+      const primaryEmail =
+        clerkUser?.emailAddresses.find((e) => e.id === clerkUser?.primaryEmailAddressId)?.emailAddress ||
+        clerkUser?.emailAddresses[0]?.emailAddress ||
+        `${userId}@student.setgoi.ac.in`;
+      const fullName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || authorName || 'SETGOI Student';
 
-        const dbUser = await prisma.user.upsert({
-          where: { clerkId: userId },
-          update: { email: primaryEmail, fullName },
-          create: {
-            clerkId: userId,
-            email: primaryEmail,
-            fullName,
-            role: 'STUDENT',
-            degree: 'B.Tech',
-            branch: branch || 'CSE',
-            semester: semester || 3,
-            onboardingCompleted: true,
-          },
-        });
+      const dbUser = await prisma.user.upsert({
+        where: { clerkId: userId },
+        update: { email: primaryEmail, fullName },
+        create: {
+          clerkId: userId,
+          email: primaryEmail,
+          fullName,
+          role: 'STUDENT',
+          degree: 'B.Tech',
+          branch: branch || 'CSE',
+          semester: semester || 3,
+          onboardingCompleted: true,
+        },
+      });
 
-        authorIdToUse = dbUser.id;
+      authorIdToUse = dbUser.id;
 
         dbPost = await prisma.forumPost.create({
           data: {
@@ -145,7 +151,6 @@ export async function POST(req: NextRequest) {
       } catch (dbErr) {
         console.warn('[Forum API] Neon DB write note:', dbErr);
       }
-    }
 
     // Also update in-memory store
     const memPost = forumStore.createPost({

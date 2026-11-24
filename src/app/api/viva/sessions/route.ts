@@ -86,12 +86,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. Upsert VivaSession
+    // 2. Upsert VivaSession with IDOR protection
     let session = null;
     if (sessionId) {
       session = await prisma.vivaSession.findUnique({
         where: { id: sessionId },
       });
+      // Security: Prevent IDOR - users can only update their own sessions
+      if (session && session.userId !== dbUser.id) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have permission to modify another user\'s viva session' },
+          { status: 403 }
+        );
+      }
     }
 
     if (!session) {

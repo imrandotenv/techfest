@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CustomUserRole } from '@/types';
+import { getCurrentAuthUser } from '@/lib/rbac';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Security: Strict RBAC check - only actual authenticated faculty or admin
+    const caller = await getCurrentAuthUser();
+    if (!caller.isAuthenticated || (caller.role !== 'faculty' && caller.role !== 'admin')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Only faculty or admin can verify notes' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await context.params;
     const body = await request.json();
-    const { status, verifierName, verifierRole, verifierId } = body;
+    const { status } = body;
 
     if (!status || !['approved', 'rejected'].includes(status)) {
       return NextResponse.json(
@@ -17,12 +27,14 @@ export async function POST(
       );
     }
 
-    const role: CustomUserRole = verifierRole || 'college';
-    if (role !== 'college' && role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Only faculty or admin can verify notes' },
-        { status: 403 }
-      );
+    // Update in Neon Postgres
+    try {
+      await prisma.note.updateMany({
+        where: { id },
+        data: { verified: status === 'approved' },
+      });
+    } catch (dbErr) {
+      console.warn('[Note Verify API] Neon DB update note:', dbErr);
     }
 
     const now = new Date().toISOString();
@@ -33,8 +45,8 @@ export async function POST(
       data: {
         id,
         status,
-        verifiedById: verifierId || 'verifier-user',
-        verifiedByName: verifierName || 'SETGOI Faculty',
+        verifiedById: caller.userId,
+        verifiedByName: caller.fullName || 'SETGOI Faculty',
         verifiedAt: now,
       },
     });

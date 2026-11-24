@@ -81,7 +81,11 @@ function resolveRoleFromClaims(sessionClaims: any): 'admin' | 'faculty' | 'stude
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
   const isApi = url.pathname.startsWith('/api');
-  const previewRole = req.cookies.get('settech_preview_role')?.value || req.cookies.get('sanakahub_preview_role')?.value;
+  const isProd = process.env.NODE_ENV === 'production';
+  // Security: In production, preview cookies are strictly ignored so auth cannot be bypassed
+  const previewRole = isProd
+    ? undefined
+    : (req.cookies.get('settech_preview_role')?.value || req.cookies.get('sanakahub_preview_role')?.value);
 
   // 0. Check Onboarding Route
   if (isOnboardingRoute(req)) {
