@@ -3,98 +3,89 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Phone, ArrowUpRight, ShieldCheck, MapPin, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, MapPin } from 'lucide-react';
 import { SetTechLogo } from '@/components/SetTechLogo';
 
 export function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on auth, console dashboards, dedicated zero-scroll studios like /viva, and authenticated workspace routes
+  // Hide footer on auth screens, onboarding, dedicated zero-scroll studios like /viva, and management consoles
   if (
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up') ||
-    pathname.startsWith('/student') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/auth-callback') ||
     pathname.startsWith('/faculty') ||
     pathname.startsWith('/admin') ||
-    pathname.startsWith('/dashboard') ||
     pathname.startsWith('/viva')
   ) {
     return null;
   }
 
   return (
-    <footer className="w-full bg-[#FAFAFA] border-t border-zinc-200 pt-14 pb-12 px-6 mt-auto relative z-10">
+    <footer className="w-full bg-white border-t border-zinc-200/80 pt-12 pb-10 px-4 sm:px-6 mt-auto relative z-10 font-sans">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 pb-12 border-b border-zinc-200">
-          {/* Column 1: Brand & Status (2 cols on lg) */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2">
-              <SetTechLogo variant="full" size={24} textClassName="text-lg font-bold" subtitle="B.Tech SETGOI" showSubtitle />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-10 border-b border-zinc-100">
+          {/* Left Brand Column (Compact, 2 cols on lg) */}
+          <div className="lg:col-span-2 space-y-3">
+            <Link href="/" className="inline-block hover:opacity-90 transition-opacity" aria-label="SETTech Home">
+              <SetTechLogo variant="full" size={22} textClassName="text-base font-bold" />
+            </Link>
 
-            <p className="text-xs font-sans text-zinc-600 max-w-sm leading-relaxed">
-              Built by SETGOI B.Tech Engineers • Affiliated with Maulana Abul Kalam Azad University of Technology (MAKAUT).
+            <p className="text-xs text-zinc-500 leading-relaxed max-w-sm">
+              Student-built academic platform for SETGOI (MAKAUT).
             </p>
 
-            <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-500">
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400">
               <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-              <span>Malandighi, Durgapur, West Bengal 713212</span>
-            </div>
-
-            {/* Live Institutional System Status */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-medium">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>All campus engineering portals online</span>
+              <span>Malandighi, Durgapur • WB 713212</span>
             </div>
           </div>
 
           {/* Column 2: Platform */}
           <div className="space-y-3">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-900 font-bold">
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-900">
               Platform
             </h4>
-            <ul className="space-y-2.5 text-xs font-sans text-zinc-600">
+            <ul className="space-y-2.5 text-sm text-zinc-500">
               <li>
-                <Link href="/notes" className="hover:text-zinc-900 transition-colors">
-                  Academic Vault (Notes & PYQs)
+                <Link href="/viva" className="hover:text-zinc-950 transition-colors">
+                  AI Viva
                 </Link>
               </li>
               <li>
-                <Link href="/forum" className="hover:text-zinc-900 transition-colors">
-                  Engineering Q&A Forum
+                <Link href="/notes" className="hover:text-zinc-950 transition-colors">
+                  Notes Vault
                 </Link>
               </li>
               <li>
-                <Link href="/campus" className="hover:text-zinc-900 transition-colors">
-                  3D Campus & Lab Directory
+                <Link href="/forum" className="hover:text-zinc-950 transition-colors">
+                  Campus Forum
                 </Link>
               </li>
               <li>
-                <Link href="/tools" className="hover:text-zinc-900 transition-colors">
-                  SGPA & 75% Attendance Tools
+                <Link href="/tools" className="hover:text-zinc-950 transition-colors">
+                  Tools
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Official Portals */}
+          {/* Column 3: Portals */}
           <div className="space-y-3">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-900 font-bold">
-              Official Portals
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-900">
+              Portals
             </h4>
-            <ul className="space-y-2.5 text-xs font-sans text-zinc-600">
+            <ul className="space-y-2.5 text-sm text-zinc-500">
               <li>
                 <a
                   href="https://icampus.setgoi.ac.in/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[#2563EB] hover:underline font-medium"
+                  className="inline-flex items-center gap-1 hover:text-zinc-950 transition-colors"
                 >
                   <span>SETGOI iCampus</span>
-                  <ArrowUpRight className="w-3 h-3" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
                 </a>
               </li>
               <li>
@@ -102,10 +93,10 @@ export function Footer() {
                   href="https://makautexam.net/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-zinc-900 transition-colors"
+                  className="inline-flex items-center gap-1 hover:text-zinc-950 transition-colors"
                 >
-                  <span>MAKAUT Exam Portal</span>
-                  <ArrowUpRight className="w-3 h-3 text-zinc-400" />
+                  <span>MAKAUT Exam</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
                 </a>
               </li>
               <li>
@@ -113,10 +104,10 @@ export function Footer() {
                   href="https://nptel.ac.in/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-zinc-900 transition-colors"
+                  className="inline-flex items-center gap-1 hover:text-zinc-950 transition-colors"
                 >
                   <span>NPTEL / Swayam</span>
-                  <ArrowUpRight className="w-3 h-3 text-zinc-400" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
                 </a>
               </li>
               <li>
@@ -124,84 +115,69 @@ export function Footer() {
                   href="https://makautwb.ac.in/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-zinc-900 transition-colors"
+                  className="inline-flex items-center gap-1 hover:text-zinc-950 transition-colors"
                 >
-                  <span>MAKAUT Official Portal</span>
-                  <ArrowUpRight className="w-3 h-3 text-zinc-400" />
+                  <span>MAKAUT Portal</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Engineering Support */}
+          {/* Column 4: Campus */}
           <div className="space-y-3">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-zinc-900 font-bold">
-              Engineering Support
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-900">
+              Campus
             </h4>
-            <ul className="space-y-2.5 text-xs font-sans text-zinc-600">
+            <ul className="space-y-2.5 text-sm text-zinc-500">
               <li>
-                <Link href="/campus" className="hover:text-zinc-900 transition-colors">
-                  B.Tech Principal & HODs
+                <Link href="/campus" className="hover:text-zinc-950 transition-colors">
+                  Campus Directory
                 </Link>
               </li>
               <li>
-                <Link href="/campus" className="hover:text-zinc-900 transition-colors">
-                  Examination & Placement Cell
+                <Link href="/campus" className="hover:text-zinc-950 transition-colors">
+                  Faculty &amp; Admin
                 </Link>
               </li>
               <li>
                 <a
                   href="tel:18001805522"
-                  className="inline-flex items-center gap-1 text-rose-600 hover:underline font-semibold font-mono"
+                  className="hover:text-zinc-950 transition-colors inline-block"
                 >
-                  <span>Anti-Ragging: 1800-180-5522</span>
+                  Anti-Ragging: 1800-180-5522
                 </a>
-              </li>
-              <li>
-                <Link href="/dashboard/college" className="hover:text-zinc-900 transition-colors text-purple-700">
-                  Faculty & Admin Desk
-                </Link>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
-          <div>
-            <span>SETTech © 2026 • Independent Student Initiative (SETGOI B.Tech • MAKAUT)</span>
-          </div>
+        {/* Minimal Bottom Legal Bar */}
+        <div className="pt-6 mt-1 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-zinc-500">
+          <p>© 2026 SETTech. Independent student initiative.</p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 text-zinc-600">
-            <span className="flex items-center gap-1.5 text-zinc-900 font-medium">
-              <Phone className="w-3.5 h-3.5 text-rose-500" />
-              <span>Anti-Ragging: 1800-180-5522</span>
-            </span>
-            <span className="text-zinc-300">|</span>
-            <Link href="/privacy" className="hover:text-zinc-950 transition-colors">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-zinc-500">
+            <Link href="/privacy" className="hover:text-zinc-900 transition-colors">
               Privacy
             </Link>
-            <span className="text-zinc-300">|</span>
-            <Link href="/terms" className="hover:text-zinc-950 transition-colors">
+            <Link href="/terms" className="hover:text-zinc-900 transition-colors">
               Terms
             </Link>
-            <span className="text-zinc-300">|</span>
-            <Link href="/cookies" className="hover:text-zinc-950 transition-colors">
+            <Link href="/cookies" className="hover:text-zinc-900 transition-colors">
               Cookies
             </Link>
-            <span className="text-zinc-300">|</span>
-            <Link href="/disclaimer" className="hover:text-zinc-950 transition-colors">
+            <Link href="/disclaimer" className="hover:text-zinc-900 transition-colors">
               Disclaimer
             </Link>
-            <span className="text-zinc-300">|</span>
             <button
+              type="button"
               onClick={() => {
                 if (typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('settech:open-cookie-settings'));
                   window.dispatchEvent(new CustomEvent('sanakahub:open-cookie-settings'));
                 }
               }}
-              className="text-blue-600 hover:text-blue-800 transition-colors underline underline-offset-2 cursor-pointer font-medium"
+              className="hover:text-zinc-900 transition-colors cursor-pointer"
             >
               Cookie Settings
             </button>
@@ -211,3 +187,5 @@ export function Footer() {
     </footer>
   );
 }
+
+export default Footer;
