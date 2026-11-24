@@ -553,21 +553,21 @@ export function TechFestBoard() {
             <div className="p-5 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3 pb-3 border-b border-zinc-100">
                 <div>
-                  <p className="text-[10px] font-mono text-zinc-400 uppercase">Attendee Name</p>
+                  <p className="text-[10px] text-zinc-400 uppercase font-medium tracking-wider">Attendee Name</p>
                   <p className="font-bold text-zinc-900 mt-0.5">{viewingPass.studentName}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono text-zinc-400 uppercase">Department</p>
+                  <p className="text-[10px] text-zinc-400 uppercase font-medium tracking-wider">Department</p>
                   <p className="font-bold text-zinc-900 mt-0.5">
                     {viewingPass.department} ({viewingPass.semester})
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono text-zinc-400 uppercase">Date & Schedule</p>
+                  <p className="text-[10px] text-zinc-400 uppercase font-medium tracking-wider">Date & Schedule</p>
                   <p className="font-semibold text-zinc-800 mt-0.5">{viewingPass.eventDate}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono text-zinc-400 uppercase">Venue</p>
+                  <p className="text-[10px] text-zinc-400 uppercase font-medium tracking-wider">Venue</p>
                   <p className="font-semibold text-zinc-800 mt-0.5 truncate">{viewingPass.venue}</p>
                 </div>
               </div>

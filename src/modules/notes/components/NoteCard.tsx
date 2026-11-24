@@ -67,8 +67,8 @@ export function NoteCard({
           </h3>
 
           {/* 1-Line Meta: Sem X • Branch • File Size */}
-          <p className="text-xs text-[#52525B] font-mono mt-1.5 truncate">
-            Sem {note.semester} • {note.departmentCode} • {formatBytes(note.fileSize)} • {note.downloadsCount} dl
+          <p className="text-xs text-[#52525B] mt-1.5 truncate">
+            Sem {note.semester} • {note.departmentCode} • <span className="font-mono">{formatBytes(note.fileSize)}</span> • <span className="font-mono">{note.downloadsCount}</span> dl
           </p>
         </div>
       </div>

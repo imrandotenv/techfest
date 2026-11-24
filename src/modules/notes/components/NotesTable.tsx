@@ -74,7 +74,7 @@ export function NotesTable({
       <div className="bg-white border border-[#E2E8F0] rounded-xl p-12 text-center shadow-xs">
         <FileText className="w-8 h-8 text-[#475569]/60 mx-auto mb-3" />
         <h3 className="text-base font-semibold text-[#0F172A] font-display">No resources matched</h3>
-        <p className="text-xs text-[#475569] mt-1 font-mono">
+        <p className="text-xs text-[#475569] mt-1">
           Try adjusting your branch, semester, or search query.
         </p>
       </div>

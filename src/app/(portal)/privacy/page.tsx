@@ -49,28 +49,28 @@ export default function PrivacyPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-zinc-600">
           <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5">
-            <span className="font-mono font-bold text-zinc-900 block">A. Account &amp; Authentication Data</span>
+            <span className="font-bold text-zinc-900 block">A. Account &amp; Authentication Data</span>
             <p className="leading-relaxed">
               When you sign up via Clerk Auth, we collect your institutional or personal email address, full name, profile image (if provided), and role assignment (<code className="font-mono text-blue-700">student</code>, <code className="font-mono text-purple-700">faculty</code>, or <code className="font-mono text-rose-700">admin</code>).
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5">
-            <span className="font-mono font-bold text-zinc-900 block">B. Client-Side Browser Storage</span>
+            <span className="font-bold text-zinc-900 block">B. Client-Side Browser Storage</span>
             <p className="leading-relaxed">
               We store localized preferences such as cookie consent status, exam countdown target dates, and free viva attempt counters in your browser&apos;s <code className="font-mono text-zinc-800">localStorage</code>. This data never touches our server database.
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5">
-            <span className="font-mono font-bold text-zinc-900 block">C. Academic Contributions</span>
+            <span className="font-bold text-zinc-900 block">C. Academic Contributions</span>
             <p className="leading-relaxed">
               When you upload syllabus summaries, lecture notes, or post queries in the Discussion Forum, your username, timestamp, and uploaded content are published to facilitate academic peer collaboration.
             </p>
           </div>
 
           <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5">
-            <span className="font-mono font-bold text-zinc-900 block">D. Technical Telemetry</span>
+            <span className="font-bold text-zinc-900 block">D. Technical Telemetry</span>
             <p className="leading-relaxed">
               Basic HTTP request logs (IP addresses, device user-agents, request timestamps) are processed transiently at our cloud edge for DDoS mitigation, rate limiting, and server health.
             </p>

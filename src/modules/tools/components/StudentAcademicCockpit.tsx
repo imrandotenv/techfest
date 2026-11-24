@@ -233,7 +233,7 @@ export function StudentAcademicCockpit() {
           <div className="rounded-2xl border border-[#E4E4E7] bg-white p-6 shadow-xs">
             <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E7]">
               <div>
-                <span className="text-xs font-mono uppercase text-[#2563EB] font-semibold">
+                <span className="text-xs uppercase text-[#2563EB] font-semibold tracking-wider">
                   SEMESTER 3 CBCS CURRICULUM
                 </span>
                 <h3 className="text-lg font-bold font-display text-[#09090B]">
@@ -242,7 +242,7 @@ export function StudentAcademicCockpit() {
               </div>
               <Link
                 href="/notes"
-                className="text-xs font-mono text-[#2563EB] hover:underline inline-flex items-center gap-1 font-medium"
+                className="text-xs text-[#2563EB] hover:underline inline-flex items-center gap-1 font-medium"
               >
                 <span>View Full Vault</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -257,7 +257,7 @@ export function StudentAcademicCockpit() {
                       <span className="font-mono text-xs font-bold text-[#09090B] bg-slate-100 px-2 py-0.5 rounded border border-[#E4E4E7]">
                         {course.code}
                       </span>
-                      <span className="text-[11px] font-mono text-[#52525B]">
+                      <span className="text-[11px] text-[#52525B]">
                         {course.credits} Credits • {course.category}
                       </span>
                     </div>
@@ -271,7 +271,7 @@ export function StudentAcademicCockpit() {
 
                   <Link
                     href={`/notes?q=${course.code}`}
-                    className="self-start sm:self-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-[#2563EB] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors shrink-0"
+                    className="self-start sm:self-auto inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-[#2563EB] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors shrink-0"
                   >
                     <span>Notes</span>
                     <ExternalLink className="w-3 h-3" />
@@ -288,7 +288,7 @@ export function StudentAcademicCockpit() {
           <div className="rounded-2xl border border-[#E4E4E7] bg-white p-6 shadow-xs">
             <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E7]">
               <div>
-                <span className="text-xs font-mono uppercase text-[#2563EB] font-semibold">
+                <span className="text-xs uppercase text-[#2563EB] font-semibold tracking-wider">
                   EXAMINATION CELL
                 </span>
                 <h3 className="text-lg font-bold font-display text-[#09090B]">
@@ -297,7 +297,7 @@ export function StudentAcademicCockpit() {
               </div>
               <Link
                 href="/calendar"
-                className="text-xs font-mono text-[#2563EB] hover:underline inline-flex items-center gap-1 font-medium"
+                className="text-xs text-[#2563EB] hover:underline inline-flex items-center gap-1 font-medium"
               >
                 <span>Full Calendar</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -311,7 +311,7 @@ export function StudentAcademicCockpit() {
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                       {exam.type}
                     </span>
-                    <span className="text-[11px] font-mono text-[#52525B] flex items-center gap-1">
+                    <span className="text-[11px] text-[#52525B] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {exam.date}
                     </span>
@@ -329,7 +329,7 @@ export function StudentAcademicCockpit() {
 
           {/* Quick Access Utility Cards (Ported from legacy student-dashboard.html) */}
           <div className="rounded-2xl border border-[#E4E4E7] bg-white p-6 shadow-xs">
-            <span className="text-xs font-mono uppercase text-[#2563EB] font-semibold block mb-1">
+            <span className="text-xs uppercase text-[#2563EB] font-semibold block mb-1 tracking-wider">
               CAMPUS UTILITIES
             </span>
             <h3 className="text-base font-bold font-display text-[#09090B] pb-3 border-b border-[#E4E4E7]">

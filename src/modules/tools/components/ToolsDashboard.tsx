@@ -86,7 +86,7 @@ export function ToolsDashboard() {
 
       {/* Clean Horizontal Pill Tab Bar */}
       {profile.onboardingCompleted && (
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-600 bg-blue-50/70 border border-blue-200/60 px-3.5 py-2 rounded-xl">
+        <div className="flex items-center gap-2 text-xs text-zinc-600 bg-blue-50/70 border border-blue-200/60 px-3.5 py-2 rounded-xl">
           <GraduationCap className="w-4 h-4 text-[#2563EB] shrink-0" />
           <span>Calculators &amp; utilities configured for <strong>B.Tech {profile.branch} • Semester {profile.semester}</strong> ({profile.passoutYear ? `Class of ${profile.passoutYear}` : 'MAKAUT'})</span>
         </div>
@@ -144,7 +144,7 @@ export function ToolsDashboard() {
                 </div>
 
                 {/* Key Features Pill Matrix */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-mono text-[#52525B] pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-[#52525B] pt-1">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Exact technical answer first</span>
@@ -179,10 +179,10 @@ export function ToolsDashboard() {
               <div className="flex flex-col items-center justify-center p-6 bg-slate-50/70 border border-[#E4E4E7] rounded-2xl shrink-0">
                 <VivaBuddyCharacter emotion="happy" size={160} />
                 <div className="mt-2 text-center">
-                  <span className="text-xs font-mono font-bold text-[#09090B]">
+                  <span className="text-xs font-bold text-[#09090B]">
                     Viva Buddy AI
                   </span>
-                  <p className="text-[11px] font-mono text-[#52525B]">
+                  <p className="text-[11px] text-[#52525B]">
                     MAKAUT External Examiner
                   </p>
                 </div>

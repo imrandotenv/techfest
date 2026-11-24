@@ -1,19 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Footer } from "@/components/navigation/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
 });
 
 const siteUrl =
@@ -85,10 +96,10 @@ export default function RootLayout({
           colorInputForeground: '#0F172A',
           colorBorder: '#E2E8F0',
           borderRadius: '0.75rem',
-          fontFamily: 'Inter, var(--font-geist-sans), sans-serif',
+          fontFamily: 'var(--font-sans), Inter, system-ui, sans-serif',
         },
         elements: {
-          card: 'shadow-sm border border-[#E2E8F0] rounded-2xl bg-white',
+          card: 'shadow-sm border border-[#E2E8F0] rounded-2xl bg-white font-sans',
           formButtonPrimary:
             'bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold rounded-xl py-3 transition-colors shadow-2xs font-sans',
           socialButtonsBlockButton:
@@ -97,23 +108,15 @@ export default function RootLayout({
           formFieldInput:
             'border-[#E2E8F0] focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] text-xs rounded-xl py-2.5 px-3 font-sans',
           userButtonAvatarBox: 'w-7 h-7 border border-[#E2E8F0] rounded-full',
-          userButtonPopoverCard: 'shadow-xl border border-[#E2E8F0] rounded-xl',
+          userButtonPopoverCard: 'shadow-xl border border-[#E2E8F0] rounded-xl font-sans',
         },
       }}
     >
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
       >
-        <head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-            rel="stylesheet"
-          />
-        </head>
-        <body className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#09090B] selection:bg-[#2563EB] selection:text-white">
+        <body className="min-h-screen flex flex-col bg-[#F7F8FA] text-[#09090B] font-sans antialiased selection:bg-[#2563EB] selection:text-white">
           <FloatingNav />
           <main className="flex-1 w-full">{children}</main>
           <Footer />

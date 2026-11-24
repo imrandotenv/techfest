@@ -57,7 +57,7 @@ export default function DisclaimerPage() {
             rel="noopener noreferrer"
             className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300 transition-all group"
           >
-            <div className="flex items-center justify-between font-mono font-bold text-blue-700 mb-1">
+            <div className="flex items-center justify-between font-bold text-blue-700 mb-1">
               <span>SETGOI iCampus Portal</span>
               <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-600" />
             </div>
@@ -70,7 +70,7 @@ export default function DisclaimerPage() {
             rel="noopener noreferrer"
             className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-white hover:border-zinc-300 transition-all group"
           >
-            <div className="flex items-center justify-between font-mono font-bold text-blue-700 mb-1">
+            <div className="flex items-center justify-between font-bold text-blue-700 mb-1">
               <span>MAKAUT Exam Portal</span>
               <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-600" />
             </div>

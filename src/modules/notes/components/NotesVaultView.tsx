@@ -599,13 +599,13 @@ export function NotesVaultView() {
                     <h3 className="text-base font-bold text-[#09090B] font-display group-hover:text-[#2563EB] transition-colors">
                       {b.name}
                     </h3>
-                    <p className="text-xs font-mono text-[#52525B] mt-1">
+                    <p className="text-xs text-[#52525B] mt-1">
                       Semesters 1 to 8 • MAKAUT CBCS
                     </p>
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[#E4E4E7] flex items-center justify-between text-xs">
-                    <span className="text-[#52525B] font-mono">
+                    <span className="text-[#52525B]">
                       {activeVaultTab === 'practicals' ? (
                         <>
                           <strong className="text-[#09090B]">{labCount}</strong> {labCount === 1 ? 'Lab' : 'Labs'} &amp; Viva

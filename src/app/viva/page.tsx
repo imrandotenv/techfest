@@ -1633,8 +1633,8 @@ export default function VivaStudioPage() {
                 <h3 className="text-xl font-bold font-display text-[#09090B]">
                   SETGOI Viva Report Card
                 </h3>
-                <p className="text-xs text-[#52525B] font-mono">
-                  {SUBJECT_CATALOG[subject].name} ({SUBJECT_CATALOG[subject].code})
+                <p className="text-xs text-[#52525B]">
+                  {SUBJECT_CATALOG[subject].name} (<span className="font-mono">{SUBJECT_CATALOG[subject].code}</span>)
                 </p>
               </div>
             </div>
@@ -1642,19 +1642,19 @@ export default function VivaStudioPage() {
             {/* Scorecard Hero Banner */}
             <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4E4E7] text-center">
               <div>
-                <div className="text-[11px] font-mono text-[#52525B]">TOTAL TESTED</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#52525B] font-medium">TOTAL TESTED</div>
                 <div className="text-xl font-bold font-display text-[#09090B] mt-0.5">
                   {scorecard.attempts}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-[#52525B]">CORRECT</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#52525B] font-medium">CORRECT</div>
                 <div className="text-xl font-bold font-display text-emerald-600 mt-0.5">
                   {scorecard.correct}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-mono text-[#52525B]">ACCURACY</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#52525B] font-medium">ACCURACY</div>
                 <div className="text-xl font-bold font-display text-[#2563EB] mt-0.5">
                   {accuracyPct}%
                 </div>
@@ -1667,7 +1667,7 @@ export default function VivaStudioPage() {
                 <GraduationCap className="w-5 h-5 shrink-0" />
                 <div>
                   <div className="text-xs font-bold font-sans">{gradeInfo.label}</div>
-                  <div className="text-[11px] font-mono opacity-80">Based on MAKAUT External Viva Rubric</div>
+                  <div className="text-[11px] opacity-80">Based on MAKAUT External Viva Rubric</div>
                 </div>
               </div>
               <div className="text-lg font-bold font-mono px-3 py-1 rounded-lg bg-white/80 border border-current">

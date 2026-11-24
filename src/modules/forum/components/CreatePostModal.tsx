@@ -114,7 +114,7 @@ export function CreatePostModal({
               <h2 id="create-post-title" className="text-base sm:text-lg font-bold text-[#0F172A] font-display">
                 Ask a Question
               </h2>
-              <p className="text-xs text-[#475569] font-mono">
+              <p className="text-xs text-[#475569]">
                 Posting as <strong className="text-[#0F172A]">{currentUser.name}</strong> ({currentUser.role.toUpperCase()})
               </p>
             </div>

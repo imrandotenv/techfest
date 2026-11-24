@@ -134,21 +134,21 @@ export async function POST(req: NextRequest) {
 
       authorIdToUse = dbUser.id;
 
-        dbPost = await prisma.forumPost.create({
-          data: {
-            title: title.trim(),
-            content: content.trim(),
-            category: category.trim(),
-            tags: Array.isArray(tags) ? tags.join(', ') : (tags || ''),
-            branch: branch || dbUser.branch || undefined,
-            semester: semester ? Number(semester) : dbUser.semester || undefined,
-            authorId: dbUser.id,
-          },
-          include: {
-            author: { select: { id: true, fullName: true, role: true, branch: true } },
-          },
-        });
-      } catch (dbErr) {
+      dbPost = await prisma.forumPost.create({
+        data: {
+          title: title.trim(),
+          content: content.trim(),
+          category: category.trim(),
+          tags: Array.isArray(tags) ? tags.join(', ') : (tags || ''),
+          branch: branch || dbUser.branch || undefined,
+          semester: semester ? Number(semester) : dbUser.semester || undefined,
+          authorId: dbUser.id,
+        },
+        include: {
+          author: { select: { id: true, fullName: true, role: true, branch: true } },
+        },
+      });
+    } catch (dbErr) {
         console.warn('[Forum API] Neon DB write note:', dbErr);
       }
 

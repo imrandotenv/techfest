@@ -36,7 +36,7 @@ export function VerificationQueue({
       <div className="bg-white border border-zinc-200 rounded-lg p-10 text-center">
         <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
         <h3 className="text-base font-semibold text-zinc-900">Verification Queue is Empty</h3>
-        <p className="text-xs text-zinc-500 mt-1 font-mono">
+        <p className="text-xs text-zinc-500 mt-1">
           All submitted notes and MAKAUT PYQs have been verified by faculty.
         </p>
       </div>

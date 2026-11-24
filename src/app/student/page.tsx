@@ -23,7 +23,6 @@ import {
   FileCheck2
 } from 'lucide-react';
 import { requireRole } from '@/lib/rbac';
-import { AppShell } from '@/components/AppShell';
 import { BTechBranch, getBranchDetails, getSemesterSubjects } from '@/config/curriculum';
 import { prisma } from '@/lib/prisma';
 import { StudentStatsModal } from '@/components/StudentStatsModal';
@@ -100,22 +99,13 @@ export default async function StudentWorkspacePage() {
     : 0;
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: 'SETTech', href: '/' },
-        { label: 'Student Workspace', href: '/student' },
-        { label: 'Overview' },
-      ]}
-      roleTitle="Student"
-      currentRole="student"
-      userName={studentName}
-      userEmail={user.email || 'student@setgoi.ac.in'}
-      primaryAction={{
-        label: '+ Upload Note',
-        href: '/notes?action=upload',
-        variant: 'primary',
-      }}
-    >
+    <div className="w-full min-h-screen bg-[#F7F8FA] relative">
+      {/* Subtle Architectural Dot Grid Pattern in Header Zone */}
+      <div
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] [background-size:24px_24px] [mask-image:linear-gradient(to_bottom,black_30%,transparent_80%)] opacity-40"
+        aria-hidden="true"
+      />
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-20 md:pt-24 pb-20 space-y-8">
       {/* =========================================================================
           WORKSPACE WELCOME BANNER
           ========================================================================= */}
@@ -180,7 +170,7 @@ export default async function StudentWorkspacePage() {
             </div>
             <div>
               <div className="text-xs font-bold text-[#09090B]">Upload Notes / PYQs</div>
-              <div className="text-[11px] font-mono text-zinc-500">Earn peer verification badge</div>
+              <div className="text-[11px] text-zinc-500">Earn peer verification badge</div>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-[#2563EB] group-hover:translate-x-0.5 transition-all" />
@@ -196,7 +186,7 @@ export default async function StudentWorkspacePage() {
             </div>
             <div>
               <div className="text-xs font-bold text-[#09090B]">Ask on Campus Forum</div>
-              <div className="text-[11px] font-mono text-zinc-500">Direct faculty &amp; peer answers</div>
+              <div className="text-[11px] text-zinc-500">Direct faculty &amp; peer answers</div>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
@@ -212,7 +202,7 @@ export default async function StudentWorkspacePage() {
             </div>
             <div>
               <div className="text-xs font-bold text-[#09090B]">MAKAUT Calculator</div>
-              <div className="text-[11px] font-mono text-zinc-500">10-Point SGPA &amp; CGPA target</div>
+              <div className="text-[11px] text-zinc-500">10-Point SGPA &amp; CGPA target</div>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
@@ -232,14 +222,14 @@ export default async function StudentWorkspacePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-zinc-900">Academic Standing &amp; Attendance</h3>
-                <p className="text-[11px] font-mono text-zinc-500">Neon-Backed Real Persistence • MAKAUT 75% Gate</p>
+                <p className="text-[11px] text-zinc-500">Neon-Backed Real Persistence • MAKAUT 75% Gate</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <StudentStatsModal initialStats={stats} />
               <Link
                 href="/tools?tab=calculator"
-                className="text-xs font-mono font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
+                className="text-xs font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
               >
                 <span>Calculator</span>
                 <ArrowRight className="w-3 h-3" />
@@ -250,9 +240,9 @@ export default async function StudentWorkspacePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             {/* CGPA */}
             <div className="p-3.5 rounded-xl bg-zinc-50/80 border border-zinc-200/80 space-y-1">
-              <div className="text-[10px] font-mono uppercase text-zinc-500">Cumulative CGPA</div>
-              <div className="text-2xl font-bold font-mono text-zinc-900">{cgpa.toFixed(2)}</div>
-              <div className="text-[10px] font-mono text-emerald-700 font-semibold flex items-center gap-1">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Cumulative CGPA</div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-zinc-900">{cgpa.toFixed(2)}</div>
+              <div className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
                 <span>{cgpa >= 7.5 ? '1st Class Honours' : '1st Class'}</span>
               </div>
@@ -260,9 +250,9 @@ export default async function StudentWorkspacePage() {
 
             {/* Target SGPA */}
             <div className="p-3.5 rounded-xl bg-zinc-50/80 border border-zinc-200/80 space-y-1">
-              <div className="text-[10px] font-mono uppercase text-zinc-500">Sem {semester} Target</div>
-              <div className="text-2xl font-bold font-mono text-zinc-900">{(targetSgpa || 9.10).toFixed(2)}</div>
-              <div className="text-[10px] font-mono text-[#2563EB] font-semibold">{mySubjects.length * 4} Credits Enrolled</div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Sem {semester} Target</div>
+              <div className="text-2xl font-bold font-mono tabular-nums text-zinc-900">{(targetSgpa || 9.10).toFixed(2)}</div>
+              <div className="text-[10px] text-[#2563EB] font-medium">{mySubjects.length * 4} Credits Enrolled</div>
             </div>
 
             {/* Attendance % */}
@@ -271,9 +261,9 @@ export default async function StudentWorkspacePage() {
                 ? 'bg-emerald-50/60 border-emerald-200/80' 
                 : 'bg-rose-50/60 border-rose-200/80'
             }`}>
-              <div className={`text-[10px] font-mono uppercase ${isSafeAttendance ? 'text-emerald-700' : 'text-rose-700'}`}>Attendance</div>
-              <div className={`text-2xl font-bold font-mono ${isSafeAttendance ? 'text-emerald-800' : 'text-rose-800'}`}>{attendancePct.toFixed(1)}%</div>
-              <div className={`text-[10px] font-mono font-semibold ${isSafeAttendance ? 'text-emerald-700' : 'text-rose-700'}`}>
+              <div className={`text-[10px] uppercase tracking-wider font-medium ${isSafeAttendance ? 'text-emerald-700' : 'text-rose-700'}`}>Attendance</div>
+              <div className={`text-2xl font-bold font-mono tabular-nums ${isSafeAttendance ? 'text-emerald-800' : 'text-rose-800'}`}>{attendancePct.toFixed(1)}%</div>
+              <div className={`text-[10px] font-medium ${isSafeAttendance ? 'text-emerald-700' : 'text-rose-700'}`}>
                 {attendedClasses} / {totalClasses} Lectures
               </div>
             </div>
@@ -281,7 +271,7 @@ export default async function StudentWorkspacePage() {
 
           {/* Attendance Safety Bar & Bunk Forecaster */}
           <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-between text-xs font-mono">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-zinc-600">Attendance Buffer (MAKAUT 75% Gate):</span>
               <span className={`font-bold ${isSafeAttendance ? 'text-emerald-700' : 'text-rose-700'}`}>
                 {isSafeAttendance 
@@ -295,7 +285,7 @@ export default async function StudentWorkspacePage() {
                 style={{ width: `${Math.min(100, attendancePct)}%` }}
               />
             </div>
-            <p className="text-[11px] text-zinc-500 font-mono">
+            <p className="text-[11px] text-zinc-500 leading-relaxed">
               Note: Attendance below 75% incurs debarment from MAKAUT end-semester examinations without medical condonation.
             </p>
           </div>
@@ -310,7 +300,7 @@ export default async function StudentWorkspacePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-zinc-900">Recent AI Viva Evaluation</h3>
-                <p className="text-[11px] font-mono text-zinc-500">Groq Whisper Voice Engine</p>
+                <p className="text-[11px] text-zinc-500">Groq Whisper Voice Engine</p>
               </div>
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-100 text-purple-800">
@@ -370,14 +360,14 @@ export default async function StudentWorkspacePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-zinc-900">My Curriculum Subjects</h3>
-                <p className="text-[11px] font-mono text-zinc-500">
+                <p className="text-[11px] text-zinc-500">
                   Semester {semester} {branchInfo.name} • MAKAUT ({mySubjects.length} Core Modules)
                 </p>
               </div>
             </div>
             <Link
               href={`/notes?branch=${branch}&semester=${semester}`}
-              className="text-xs font-mono font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
             >
               <span>Notes Vault</span>
               <ArrowRight className="w-3 h-3" />
@@ -404,7 +394,7 @@ export default async function StudentWorkspacePage() {
                   </span>
                   <div className="min-w-0">
                     <div className="text-xs font-medium text-zinc-900 truncate">{sub.name}</div>
-                    <div className="text-[11px] font-mono text-zinc-500 truncate">
+                    <div className="text-[11px] text-zinc-500 truncate">
                       {sub.credits} Credits • {sub.type} {sub.description ? `• ${sub.description}` : ''}
                     </div>
                   </div>
@@ -412,13 +402,13 @@ export default async function StudentWorkspacePage() {
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Link
                     href={`/notes?branch=${branch}&semester=${semester}&subject=${encodeURIComponent(sub.name)}`}
-                    className="text-[10px] font-mono text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200/60 font-semibold"
+                    className="text-[10px] font-medium text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200/60 font-semibold"
                   >
                     Notes
                   </Link>
                   <Link
                     href={`/viva?subject=${encodeURIComponent(sub.name)}`}
-                    className="text-[10px] font-mono text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200/60 font-semibold"
+                    className="text-[10px] font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200/60 font-semibold"
                   >
                     Viva
                   </Link>
@@ -437,12 +427,12 @@ export default async function StudentWorkspacePage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-zinc-900">My Forum Queries</h3>
-                <p className="text-[11px] font-mono text-zinc-500">Peer &amp; Faculty Resolution</p>
+                <p className="text-[11px] text-zinc-500">Peer &amp; Faculty Resolution</p>
               </div>
             </div>
             <Link
               href="/forum"
-              className="text-xs font-mono font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
             >
               <span>View All</span>
               <ArrowRight className="w-3 h-3" />
@@ -459,7 +449,7 @@ export default async function StudentWorkspacePage() {
                   Faculty Solved
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-zinc-500 flex items-center justify-between">
+              <div className="text-[11px] text-zinc-500 flex items-center justify-between">
                 <span>Prof. Subhash Mukherjee answered</span>
                 <span>6 replies</span>
               </div>
@@ -474,7 +464,7 @@ export default async function StudentWorkspacePage() {
                   Open
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-zinc-500 flex items-center justify-between">
+              <div className="text-[11px] text-zinc-500 flex items-center justify-between">
                 <span>Posted in CSE Department Desk</span>
                 <span>2 replies</span>
               </div>
@@ -502,12 +492,12 @@ export default async function StudentWorkspacePage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-zinc-900">Official College &amp; MAKAUT Notices</h3>
-              <p className="text-[11px] font-mono text-zinc-500">Live Departmental Circulars &amp; Examination Updates</p>
+              <p className="text-[11px] text-zinc-500">Live Departmental Circulars &amp; Examination Updates</p>
             </div>
           </div>
           <Link
             href="/notices"
-            className="text-xs font-mono font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
+            className="text-xs font-medium text-[#2563EB] hover:underline inline-flex items-center gap-1"
           >
             <span>All Notices</span>
             <ArrowRight className="w-3 h-3" />
@@ -516,7 +506,7 @@ export default async function StudentWorkspacePage() {
 
         {liveNotices.length === 0 ? (
           <div className="p-4 rounded-xl bg-zinc-50 border border-dashed border-zinc-200 text-center">
-            <p className="text-xs font-mono text-zinc-500">No active notices for {branch} right now. All official circulars are published via Faculty Academic Desk.</p>
+            <p className="text-xs text-zinc-500">No active notices for {branch} right now. All official circulars are published via Faculty Academic Desk.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -561,6 +551,7 @@ export default async function StudentWorkspacePage() {
           </div>
         )}
       </div>
-    </AppShell>
-  );
+    </div>
+  </div>
+);
 }

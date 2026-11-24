@@ -193,7 +193,7 @@ export default function CookiesPage() {
         <p className="text-sm text-zinc-600 leading-relaxed">
           Most modern web browsers allow you to manage or block cookies through their privacy settings. Please note that disabling Strictly Necessary session cookies will prevent login to student and faculty portals:
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-600 font-mono">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-600 font-sans">
           <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200">
             <strong className="text-zinc-900 block font-sans">Google Chrome</strong>
             Settings → Privacy and security → Third-party cookies

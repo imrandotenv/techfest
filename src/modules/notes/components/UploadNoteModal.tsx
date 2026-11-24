@@ -178,7 +178,7 @@ export function UploadNoteModal({
             <h2 id="upload-modal-title" className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight font-display">
               Upload to MAKAUT Vault
             </h2>
-            <p className="text-xs text-[#475569] font-mono mt-0.5">
+            <p className="text-xs text-[#475569] mt-0.5">
               Submit lecture notes, solved PYQs, cheat sheets, or lab manuals
             </p>
           </div>
