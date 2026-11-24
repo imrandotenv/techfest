@@ -8,9 +8,11 @@ export const runtime = 'nodejs';
 
 export interface TtsRequest {
   text: string;
-  language?: 'en' | 'hi';
-  voice?: 'female' | 'male';
-  rate?: number | string; // e.g. 1.0, 1.15, or "+5%"
+  language?: 'en' | 'hi' | 'hinglish' | string;
+  voice?: 'female' | 'male' | string;
+  gender?: 'female' | 'male' | string;
+  speed?: number | string;
+  rate?: number | string; // e.g. 1.0, 1.15, or "+4%"
 }
 
 export interface TtsResponse {
@@ -52,27 +54,32 @@ function addToCache(key: string, entry: CacheEntry) {
 }
 
 /**
- * Text humanizer for speech:
+ * Spoken-text sanitizer:
  * Strips markdown symbols, code blocks, URLs, and emojis.
  * Expands mathematical complexity (Big-O) and engineering acronyms into natural Indian phonetics.
+ * Preserves commas and ellipses for natural breathing pauses.
  */
-export function normalizeTextForSpeech(rawText: string): string {
+export function sanitizeForSpeech(rawText: string): string {
   if (!rawText) return '';
 
   return (
     rawText
-      // Remove multiline code blocks or replace with speech cue
-      .replace(/```[\s\S]*?```/g, ' [code concept] ')
+      // Remove multiline code blocks or replace with a brief natural spoken cue
+      .replace(/```[\s\S]*?```/g, ' code concept ')
       // Remove inline code backticks while keeping words
       .replace(/`([^`]+)`/g, '$1')
-      // Remove markdown headings, bold, italics, strikethrough, blockquotes
+      // Remove markdown headings, blockquotes, horizontal rules
       .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^>\s+/gm, '')
+      .replace(/^[-*_]{3,}\s*$/gm, '')
+      // Remove bullet dashes / asterisks at line starts
+      .replace(/^[ \t]*[-*•]\s+/gm, '')
+      // Remove bold, italic, strikethrough markers
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\*([^*]+)\*/g, '$1')
       .replace(/__([^_]+)__/g, '$1')
       .replace(/_([^_]+)_/g, '$1')
       .replace(/~~([^~]+)~~/g, '$1')
-      .replace(/^>\s+/gm, '')
       // Remove markdown links [title](url) -> title
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       // Remove bare URLs
@@ -82,16 +89,20 @@ export function normalizeTextForSpeech(rawText: string): string {
         /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
         ''
       )
-      // Expand Big-O Complexity Notation naturally
-      .replace(/\bO\(1\)/gi, 'Big O of 1')
-      .replace(/\bO\(log\s*n\)/gi, 'Big O of log n')
-      .replace(/\bO\(n\s*log\s*n\)/gi, 'Big O of n log n')
-      .replace(/\bO\(n\^?2\)/gi, 'Big O of n squared')
-      .replace(/\bO\(n\^?3\)/gi, 'Big O of n cubed')
-      .replace(/\bO\(2\^?n\)/gi, 'Big O of 2 to the power n')
-      .replace(/\bO\(n!\)/gi, 'Big O of n factorial')
-      .replace(/\bO\(n\)/gi, 'Big O of n')
+      // Expand Big-O Complexity Notation naturally into spoken English
+      .replace(/\bO\(1\)/gi, 'O of 1')
+      .replace(/\bO\(log\s*n\)/gi, 'O of log n')
+      .replace(/\bO\(n\s*log\s*n\)/gi, 'O of n log n')
+      .replace(/\bO\(n\^?2\)/gi, 'O of n squared')
+      .replace(/\bO\(n²\)/gi, 'O of n squared')
+      .replace(/\bO\(n\^?3\)/gi, 'O of n cubed')
+      .replace(/\bO\(n³\)/gi, 'O of n cubed')
+      .replace(/\bO\(2\^?n\)/gi, 'O of 2 to the power n')
+      .replace(/\bO\(2ⁿ\)/gi, 'O of 2 to the power n')
+      .replace(/\bO\(n!\)/gi, 'O of n factorial')
+      .replace(/\bO\(n\)/gi, 'O of n')
       // Expand common engineering acronyms naturally for phonetics
+      .replace(/\bB\+\s*tree\b/gi, 'B plus tree')
       .replace(/\bFIFO\b/g, 'Fifo')
       .replace(/\bLIFO\b/g, 'Lifo')
       .replace(/\bLRU\b/g, 'L-R-U')
@@ -109,25 +120,32 @@ export function normalizeTextForSpeech(rawText: string): string {
       .replace(/\bAPI\b/g, 'A-P-I')
       .replace(/\bMAKAUT\b/g, 'Makaut')
       .replace(/\bSETGOI\b/g, 'Setgoi')
-      // Expand comparison and directional operators
-      .replace(/->|→/g, ' to ')
+      // Slashes between words (e.g. LIFO/FIFO or DFS/BFS) -> " or "
+      .replace(/\b([A-Za-z0-9]+)\/([A-Za-z0-9]+)\b/g, '$1 or $2')
+      // Expand directional and equality operators
+      .replace(/->|→|=>/g, ' to ')
       .replace(/<-|←/g, ' from ')
       .replace(/!=|≠/g, ' not equal to ')
       .replace(/===|==/g, ' equals ')
-      .replace(/<=|≤/g, ' less than or equal to ')
       .replace(/>=|≥/g, ' greater than or equal to ')
-      .replace(/&&/g, ' and ')
+      .replace(/<=|≤/g, ' less than or equal to ')
+      .replace(/&&|&/g, ' and ')
       .replace(/\|\|/g, ' or ')
-      // Clean remaining special punctuation
-      .replace(/[~^|]/g, ' ')
-      // Collapse whitespace
-      .replace(/\s+/g, ' ')
+      // Clean harsh special characters while PRESERVING commas, periods, question marks, and ellipses (...)
+      .replace(/[\^|\$#@~{}[\]]/g, ' ')
+      // Collapse whitespace while keeping commas and ellipses intact for breathing pauses
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\s*,\s*/g, ', ')
+      .replace(/\s*\.\.\.\s*/g, '... ')
       .trim()
   );
 }
 
+// Backward-compatible alias
+export const normalizeTextForSpeech = sanitizeForSpeech;
+
 /**
- * Synthesize speech buffer using MsEdgeTTS
+ * Synthesize speech buffer using MsEdgeTTS with expressive pitch & natural pacing
  */
 async function synthesizeWithEdge(
   text: string,
@@ -137,7 +155,7 @@ async function synthesizeWithEdge(
   const tts = new MsEdgeTTS();
   await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
 
-  const { audioStream } = tts.toStream(text, { rate: rateString });
+  const { audioStream } = tts.toStream(text, { rate: rateString, pitch: '+0Hz' });
   const chunks: Buffer[] = [];
 
   return new Promise<Buffer>((resolve, reject) => {
@@ -164,6 +182,69 @@ async function synthesizeWithEdge(
       reject(err);
     });
   });
+}
+
+/**
+ * Synthesize with resilient fallback:
+ * If en-IN-NeerjaExpressiveNeural encounters an issue, fallback to en-IN-NeerjaNeural
+ */
+async function synthesizeWithEdgeSafe(
+  text: string,
+  primaryVoice: string,
+  rateString: string
+): Promise<{ buffer: Buffer; voiceUsed: string }> {
+  try {
+    const buffer = await synthesizeWithEdge(text, primaryVoice, rateString);
+    return { buffer, voiceUsed: primaryVoice };
+  } catch (err: any) {
+    if (primaryVoice === 'en-IN-NeerjaExpressiveNeural') {
+      console.warn('[TTS API] NeerjaExpressiveNeural failed, falling back to NeerjaNeural:', err?.message);
+      const buffer = await synthesizeWithEdge(text, 'en-IN-NeerjaNeural', rateString);
+      return { buffer, voiceUsed: 'en-IN-NeerjaNeural' };
+    }
+    throw err;
+  }
+}
+
+function resolveVoice(
+  language?: string,
+  voicePref?: string,
+  genderPref?: string
+): string {
+  const lang = (language || 'en').toLowerCase().trim();
+  const pref = (voicePref || genderPref || '').toLowerCase().trim();
+
+  if (lang === 'hi' || lang === 'hinglish') {
+    // Hinglish defaults to male professor (hi-IN-MadhurNeural), or female professor (hi-IN-SwaraNeural)
+    if (pref === 'female' || pref.includes('swara')) {
+      return 'hi-IN-SwaraNeural';
+    }
+    return 'hi-IN-MadhurNeural';
+  } else {
+    // English defaults to expressive female (en-IN-NeerjaExpressiveNeural), or male (en-IN-PrabhatNeural)
+    if (pref === 'male' || pref.includes('prabhat')) {
+      return 'en-IN-PrabhatNeural';
+    }
+    return 'en-IN-NeerjaExpressiveNeural';
+  }
+}
+
+function formatSpeechRate(speedOrRate: number | string | undefined): string {
+  if (typeof speedOrRate === 'number') {
+    const pct = Math.round((speedOrRate - 1) * 100);
+    return pct >= 0 ? `+${pct + 4}%` : `${pct}%`;
+  }
+  if (typeof speedOrRate === 'string') {
+    const trimmed = speedOrRate.trim();
+    if (trimmed.startsWith('+') || trimmed.startsWith('-')) return trimmed;
+    if (!isNaN(Number(trimmed))) {
+      const num = Number(trimmed);
+      const pct = Math.round((num - 1) * 100);
+      return pct >= 0 ? `+${pct + 4}%` : `${pct}%`;
+    }
+    return `+${trimmed}`;
+  }
+  return '+4%';
 }
 
 export async function POST(req: Request) {
@@ -193,9 +274,8 @@ export async function POST(req: Request) {
 
     const body: TtsRequest = await req.json();
     rawText = body.text || '';
-    const language = body.language || 'en';
-    const voiceGender = body.voice || 'female';
-    const rawRate = body.rate || 1.0;
+    const language = (body.language || 'en').toLowerCase();
+    const rawRate = body.speed !== undefined ? body.speed : (body.rate !== undefined ? body.rate : 1.0);
 
     if (!rawText || rawText.trim().length === 0) {
       return NextResponse.json(
@@ -204,24 +284,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const cleanText = normalizeTextForSpeech(rawText);
-
-    // Format speech rate (e.g., 1.15 -> "+15%", 1.0 -> "+4%" default for natural Indian pace)
-    let rateStr = '+4%';
-    if (typeof rawRate === 'number') {
-      const pct = Math.round((rawRate - 1) * 100);
-      rateStr = pct >= 0 ? `+${pct + 4}%` : `${pct}%`;
-    } else if (typeof rawRate === 'string') {
-      rateStr = rawRate.startsWith('+') || rawRate.startsWith('-') ? rawRate : `+${rawRate}`;
-    }
-
-    // Select Azure Neural Voice
-    let edgeVoice = 'en-IN-NeerjaExpressiveNeural';
-    if (language === 'hi') {
-      edgeVoice = voiceGender === 'male' ? 'hi-IN-MadhurNeural' : 'hi-IN-SwaraNeural';
-    } else {
-      edgeVoice = voiceGender === 'male' ? 'en-IN-PrabhatNeural' : 'en-IN-NeerjaExpressiveNeural';
-    }
+    const cleanText = sanitizeForSpeech(rawText);
+    const rateStr = formatSpeechRate(rawRate);
+    let edgeVoice = resolveVoice(language, body.voice, body.gender);
 
     // Check In-Memory Audio Cache for instant (<10ms) playback
     const cacheKey = getCacheKey(cleanText, language, edgeVoice, rateStr);
@@ -251,8 +316,8 @@ export async function POST(req: Request) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const targetLangCode = language === 'hi' ? 'hi-IN' : 'en-IN';
-        const speaker = voiceGender === 'male' ? 'arvind' : 'anushka';
+        const targetLangCode = (language === 'hi' || language === 'hinglish') ? 'hi-IN' : 'en-IN';
+        const speaker = (body.voice === 'male' || body.gender === 'male' || edgeVoice.includes('Madhur') || edgeVoice.includes('Prabhat')) ? 'arvind' : 'anushka';
 
         const sarvamRes = await fetch('https://api.sarvam.ai/text-to-speech', {
           method: 'POST',
@@ -304,7 +369,7 @@ export async function POST(req: Request) {
     // Tier 2 (Primary Zero-Key Neural): Microsoft Azure Indian Voices via msedge-tts
     // =========================================================================
     try {
-      const audioBuffer = await synthesizeWithEdge(cleanText, edgeVoice, rateStr);
+      const { buffer: audioBuffer, voiceUsed } = await synthesizeWithEdgeSafe(cleanText, edgeVoice, rateStr);
       if (audioBuffer && audioBuffer.length > 0) {
         addToCache(cacheKey, { buffer: audioBuffer, format: 'mp3', provider: 'edge-neural', timestamp: Date.now() });
 
@@ -314,7 +379,7 @@ export async function POST(req: Request) {
           provider: 'edge-neural',
           cleanText,
           cached: false,
-          voiceName: edgeVoice,
+          voiceName: voiceUsed,
         } as TtsResponse, {
           headers: {
             'Cache-Control': 'public, max-age=3600',
@@ -358,23 +423,18 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const text = searchParams.get('text') || '';
-    const language = (searchParams.get('language') || 'en') as 'en' | 'hi';
-    const voiceGender = (searchParams.get('voice') || 'female') as 'female' | 'male';
-    const rate = searchParams.get('rate') || '1.0';
+    const language = (searchParams.get('language') || 'en').toLowerCase();
+    const voicePref = searchParams.get('voice') || '';
+    const genderPref = searchParams.get('gender') || '';
+    const rate = searchParams.get('rate') || searchParams.get('speed') || '1.0';
 
     if (!text.trim()) {
       return new Response('No text provided', { status: 400 });
     }
 
-    const cleanText = normalizeTextForSpeech(text);
-    const rateStr = rate === '1.15' ? '+15%' : '+4%';
-
-    let edgeVoice = 'en-IN-NeerjaExpressiveNeural';
-    if (language === 'hi') {
-      edgeVoice = voiceGender === 'male' ? 'hi-IN-MadhurNeural' : 'hi-IN-SwaraNeural';
-    } else {
-      edgeVoice = voiceGender === 'male' ? 'en-IN-PrabhatNeural' : 'en-IN-NeerjaExpressiveNeural';
-    }
+    const cleanText = sanitizeForSpeech(text);
+    const rateStr = formatSpeechRate(rate);
+    const edgeVoice = resolveVoice(language, voicePref, genderPref);
 
     const cacheKey = getCacheKey(cleanText, language, edgeVoice, rateStr);
     const cachedEntry = AUDIO_CACHE.get(cacheKey);
@@ -389,7 +449,7 @@ export async function GET(req: Request) {
       });
     }
 
-    const buffer = await synthesizeWithEdge(cleanText, edgeVoice, rateStr);
+    const { buffer } = await synthesizeWithEdgeSafe(cleanText, edgeVoice, rateStr);
     addToCache(cacheKey, { buffer, format: 'mp3', provider: 'edge-neural', timestamp: Date.now() });
 
     return new Response(new Uint8Array(buffer), {
