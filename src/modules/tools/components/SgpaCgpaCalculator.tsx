@@ -17,7 +17,8 @@ import {
   ChevronUp,
   X,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Save
 } from 'lucide-react';
 import { 
   SemesterDetail, 
@@ -40,6 +41,32 @@ export function SgpaCgpaCalculator() {
   const [showYgpaBreakdown, setShowYgpaBreakdown] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [savingToDashboard, setSavingToDashboard] = useState(false);
+  const [savedToDashboard, setSavedToDashboard] = useState(false);
+
+  const handleSaveToDashboard = async () => {
+    setSavingToDashboard(true);
+    try {
+      const gpaToSave = activeTab === 'cumulative' ? cumulativeSummary.cgpa : subjectSummary.sgpa;
+      const res = await fetch('/api/student/stats', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cgpa: parseFloat(gpaToSave.toFixed(2)),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update stats');
+      setSavedToDashboard(true);
+      setToastMessage(`Saved CGPA ${gpaToSave.toFixed(2)} to your Neon student dashboard!`);
+      setTimeout(() => setSavedToDashboard(false), 2500);
+      setTimeout(() => setToastMessage(null), 3800);
+    } catch {
+      setToastMessage('Could not save to dashboard. Sign in required.');
+      setTimeout(() => setToastMessage(null), 3800);
+    } finally {
+      setSavingToDashboard(false);
+    }
+  };
 
   // Subject-wise calculator state
   const [selectedSemesterNum, setSelectedSemesterNum] = useState<number>(3);
@@ -600,6 +627,15 @@ export function SgpaCgpaCalculator() {
 
             {/* Actions */}
             <div className="pt-2 space-y-2">
+              <button
+                onClick={handleSaveToDashboard}
+                disabled={savingToDashboard}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {savedToDashboard ? <Check className="w-3.5 h-3.5 text-white" /> : <Save className="w-3.5 h-3.5 text-white" />}
+                <span>{savedToDashboard ? 'Saved to Dashboard!' : savingToDashboard ? 'Saving to Neon...' : 'Save to My Dashboard'}</span>
+              </button>
+
               <button
                 onClick={handleCopyReport}
                 className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer"

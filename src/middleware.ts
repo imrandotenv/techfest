@@ -51,6 +51,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/forum',
   '/api/onboarding(.*)',
   '/api/profile(.*)',
+  '/api/notices(.*)',
+  '/api/webhooks(.*)',
 ]);
 
 const hasResolvableClerk = 

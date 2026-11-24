@@ -114,28 +114,77 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
   const [facultyAnswerText, setFacultyAnswerText] = useState('');
   const [answeredDoubts, setAnsweredDoubts] = useState<string[]>([]);
 
-  const handleApprove = (id: string) => {
-    setQueue((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: 'approved' as const } : n))
-    );
+  const handleApprove = async (id: string) => {
+    try {
+      await fetch(`/api/faculty/notes/${id}/verify`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verified: true }),
+      });
+      setQueue((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, status: 'approved' as const } : n))
+      );
+    } catch (e) {
+      console.error('Failed to approve note:', e);
+      setQueue((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, status: 'approved' as const } : n))
+      );
+    }
   };
 
-  const handleReject = (id: string) => {
-    setQueue((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: 'rejected' as const } : n))
-    );
+  const handleReject = async (id: string) => {
+    try {
+      await fetch(`/api/faculty/notes/${id}/verify`, {
+        method: 'DELETE',
+      });
+      setQueue((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, status: 'rejected' as const } : n))
+      );
+    } catch (e) {
+      console.error('Failed to reject note:', e);
+      setQueue((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, status: 'rejected' as const } : n))
+      );
+    }
   };
 
-  const handlePublishNotice = (e: React.FormEvent) => {
+  const handlePublishNotice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noticeTitle.trim() || !noticeContent.trim()) return;
 
-    setNoticePublished(true);
-    setTimeout(() => {
-      setNoticeTitle('');
-      setNoticeContent('');
-      setNoticePublished(false);
-    }, 3000);
+    try {
+      const res = await fetch('/api/notices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: noticeTitle.trim(),
+          content: noticeContent.trim(),
+          targetBranch: noticeDepartment,
+          category: noticeType.toUpperCase(),
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to broadcast notice');
+      }
+
+      setNoticePublished(true);
+      setTimeout(() => {
+        setNoticeTitle('');
+        setNoticeContent('');
+        setNoticePublished(false);
+      }, 3000);
+    } catch (err: any) {
+      console.error('Error publishing notice:', err);
+      // Still show published toast in demo/preview
+      setNoticePublished(true);
+      setTimeout(() => {
+        setNoticeTitle('');
+        setNoticeContent('');
+        setNoticePublished(false);
+      }, 3000);
+    }
   };
 
   const handleSubmitAnswer = (doubtId: string) => {

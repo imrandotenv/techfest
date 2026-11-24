@@ -1,9 +1,31 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { checkRateLimit, getClientIdentifier } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    // 1. Rate limiting check (30 requests / hour per user/IP)
+    const { userId } = await auth().catch(() => ({ userId: null }));
+    const clientId = getClientIdentifier(req, userId);
+    const rateCheck = await checkRateLimit(`${clientId}:transcribe`, 30, 60 * 60 * 1000);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit reached: Maximum 30 audio transcription requests per hour.',
+          text: '',
+          retryAfter: rateCheck.retryAfterSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateCheck.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     const groqApiKey = process.env.GROQ_API_KEY;
     if (!groqApiKey || groqApiKey.trim().length === 0) {
       return NextResponse.json(

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
+import { auth } from '@clerk/nextjs/server';
+import { checkRateLimit, getClientIdentifier } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
@@ -167,6 +169,28 @@ async function synthesizeWithEdge(
 export async function POST(req: Request) {
   let rawText = '';
   try {
+    // 1. Rate limiting check (60 requests / hour per user/IP)
+    const { userId } = await auth().catch(() => ({ userId: null }));
+    const clientId = getClientIdentifier(req, userId);
+    const rateCheck = await checkRateLimit(`${clientId}:tts`, 60, 60 * 60 * 1000);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        {
+          audio: null,
+          format: null,
+          provider: 'browser',
+          cleanText: '',
+          error: 'Rate limit reached: Maximum 60 voice synthesis requests per hour. Please wait before retrying.',
+        } as TtsResponse,
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateCheck.retryAfterSeconds),
+          },
+        }
+      );
+    }
+
     const body: TtsRequest = await req.json();
     rawText = body.text || '';
     const language = body.language || 'en';

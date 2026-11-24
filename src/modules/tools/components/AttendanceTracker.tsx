@@ -11,7 +11,9 @@ import {
   ShieldCheck, 
   TrendingUp, 
   Sparkles,
-  Minus
+  Minus,
+  Save,
+  Check
 } from 'lucide-react';
 
 export interface AttendanceSubject {
@@ -34,6 +36,34 @@ export function AttendanceTracker() {
   const [subjects, setSubjects] = useState<AttendanceSubject[]>(DEFAULT_SUBJECTS);
   const [newCode, setNewCode] = useState('');
   const [newName, setNewName] = useState('');
+  const [savingToDashboard, setSavingToDashboard] = useState(false);
+  const [savedToDashboard, setSavedToDashboard] = useState(false);
+  const [saveStatusMsg, setSaveStatusMsg] = useState<string | null>(null);
+
+  const handleSaveToDashboard = async () => {
+    setSavingToDashboard(true);
+    try {
+      const res = await fetch('/api/student/stats', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendancePct: overallStats.percentage,
+          attendedClasses: overallStats.totalAttended,
+          totalClasses: overallStats.totalHeld,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update stats');
+      setSavedToDashboard(true);
+      setSaveStatusMsg(`Saved attendance (${overallStats.percentage}%) to your Neon dashboard!`);
+      setTimeout(() => setSavedToDashboard(false), 2500);
+      setTimeout(() => setSaveStatusMsg(null), 3800);
+    } catch {
+      setSaveStatusMsg('Could not save to dashboard. Sign in required.');
+      setTimeout(() => setSaveStatusMsg(null), 3800);
+    } finally {
+      setSavingToDashboard(false);
+    }
+  };
 
   // Overall aggregate
   const overallStats = useMemo(() => {
@@ -373,6 +403,22 @@ export function AttendanceTracker() {
                 )}
               </div>
             </div>
+
+            {/* Save to Dashboard Button */}
+            <button
+              onClick={handleSaveToDashboard}
+              disabled={savingToDashboard}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              {savedToDashboard ? <Check className="w-3.5 h-3.5 text-white" /> : <Save className="w-3.5 h-3.5 text-white" />}
+              <span>{savedToDashboard ? 'Saved to Dashboard!' : savingToDashboard ? 'Saving...' : 'Save to My Dashboard'}</span>
+            </button>
+
+            {saveStatusMsg && (
+              <p className="text-[11px] font-mono text-center text-emerald-700 bg-emerald-50 border border-emerald-200 py-1 px-2 rounded-lg">
+                {saveStatusMsg}
+              </p>
+            )}
 
             {/* Guidance Footer */}
             <div className="text-[11px] text-zinc-500 font-sans leading-relaxed pt-2 border-t border-zinc-100 flex items-start gap-2">

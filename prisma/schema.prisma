@@ -20,6 +20,7 @@ model User {
   passoutYear         Int?     // e.g. 2026–2030
   universityRoll      String?  // optional MAKAUT roll number
   onboardingCompleted Boolean  @default(false)
+  academicStats       Json?    // { cgpa, attendancePct, attendedClasses, totalClasses, semesterSgpas }
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -27,6 +28,7 @@ model User {
   forumPosts   ForumPost[]
   forumReplies ForumReply[]
   vivaSessions VivaSession[]
+  notices      Notice[]
 
   @@index([clerkId])
   @@index([email])
@@ -193,4 +195,31 @@ model NoteItem {
   @@index([subjectCode])
   @@index([department, semester])
   @@index([status])
+}
+
+model Notice {
+  id           String   @id @default(cuid())
+  title        String
+  content      String   @db.Text
+  category     String   @default("ACADEMIC") // "EXAM" | "EVENT" | "ACADEMIC" | "URGENT"
+  targetBranch String   @default("ALL")      // "ALL" | "CSE" | "ECE" | "EE" | "ME" | "CE" | "IT"
+  isPinned     Boolean  @default(false)
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@index([targetBranch])
+  @@index([isPinned])
+  @@index([createdAt])
+}
+
+model RateLimit {
+  id      String   @id @default(cuid())
+  key     String   @unique // e.g. "userId:viva" or "ip:viva"
+  count   Int      @default(1)
+  resetAt DateTime
+
+  @@index([resetAt])
 }

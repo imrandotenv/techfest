@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { auth } from '@clerk/nextjs/server';
+import { checkRateLimit, getClientIdentifier } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
@@ -468,6 +470,35 @@ function getSimulatedVivaResponse(
 
 export async function POST(req: Request) {
   try {
+    // 1. Rate limiting check (40 requests / hour per user/IP)
+    const { userId } = await auth().catch(() => ({ userId: null }));
+    const clientId = getClientIdentifier(req, userId);
+    const rateCheck = await checkRateLimit(`${clientId}:viva`, 40, 60 * 60 * 1000);
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit reached. You have completed your 40 viva queries for this hour. Please try again later.',
+          retryAfter: rateCheck.retryAfterSeconds,
+          spokenText: 'You have hit your viva rate limit for this hour! Take a short break, review your notes, and jump back in shortly.',
+          reaction: 'Rate limit reached! Take a breather.',
+          explanation: `Hourly rate limit of 40 requests reached. Window resets in ${Math.ceil(rateCheck.retryAfterSeconds / 60)} minutes.`,
+          emotion: 'thinking',
+          nextQuestion: 'Ready to continue when your rate limit resets?',
+          provider: 'simulation',
+          isCorrect: null,
+          topicTag: 'Rate Limit',
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateCheck.retryAfterSeconds),
+            'X-RateLimit-Limit': String(rateCheck.limit),
+            'X-RateLimit-Remaining': String(rateCheck.remaining),
+          },
+        }
+      );
+    }
+
     const body: VivaRequest = await req.json();
     const {
       question,
