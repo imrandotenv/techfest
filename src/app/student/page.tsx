@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { AcademicStats } from '@/app/api/student/stats/route';
 import { WorkspaceShell } from '@/components/WorkspaceShell';
 import { StudentCockpitView } from '@/components/StudentCockpitView';
+import { PendingVerificationBanner } from '@/components/PendingVerificationBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,15 +33,35 @@ export default async function StudentWorkspacePage() {
   };
 
   let liveNotices: any[] = [];
+  let pendingInfo: {
+    approvalStatus: string;
+    requestedRole: string | null;
+    department: string | null;
+    designation: string | null;
+  } | null = null;
 
   try {
     if (user.userId) {
       const dbUser = await prisma.user.findUnique({
         where: { clerkId: user.userId },
-        select: { academicStats: true },
+        select: {
+          academicStats: true,
+          approvalStatus: true,
+          requestedRole: true,
+          department: true,
+          designation: true,
+        },
       });
       if (dbUser?.academicStats) {
         stats = { ...stats, ...(dbUser.academicStats as unknown as AcademicStats) };
+      }
+      if (dbUser?.approvalStatus === 'PENDING') {
+        pendingInfo = {
+          approvalStatus: dbUser.approvalStatus,
+          requestedRole: dbUser.requestedRole,
+          department: dbUser.department,
+          designation: dbUser.designation,
+        };
       }
     }
 
@@ -75,6 +96,15 @@ export default async function StudentWorkspacePage() {
         variant: 'primary',
       }}
     >
+      {pendingInfo && (
+        <div className="mb-6">
+          <PendingVerificationBanner
+            requestedRole={pendingInfo.requestedRole}
+            department={pendingInfo.department}
+            designation={pendingInfo.designation}
+          />
+        </div>
+      )}
       <StudentCockpitView
         studentName={studentName}
         branch={branch}

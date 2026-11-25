@@ -1,10 +1,11 @@
 import React from 'react';
-import { requireRole } from '@/lib/rbac';
+import { requireRole, syncAndGetCurrentUser } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { BTechBranch } from '@/config/curriculum';
 import { AcademicStats } from '@/app/api/student/stats/route';
 import { WorkspaceShell } from '@/components/WorkspaceShell';
 import { AdminViewRouter } from './AdminViewRouter';
+import { VerificationPendingScreen } from '@/components/PendingVerificationBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,21 @@ export const metadata = {
 };
 
 export default async function AdminPage() {
+  const syncedUser = await syncAndGetCurrentUser();
+  if (
+    syncedUser &&
+    syncedUser.approvalStatus === 'PENDING' &&
+    syncedUser.requestedRole === 'ADMIN'
+  ) {
+    return (
+      <VerificationPendingScreen
+        requestedRole={syncedUser.requestedRole}
+        department={syncedUser.department}
+        designation={syncedUser.designation}
+      />
+    );
+  }
+
   const user = await requireRole(['admin'], {
     redirectTo: '/sign-in?redirect_url=/admin',
   });

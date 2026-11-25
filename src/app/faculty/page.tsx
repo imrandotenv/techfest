@@ -1,9 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
-import { requireRole } from '@/lib/rbac';
+import { requireRole, syncAndGetCurrentUser } from '@/lib/rbac';
 import { FacultyWorkspaceClient } from './FacultyWorkspaceClient';
 import { WorkspaceShell } from '@/components/WorkspaceShell';
+import { VerificationPendingScreen } from '@/components/PendingVerificationBanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,22 @@ export const metadata = {
 };
 
 export default async function FacultyWorkspacePage() {
+  const syncedUser = await syncAndGetCurrentUser();
+  if (
+    syncedUser &&
+    syncedUser.approvalStatus === 'PENDING' &&
+    syncedUser.requestedRole === 'FACULTY'
+  ) {
+    return (
+      <VerificationPendingScreen
+        requestedRole={syncedUser.requestedRole}
+        department={syncedUser.department}
+        designation={syncedUser.designation}
+        requestedScopes={syncedUser.requestedScopes as any}
+      />
+    );
+  }
+
   const user = await requireRole(['faculty', 'admin'], {
     redirectTo: '/sign-in?redirect_url=/faculty',
   });
