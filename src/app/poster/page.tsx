@@ -14,12 +14,56 @@ import {
   BookOpen,
   PlayCircle,
   Calculator,
-  GraduationCap,
   CheckCircle2,
   Mic,
   Compass,
 } from 'lucide-react';
 import { SetTechLogo } from '@/components/SetTechLogo';
+
+function SetgoiCrestSvg() {
+  return (
+    <svg
+      width="44"
+      height="44"
+      viewBox="0 0 44 44"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="SETGOI Institutional Crest"
+    >
+      <path
+        d="M22 3L38 9V21.5C38 31.1 31.2 38.4 22 41C12.8 38.4 6 31.1 6 21.5V9L22 3Z"
+        fill="#09090B"
+      />
+      <path
+        d="M22 5.8L35.2 10.8V21.4C35.2 29.4 29.6 35.6 22 38C14.4 35.6 8.8 29.4 8.8 21.4V10.8L22 5.8Z"
+        stroke="#2563EB"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M22 10.5L29.5 14.2L22 17.8L14.5 14.2L22 10.5Z"
+        fill="#2563EB"
+      />
+      <path
+        d="M17.2 16.4V20.2C17.2 21.5 19.3 22.6 22 22.6C24.7 22.6 26.8 21.5 26.8 20.2V16.4"
+        stroke="#FAFAFA"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <text
+        x="22"
+        y="31.5"
+        textAnchor="middle"
+        fill="#FAFAFA"
+        fontSize="7.2"
+        fontWeight="800"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        letterSpacing="0.8"
+      >
+        SETGOI
+      </text>
+    </svg>
+  );
+}
 
 export default function PosterStudioPage() {
   const posterRef = useRef<HTMLDivElement | null>(null);
@@ -27,7 +71,7 @@ export default function PosterStudioPage() {
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
 
   const [format, setFormat] = useState<'a4' | 'social'>('a4');
-  const [collegeLogoSrc, setCollegeLogoSrc] = useState<string>('/setgoi-logo.png');
+  const [logoSrc, setLogoSrc] = useState<string>('/setgoi-logo.png');
   const [logoError, setLogoError] = useState<boolean>(false);
 
   const [landingPreviewSrc, setLandingPreviewSrc] = useState<string>('/poster/landing-preview.png');
@@ -86,34 +130,34 @@ export default function PosterStudioPage() {
       {/* =========================================================================
           NON-PRINTABLE CONTROL TOOLBAR
           ========================================================================= */}
-      <div className="print:hidden w-full max-w-[920px] bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-3 sticky top-4 z-40">
-        <div className="flex items-center gap-3">
+      <div className="print:hidden w-full max-w-[1080px] bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-3.5 py-2.5 shadow-sm flex flex-wrap items-center justify-between gap-2 sticky top-4 z-40">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/"
-            className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-colors"
+            className="px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back</span>
           </Link>
-          <div>
-            <div className="text-xs font-bold text-[#09090B] font-display">
-              SETTech A4 Poster Studio
+          <div className="hidden sm:block">
+            <div className="text-xs font-bold text-[#09090B] font-display leading-tight">
+              SETTech Poster Studio
             </div>
             <div className="text-[10px] font-mono text-zinc-500">
-              {format === 'social' ? '1080 × 1080px • 1:1 Social Card' : '794 × 1123px • A4 Print Sheet'}
+              {format === 'social' ? '1080 × 1080 • 1:1 Card' : '794 × 1123 • A4 Print'}
             </div>
           </div>
 
           {/* Format Switcher Segmented Toggle */}
           <div
-            className="flex items-center gap-0.5 p-0.5 bg-zinc-100 border border-[#E4E4E7] rounded-xl text-[11px] font-mono ml-2"
+            className="flex items-center gap-0.5 p-0.5 bg-zinc-100 border border-[#E4E4E7] rounded-xl text-[11px] font-mono ml-1"
             role="group"
             aria-label="Poster Format Switcher"
           >
             <button
               type="button"
               onClick={() => setFormat('a4')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                 format === 'a4'
                   ? 'bg-white text-[#09090B] font-bold shadow-2xs'
                   : 'text-zinc-500 hover:text-zinc-900'
@@ -124,7 +168,7 @@ export default function PosterStudioPage() {
             <button
               type="button"
               onClick={() => setFormat('social')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                 format === 'social'
                   ? 'bg-white text-[#2563EB] font-bold shadow-2xs'
                   : 'text-zinc-500 hover:text-zinc-900'
@@ -135,7 +179,7 @@ export default function PosterStudioPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <input
             ref={logoInputRef}
             type="file"
@@ -143,7 +187,7 @@ export default function PosterStudioPage() {
             className="hidden"
             onChange={(e) =>
               handleImageUpload(e, (url) => {
-                setCollegeLogoSrc(url);
+                setLogoSrc(url);
                 setLogoError(false);
               })
             }
@@ -151,10 +195,10 @@ export default function PosterStudioPage() {
           <button
             type="button"
             onClick={() => logoInputRef.current?.click()}
-            className="px-3 py-1.5 rounded-xl bg-white border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-sans font-medium text-zinc-700 inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-sans font-medium text-zinc-700 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <ImagePlus className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Upload College Logo</span>
+            <span>College Logo</span>
           </button>
 
           <input
@@ -172,29 +216,29 @@ export default function PosterStudioPage() {
           <button
             type="button"
             onClick={() => screenshotInputRef.current?.click()}
-            className="px-3 py-1.5 rounded-xl bg-white border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-sans font-medium text-zinc-700 inline-flex items-center gap-1.5 cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-sans font-medium text-zinc-700 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <ImagePlus className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Upload Landing Screenshot</span>
+            <span>Screenshot</span>
           </button>
 
           <button
             type="button"
             onClick={handleDownloadPng}
             disabled={isExporting}
-            className="px-3.5 py-1.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer disabled:opacity-60"
+            className="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer disabled:opacity-60 whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{isExporting ? 'Exporting...' : 'Download High-Res PNG (300 DPI)'}</span>
+            <span>{isExporting ? 'Exporting...' : 'Download PNG'}</span>
           </button>
 
           <button
             type="button"
             onClick={handlePrintPdf}
-            className="px-3.5 py-1.5 rounded-xl bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print / Save A4 PDF</span>
+            <span>Print A4 PDF</span>
           </button>
         </div>
       </div>
@@ -218,22 +262,19 @@ export default function PosterStudioPage() {
           {/* -------------------------------------------------------------------
               SECTION 1: TOP INSTITUTIONAL CO-BRANDING HEADER
               ------------------------------------------------------------------- */}
-          <header className="flex items-center justify-between gap-4 pb-6 border-b border-[#E4E4E7]">
+          <header className="flex items-center justify-between gap-4 pb-5 border-b border-[#E4E4E7]">
             <div className="flex items-center gap-3.5 min-w-0">
-              {/* SETGOI College Logo with Automatic Fallback Emblem */}
-              <div className="w-12 h-12 rounded-xl bg-white border border-[#E4E4E7] shadow-2xs flex items-center justify-center overflow-hidden shrink-0 p-1">
-                {!logoError ? (
+              {/* SETGOI College Logo with Automatic SVG Crest Fallback */}
+              <div className="w-12 h-12 rounded-xl bg-white border border-[#E4E4E7] shadow-2xs flex items-center justify-center overflow-hidden shrink-0 p-0.5">
+                {!logoError && logoSrc ? (
                   <img
-                    src={collegeLogoSrc}
+                    src={logoSrc}
                     alt="SETGOI Logo"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain rounded-lg"
                     onError={() => setLogoError(true)}
                   />
                 ) : (
-                  <div className="w-full h-full rounded-lg bg-[#09090B] text-white flex flex-col items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-blue-400" />
-                    <span className="text-[7px] font-mono font-bold tracking-wider mt-0.5">SETGOI</span>
-                  </div>
+                  <SetgoiCrestSvg />
                 )}
               </div>
 
@@ -258,12 +299,12 @@ export default function PosterStudioPage() {
           {/* -------------------------------------------------------------------
               SECTION 2: CRISP MINIMAL HERO HEADLINE
               ------------------------------------------------------------------- */}
-          <section className="text-center space-y-2.5 pt-2">
-            <h1 className="text-[34px] font-display font-extrabold text-[#09090B] tracking-[-0.035em] leading-[1.08] max-w-[660px] mx-auto">
-              Your Entire B.Tech Semester,{' '}
-              <span className="text-[#2563EB]">Organized in One Place.</span>
+          <section className="text-center space-y-2 pt-1">
+            <h1 className="text-[33px] font-display font-extrabold text-[#09090B] tracking-[-0.035em] leading-[1.1] max-w-[660px] mx-auto">
+              <span className="block">Your Entire B.Tech Semester,</span>
+              <span className="block text-[#2563EB]">Organized in One Place.</span>
             </h1>
-            <p className="text-[13.5px] font-sans text-[#52525B] max-w-[600px] mx-auto leading-relaxed">
+            <p className="text-[13px] font-sans text-[#52525B] max-w-[600px] mx-auto leading-relaxed">
               Verified MAKAUT notes, PYQs, SWAYAM lectures, AI Viva prep &amp; 75% attendance tracking.
             </p>
           </section>
@@ -271,17 +312,17 @@ export default function PosterStudioPage() {
           {/* -------------------------------------------------------------------
               SECTION 3: CENTERPIECE SETTECH LANDING PAGE SHOWCASE
               ------------------------------------------------------------------- */}
-          <section className="my-1">
+          <section className="my-0.5">
             <div className="rounded-2xl border border-[#D4D4D8] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden">
               {/* macOS Browser Chrome */}
-              <div className="h-9 px-4 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
+              <div className="h-8 px-4 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
                   <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
                   <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
                 </div>
 
-                <div className="px-4 py-1 rounded-lg bg-white border border-[#E4E4E7] text-[10.5px] font-mono text-zinc-600 flex items-center gap-1.5 shadow-2xs">
+                <div className="px-4 py-0.5 rounded-lg bg-white border border-[#E4E4E7] text-[10.5px] font-mono text-zinc-600 flex items-center gap-1.5 shadow-2xs">
                   <Lock className="w-2.5 h-2.5 text-emerald-600" />
                   <span>https://settech.ceimran.in</span>
                 </div>
@@ -292,7 +333,7 @@ export default function PosterStudioPage() {
               {/* Landing Page Screenshot OR Faithful High-Craft Architectural Composition */}
               <div
                 className={`w-full ${
-                  format === 'social' ? 'h-[390px]' : 'h-[435px]'
+                  format === 'social' ? 'h-[365px]' : 'h-[410px] max-h-[455px]'
                 } bg-[#FAFAFA] overflow-hidden relative`}
               >
                 {!previewImgError ? (
@@ -469,45 +510,53 @@ export default function PosterStudioPage() {
           {/* -------------------------------------------------------------------
               SECTION 5: BOTTOM REAL QR SCAN DOCK
               ------------------------------------------------------------------- */}
-          <footer className="bg-white border border-[#E4E4E7] rounded-2xl p-6 shadow-xs flex items-center justify-between gap-6">
-            <div className="space-y-2.5">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#2563EB]">
-                FREE FOR ALL SETGOI B.TECH STUDENTS
+          <footer className="space-y-3">
+            <div className="bg-white border border-[#E4E4E7] rounded-2xl px-6 py-5 shadow-xs flex items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#2563EB]">
+                  FREE FOR ALL SETGOI B.TECH STUDENTS
+                </div>
+                <h2 className="text-[22px] font-display font-bold text-[#09090B] tracking-tight leading-tight">
+                  Scan to Access SETTech Instantly
+                </h2>
+                <p className="text-[12.5px] font-sans text-[#52525B]">
+                  Open Camera &rarr; Scan QR &rarr; Sign in with Google
+                </p>
+                <div className="pt-0.5">
+                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#09090B] text-white font-mono text-xs font-semibold tracking-wide">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    settech.ceimran.in
+                  </span>
+                </div>
               </div>
-              <h2 className="text-[22px] font-display font-bold text-[#09090B] tracking-tight leading-tight">
-                Scan to Access SETTech Instantly
-              </h2>
-              <p className="text-[12.5px] font-sans text-[#52525B]">
-                Open Camera &rarr; Scan QR &rarr; Sign in with Google
-              </p>
-              <div className="pt-1">
-                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#09090B] text-white font-mono text-xs font-semibold tracking-wide">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  settech.ceimran.in
+
+              {/* Sharp White QR Frame with Corner Viewfinder Marks */}
+              <div className="flex flex-col items-center gap-2.5 shrink-0">
+                <div className="relative p-3.5 bg-white border border-[#E4E4E7] rounded-xl shadow-2xs">
+                  {/* Corner Viewfinder Accents */}
+                  <span className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-[#09090B] rounded-tl" />
+                  <span className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-[#09090B] rounded-tr" />
+                  <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-[#09090B] rounded-bl" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-[#09090B] rounded-br" />
+
+                  <QRCodeSVG
+                    value="https://settech.ceimran.in"
+                    size={112}
+                    level="H"
+                    bgColor="#FFFFFF"
+                    fgColor="#09090B"
+                  />
+                </div>
+                <span className="text-[9.5px] font-mono font-bold tracking-[0.2em] text-[#09090B]">
+                  SCAN TO OPEN
                 </span>
               </div>
             </div>
 
-            {/* Sharp White QR Frame with Corner Viewfinder Marks */}
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
-              <div className="relative p-3 bg-white border border-[#E4E4E7] rounded-xl shadow-2xs">
-                {/* Corner Viewfinder Accents */}
-                <span className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-[#09090B] rounded-tl" />
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-[#09090B] rounded-tr" />
-                <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-[#09090B] rounded-bl" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-[#09090B] rounded-br" />
-
-                <QRCodeSVG
-                  value="https://settech.ceimran.in"
-                  size={116}
-                  level="H"
-                  bgColor="#FFFFFF"
-                  fgColor="#09090B"
-                />
-              </div>
-              <span className="text-[9.5px] font-mono font-bold tracking-[0.2em] text-[#09090B]">
-                SCAN TO OPEN
-              </span>
+            {/* Sleek Bottom Micro-Footer Bar */}
+            <div className="flex items-center justify-between px-1 pt-1 text-[10px] font-mono text-[#52525B]">
+              <span>Sanaka Educational Trust&apos;s Group of Institutions • Malandighi, Durgapur</span>
+              <span className="text-[#09090B] font-semibold">Built for SETGOI Engineers • Free Access</span>
             </div>
           </footer>
         </div>
