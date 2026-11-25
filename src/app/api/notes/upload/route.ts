@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { uploadToNeonStorage } from '@/lib/storage';
+import { resolveAndHealUser } from '@/lib/rbac';
 
 export const runtime = 'nodejs';
 
@@ -75,20 +77,16 @@ export async function POST(req: NextRequest) {
       `${userId}@student.setgoi.ac.in`;
     const fullName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || clerkUser?.username || 'SETGOI Scholar';
 
-    const dbUser = await prisma.user.upsert({
-      where: { clerkId: userId },
-      update: { email: primaryEmail, fullName },
-      create: {
-        clerkId: userId,
-        email: primaryEmail,
-        fullName,
-        role: 'STUDENT',
-        degree: 'B.Tech',
-        branch,
-        semester,
-        onboardingCompleted: true,
-      },
+    const dbUser = await resolveAndHealUser({
+      clerkUserId: userId,
+      email: primaryEmail,
+      fullName,
+      autoCreate: true,
     });
+
+    if (!dbUser) {
+      return NextResponse.json({ error: 'Failed to resolve user in database' }, { status: 500 });
+    }
 
     const isPrivileged = dbUser.role === 'FACULTY' || dbUser.role === 'ADMIN';
 
@@ -117,6 +115,10 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    revalidatePath('/notes');
+    revalidatePath('/faculty');
+    revalidatePath('/admin');
 
     return NextResponse.json({
       success: true,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { NoteItem } from '@/types';
 import { BranchCode, UploadNoteFormData } from '../types';
@@ -107,6 +107,7 @@ const SEMESTERS = [
 ];
 
 export function NotesVaultView() {
+  const router = useRouter();
   const { user, isSignedIn } = useUser();
   const activeRole = getResolvedRole(user);
   const userName =
@@ -125,8 +126,23 @@ export function NotesVaultView() {
   const { profile } = useAcademicProfile();
   const [hasAppliedStudentDefaults, setHasAppliedStudentDefaults] = useState(false);
 
-  // Master notes state
-  const [notes, setNotes] = useState<NoteItem[]>(() => getInitialNotes());
+  // Master notes state — hydrated live from Neon PostgreSQL (/api/notes)
+  const [notes, setNotes] = useState<NoteItem[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/notes')
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && json.success && Array.isArray(json.data)) {
+          setNotes(json.data);
+        }
+      })
+      .catch((err) => console.warn('[NotesVaultView] Failed to fetch notes:', err));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Progressive Vault Flow State
   const [selectedBranch, setSelectedBranch] = useState<BranchCode | null>(() => {
@@ -309,7 +325,7 @@ export function NotesVaultView() {
     }
   };
 
-  const handleApprove = (noteId: string) => {
+  const handleApprove = async (noteId: string) => {
     if (!isSignedIn) {
       setAuthPromptReason('verify_notes');
       return;
@@ -327,9 +343,18 @@ export function NotesVaultView() {
     const { updatedNotes, targetNote } = verifyNoteAction(notes, noteId, 'approved', verifier);
     setNotes(updatedNotes);
     showToast(`Approved "${targetNote?.title}". The note is verified!`);
+
+    try {
+      await fetch(`/api/faculty/notes/${encodeURIComponent(noteId)}/verify`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verified: true }),
+      });
+      router.refresh();
+    } catch {}
   };
 
-  const handleReject = (noteId: string) => {
+  const handleReject = async (noteId: string) => {
     if (!isSignedIn) {
       setAuthPromptReason('verify_notes');
       return;
@@ -339,32 +364,18 @@ export function NotesVaultView() {
       setAuthPromptReason('verify_notes');
       return;
     }
-    const verifier = {
-      id: user?.id || `verifier-${activeRole}`,
-      name: userName,
-      role: activeRole,
-    };
-    const { updatedNotes, targetNote } = verifyNoteAction(notes, noteId, 'rejected', verifier);
-    setNotes(updatedNotes);
-    showToast(`Rejected "${targetNote?.title}".`);
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    showToast('Submission rejected and removed.');
+
+    try {
+      await fetch(`/api/faculty/notes/${encodeURIComponent(noteId)}/verify`, {
+        method: 'DELETE',
+      });
+      router.refresh();
+    } catch {}
   };
 
   const handleUploadSubmit = async (formData: UploadNoteFormData) => {
-    const uploader = {
-      id: user?.id || `uploader-${activeRole}`,
-      name: userName,
-      role: activeRole,
-    };
-    const { updatedNotes, newNote } = uploadNewNote(notes, formData, uploader);
-    setNotes(updatedNotes);
-
-    if (newNote.status === 'approved') {
-      showToast(`Resource "${newNote.title}" published!`);
-    } else {
-      showToast(`Resource "${newNote.title}" submitted to verification queue!`);
-    }
-
-    // If a physical file was provided, upload to Neon Object Storage
     if (formData.file) {
       try {
         const bodyData = new FormData();
@@ -379,19 +390,47 @@ export function NotesVaultView() {
           method: 'POST',
           body: bodyData,
         });
-
-        if (res.ok) {
-          const json = await res.json();
-          if (json.note) {
-            setNotes((prev) =>
-              prev.map((n) => (n.id === newNote.id ? { ...n, fileUrl: json.note.fileUrl, id: json.note.id } : n))
-            );
-            showToast(`Uploaded to Neon Object Storage!`);
-          }
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.note) {
+          const listRes = await fetch('/api/notes').then((r) => r.json()).catch(() => null);
+          if (listRes?.data) setNotes(listRes.data);
+          showToast(json.message || 'Uploaded to SETGOI Vault!');
+          router.refresh();
+          return;
         }
+        showToast(json.error || 'Upload failed.');
       } catch (err) {
-        console.warn('[Notes Upload] Cloud sync note:', err);
+        console.warn('[Notes Upload] Error:', err);
+        showToast('Network error uploading note.');
       }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          subjectCode: formData.subjectCode,
+          subjectName: formData.subjectName,
+          departmentCode: formData.departmentCode,
+          semester: formData.semester,
+          category: formData.category,
+          fileUrl: formData.fileUrl,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.data) {
+        setNotes((prev) => [json.data, ...prev]);
+        showToast(json.message || 'Resource submitted!');
+        router.refresh();
+      } else {
+        showToast(json.error || 'Failed to submit note.');
+      }
+    } catch (err) {
+      console.warn('[Notes Submit] Error:', err);
+      showToast('Network error submitting note.');
     }
   };
 

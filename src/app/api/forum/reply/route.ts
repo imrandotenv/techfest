@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
-import { forumStore } from '@/modules/forum/forum-service';
+import { resolveAndHealUser } from '@/lib/rbac';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,98 +16,95 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const {
-      postId,
-      content,
-      authorName,
-      authorRole,
-      authorDepartment,
-      isOfficialAnswer,
-      parentId,
-    } = body;
+    const body = await req.json().catch(() => ({}));
+    const { postId, content, parentId, isOfficialAnswer } = body;
 
-    if (!postId || !content) {
+    if (!postId || !content?.trim()) {
       return NextResponse.json(
-        { success: false, error: 'postId and content are required' },
+        { success: false, error: 'postId and reply content are required' },
         { status: 400 }
       );
     }
 
-    let authorIdToUse = userId;
-    let actualOfficialAnswer = false;
+    const clerkUser = await currentUser();
+    const primaryEmail =
+      clerkUser?.emailAddresses.find((e) => e.id === clerkUser?.primaryEmailAddressId)?.emailAddress ||
+      clerkUser?.emailAddresses[0]?.emailAddress ||
+      `${userId}@student.setgoi.ac.in`;
+    const fullName =
+      [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') ||
+      clerkUser?.username ||
+      'SETGOI Member';
 
-    try {
-      const clerkUser = await currentUser();
-      const primaryEmail =
-        clerkUser?.emailAddresses.find((e) => e.id === clerkUser?.primaryEmailAddressId)?.emailAddress ||
-        clerkUser?.emailAddresses[0]?.emailAddress ||
-        `${userId}@student.setgoi.ac.in`;
-      const fullName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || authorName || 'SETGOI Member';
+    const dbUser = await resolveAndHealUser({
+      clerkUserId: userId,
+      email: primaryEmail,
+      fullName,
+      autoCreate: true,
+    });
 
-      const dbUser = await prisma.user.upsert({
-        where: { clerkId: userId },
-        update: { email: primaryEmail, fullName },
-        create: {
-          clerkId: userId,
-          email: primaryEmail,
-          fullName,
-          role: 'STUDENT',
-          degree: 'B.Tech',
-          branch: 'CSE',
-          semester: 3,
-          onboardingCompleted: true,
-        },
-      });
-
-      authorIdToUse = dbUser.id;
-      // Security: Only FACULTY or ADMIN can author an official answer
-      const isPrivileged = dbUser.role === 'FACULTY' || dbUser.role === 'ADMIN';
-      actualOfficialAnswer = isPrivileged && Boolean(isOfficialAnswer);
-
-      // Check if post exists in DB
-      const postExists = await prisma.forumPost.findUnique({
-        where: { id: postId },
-      });
-
-      if (postExists) {
-        await prisma.forumReply.create({
-          data: {
-            postId,
-            content: content.trim(),
-            authorId: dbUser.id,
-            isOfficialAnswer: actualOfficialAnswer,
-            parentId: parentId || null,
-          },
-        });
-      }
-    } catch (dbErr) {
-      console.warn('[Forum Reply API] Neon DB write note:', dbErr);
+    if (!dbUser) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to resolve user profile' },
+        { status: 500 }
+      );
     }
 
-    const result = forumStore.createReply({
-      postId,
-      content,
-      authorId: authorIdToUse,
-      authorName: authorName || 'SETGOI Member',
-      authorRole: actualOfficialAnswer ? 'faculty' : (authorRole || 'student'),
-      authorDepartment: authorDepartment || 'SETGOI Campus',
-      isOfficialAnswer: actualOfficialAnswer,
-      parentId: parentId || undefined,
+    const postExists = await prisma.forumPost.findUnique({ where: { id: postId } });
+    if (!postExists) {
+      return NextResponse.json({ success: false, error: 'Forum thread not found' }, { status: 404 });
+    }
+
+    // Automatically tag replies from FACULTY or ADMIN as Official Faculty Answer
+    const isPrivileged = dbUser.role === 'FACULTY' || dbUser.role === 'ADMIN';
+    const actualOfficialAnswer = isPrivileged || (isPrivileged && Boolean(isOfficialAnswer));
+
+    const dbReply = await prisma.forumReply.create({
+      data: {
+        postId,
+        content: content.trim(),
+        authorId: dbUser.id,
+        isOfficialAnswer: actualOfficialAnswer,
+        parentId: parentId || null,
+      },
+      include: {
+        author: { select: { id: true, clerkId: true, fullName: true, role: true, branch: true } },
+      },
     });
+
+    revalidatePath('/forum');
+
+    const rRole = (dbReply.author?.role || 'STUDENT').toUpperCase();
+    const roleLower = rRole === 'ADMIN' ? 'admin' : rRole === 'FACULTY' ? 'college' : 'student';
 
     return NextResponse.json(
       {
         success: true,
-        reply: result.reply,
-        post: result.post,
+        reply: {
+          id: dbReply.id,
+          postId: dbReply.postId,
+          content: dbReply.content,
+          authorId: dbReply.author?.clerkId || userId,
+          authorName: dbReply.author?.fullName || fullName,
+          authorRole: roleLower,
+          authorDepartment: dbReply.author?.branch ? `B.Tech ${dbReply.author.branch}` : 'SETGOI Campus',
+          isOfficialAnswer: dbReply.isOfficialAnswer,
+          verifiedBy: dbReply.isOfficialAnswer ? dbReply.author?.fullName || fullName : undefined,
+          upvotesCount: 0,
+          userUpvoted: false,
+          parentId: dbReply.parentId,
+          createdAt: dbReply.createdAt.toISOString(),
+        },
+        message: dbReply.isOfficialAnswer
+          ? 'Official Faculty Answer posted!'
+          : 'Reply posted successfully!',
       },
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Error creating reply:', error);
+    console.error('[Forum Reply POST] Error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to submit reply' },
+      { success: false, error: error?.message || 'Failed to post reply' },
       { status: 500 }
     );
   }

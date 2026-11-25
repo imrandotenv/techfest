@@ -254,3 +254,16 @@ model VivaCuratedTopic {
   @@index([subjectCode])
   @@index([branch, semester])
 }
+
+model ForumVote {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String?
+  replyId   String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, replyId])
+  @@index([postId])
+  @@index([replyId])
+}

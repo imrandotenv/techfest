@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { ForumPost, CustomUserRole, ForumSortOption, ForumCategory, ForumStatusFilter } from '../types';
-import { INITIAL_FORUM_DATA } from '../mock-data';
 import { ForumHeader } from './ForumHeader';
 import { ForumPostCard } from './ForumPostCard';
 import { ForumPostDetail } from './ForumPostDetail';
@@ -51,6 +51,7 @@ export function ForumMainView({
   initialPosts,
   initialPostId,
 }: ForumMainViewProps) {
+  const router = useRouter();
   const { user, isSignedIn } = useUser();
 
   const currentRole = getResolvedRole(user);
@@ -62,11 +63,7 @@ export function ForumMainView({
       ? 'Platform Admin'
       : 'SETGOI Student';
 
-  const [posts, setPosts] = useState<ForumPost[]>(() => {
-    return initialPosts && initialPosts.length > 0
-      ? initialPosts
-      : JSON.parse(JSON.stringify(INITIAL_FORUM_DATA));
-  });
+  const [posts, setPosts] = useState<ForumPost[]>(() => initialPosts ?? []);
 
   const [selectedPostId, setSelectedPostId] = useState<string | null>(
     initialPostId || null
@@ -204,22 +201,35 @@ export function ForumMainView({
     );
 
     try {
-      await fetch('/api/forum/reply', {
+      const res = await fetch('/api/forum/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId: data.postId,
           content: data.content,
-          authorId: user?.id || `user-${currentRole}-local`,
-          authorName: userName,
-          authorRole: currentRole,
-          authorDepartment: userDepartment,
           isOfficialAnswer: isOfficial,
           parentId: data.parentId || null,
         }),
       });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.reply) {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === data.postId
+              ? {
+                  ...p,
+                  hasOfficialAnswer: p.hasOfficialAnswer || json.reply.isOfficialAnswer,
+                  replies: p.replies.map((r) => (r.id === newReply.id ? json.reply : r)),
+                }
+              : p
+          )
+        );
+        router.refresh();
+      } else if (!res.ok) {
+        triggerToast(json.error || 'Failed to save reply', 'error');
+      }
     } catch {
-      // In-memory update already done
+      triggerToast('Network error saving reply', 'error');
     }
   };
 
@@ -313,22 +323,26 @@ export function ForumMainView({
     triggerToast('New question published successfully!', 'success');
 
     try {
-      await fetch('/api/forum', {
+      const res = await fetch('/api/forum', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: data.title,
           content: data.content,
           category: data.category,
-          authorId: user?.id || `author-${Date.now()}`,
-          authorName: userName,
-          authorRole: currentRole,
-          authorDepartment: data.department || userDepartment,
           tags: data.tags,
         }),
       });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.post) {
+        setPosts((prev) => prev.map((p) => (p.id === newPost.id ? json.post : p)));
+        setSelectedPostId(json.post.id);
+        router.refresh();
+      } else if (!res.ok) {
+        triggerToast(json.error || 'Failed to persist post', 'error');
+      }
     } catch {
-      // In-memory update already done
+      triggerToast('Network error saving post', 'error');
     }
   };
 

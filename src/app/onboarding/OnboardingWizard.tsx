@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BTECH_BRANCHES, 
@@ -59,6 +60,7 @@ const SEMESTERS = [
 
 export function OnboardingWizard({ initialEmail, initialName }: OnboardingWizardProps) {
   const router = useRouter();
+  const { user } = useUser();
 
   // Wizard state
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -101,6 +103,11 @@ export function OnboardingWizard({ initialEmail, initialName }: OnboardingWizard
       if (!res.ok) {
         throw new Error(data.error || 'Failed to complete onboarding');
       }
+
+      // Reload Clerk user session so client JWT reflects onboardingCompleted: true
+      try {
+        await user?.reload();
+      } catch {}
 
       // Success: redirect to student dashboard
       router.push('/student');

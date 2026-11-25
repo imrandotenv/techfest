@@ -47,6 +47,7 @@ export function UploadNoteModal({
   const [academicYear, setAcademicYear] = useState<string>('2026-2027');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [fileObject, setFileObject] = useState<File | null>(null);
+  const [externalUrl, setExternalUrl] = useState<string>('');
   const [fileSize, setFileSize] = useState<number>(3450000);
   const [error, setError] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -144,6 +145,11 @@ export function UploadNoteModal({
       return;
     }
 
+    if (!fileObject && !externalUrl.trim()) {
+      setError('Please provide an External PDF / Google Drive URL or upload a PDF file.');
+      return;
+    }
+
     onSubmit({
       title: title.trim(),
       subjectCode: subjectCode.trim(),
@@ -154,9 +160,13 @@ export function UploadNoteModal({
       academicYear,
       file: fileObject,
       fileSize,
-      fileUrl: `/mock-files/${subjectCode.toLowerCase()}-${Date.now()}.pdf`,
+      fileUrl: externalUrl.trim() || undefined,
     });
 
+    setTitle('');
+    setExternalUrl('');
+    setFileObject(null);
+    setSelectedFileName('');
     onClose();
   };
 
@@ -336,6 +346,20 @@ export function UploadNoteModal({
                 <option value="2023-2024">2023-2024</option>
               </select>
             </div>
+          </div>
+
+          {/* External PDF / Google Drive URL */}
+          <div>
+            <label className="block text-[#0F172A] font-medium mb-1 font-sans">
+              External PDF / Google Drive URL:
+            </label>
+            <input
+              type="url"
+              value={externalUrl}
+              onChange={(e) => setExternalUrl(e.target.value)}
+              placeholder="https://drive.google.com/file/d/... or https://.../notes.pdf"
+              className="w-full px-3 py-2 bg-white border border-[#E2E8F0] rounded-lg font-mono text-xs text-[#0F172A] focus:outline-hidden focus:border-[#2563EB]"
+            />
           </div>
 
           {/* PDF File Dropzone */}

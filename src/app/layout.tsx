@@ -29,17 +29,16 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://settech.ceimran.in';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL('https://settech.ceimran.in'),
   title: {
-    default: "SETTech — B.Tech Engineering Cockpit for SETGOI",
+    default: "SETTech — Official B.Tech Academic Suite | SETGOI Durgapur",
     template: "%s | SETTech",
   },
   description:
-    "Ultra-fast student utility, AI Viva Studio, verified MAKAUT PYQ vault, 10-point SGPA calculator, and campus portal for Sanaka Educational Trust's Group of Institutions (SETGOI), Durgapur.",
+    "Verified MAKAUT notes, PYQs, AI Viva prep, SGPA & 75% attendance calculators, and engineering Q&A for SETGOI students.",
   applicationName: "SETTech",
   authors: [{ name: "SETGOI B.Tech Engineers" }],
   generator: "Next.js",
@@ -66,16 +65,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: siteUrl,
-    title: "SETTech — B.Tech Engineering Cockpit for SETGOI",
+    title: "SETTech — Official B.Tech Academic Suite | SETGOI Durgapur",
     description:
-      "Ultra-fast student utility, AI Viva Studio with Groq Whisper, verified MAKAUT PYQ vault, SGPA calculator, and discussion portal for SETGOI School of Engineering.",
+      "Verified MAKAUT notes, PYQs, AI Viva prep, SGPA & 75% attendance calculators, and engineering Q&A for SETGOI students.",
     siteName: "SETTech",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SETTech — B.Tech Engineering Cockpit for SETGOI",
+    title: "SETTech — Official B.Tech Academic Suite | SETGOI Durgapur",
     description:
-      "Ultra-fast student utility, AI Viva Studio with Groq Whisper, verified MAKAUT PYQ vault, and SGPA tools for SETGOI B.Tech students.",
+      "Verified MAKAUT notes, PYQs, AI Viva prep, SGPA & 75% attendance calculators, and engineering Q&A for SETGOI students.",
     creator: "@SETTechSETGOI",
   },
 };

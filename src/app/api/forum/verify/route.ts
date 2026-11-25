@@ -1,60 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { forumStore } from '@/modules/forum/forum-service';
+import { revalidatePath } from 'next/cache';
 import { getCurrentAuthUser } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 
+export const runtime = 'nodejs';
+
 export async function PATCH(req: NextRequest) {
   try {
-    // Security: Strict RBAC check - only actual authenticated faculty or admin
     const caller = await getCurrentAuthUser();
     if (!caller.isAuthenticated || (caller.role !== 'faculty' && caller.role !== 'admin')) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Restricted action: Only College Faculty or Admin accounts can mark or verify an Official Faculty Answer.',
+          error: 'Restricted action: Only College Faculty or Admin accounts can verify Official Faculty Answers.',
         },
         { status: 403 }
       );
     }
 
-    const body = await req.json();
-    const { postId, replyId } = body;
+    const body = await req.json().catch(() => ({}));
+    const { replyId } = body;
 
-    if (!postId || !replyId) {
-      return NextResponse.json(
-        { success: false, error: 'postId and replyId are required' },
-        { status: 400 }
-      );
+    if (!replyId) {
+      return NextResponse.json({ success: false, error: 'replyId is required' }, { status: 400 });
     }
 
-    const result = forumStore.toggleOfficialAnswer(postId, replyId, {
-      id: caller.userId || 'verifier-user',
-      name: caller.fullName || 'SETGOI Faculty',
-      role: caller.role === 'admin' ? 'admin' : 'college',
+    const existing = await prisma.forumReply.findUnique({ where: { id: replyId } });
+    if (!existing) {
+      return NextResponse.json({ success: false, error: 'Reply not found' }, { status: 404 });
+    }
+
+    const updated = await prisma.forumReply.update({
+      where: { id: replyId },
+      data: { isOfficialAnswer: !existing.isOfficialAnswer },
     });
 
-    // Also update in Neon Postgres if record exists
-    try {
-      await prisma.forumReply.updateMany({
-        where: { id: replyId },
-        data: { isOfficialAnswer: result.reply.isOfficialAnswer },
-      });
-    } catch (dbErr) {
-      console.warn('[Forum Verify API] Neon DB sync note:', dbErr);
-    }
+    revalidatePath('/forum');
 
     return NextResponse.json({
       success: true,
-      reply: result.reply,
-      post: result.post,
-      message: result.reply.isOfficialAnswer
+      reply: updated,
+      message: updated.isOfficialAnswer
         ? 'Answer successfully verified as Official Faculty Answer.'
         : 'Official verification removed.',
     });
   } catch (error: any) {
-    console.error('Error verifying official answer:', error);
+    console.error('[Forum Verify PATCH] Error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to verify answer' },
+      { success: false, error: error?.message || 'Failed to verify answer' },
       { status: 500 }
     );
   }
