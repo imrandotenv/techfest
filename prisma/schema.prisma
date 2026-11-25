@@ -45,6 +45,8 @@ model Note {
   fileUrl     String
   fileKey     String
   fileSize    Int?     @default(0)
+  category    String   @default("LECTURE_NOTE") // "LECTURE_NOTE" | "MAKAUT_PYQ" | "LAB_MANUAL"
+  content     String?  @db.Text
   verified    Boolean  @default(false)
   
   uploaderId  String

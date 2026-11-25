@@ -282,6 +282,7 @@ export function NotesVaultView() {
     if (!selectedBranch || !selectedSemester) return [];
 
     let filtered = notes.filter((n) => {
+      if (n.category === 'LAB_MANUAL') return false;
       if (n.status !== 'approved') return false;
       const matchesBranch = n.departmentCode === selectedBranch || n.departmentCode === 'ALL';
       const matchesSem = n.semester === selectedSemester;

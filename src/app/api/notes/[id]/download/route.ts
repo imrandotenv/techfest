@@ -18,6 +18,7 @@ export async function GET(
     let branch = searchParams.get('branch') || 'CSE';
     let semester = Number(searchParams.get('semester')) || 3;
     let verified = true;
+    let dbContent: string | null = null;
 
     const dbNote = await prisma.note.findUnique({ where: { id } }).catch(() => null);
     if (dbNote) {
@@ -27,6 +28,7 @@ export async function GET(
       branch = dbNote.branch;
       semester = dbNote.semester;
       verified = dbNote.verified;
+      dbContent = dbNote.content;
     }
 
     const html = buildPrintableHtmlDocument({
@@ -36,6 +38,7 @@ export async function GET(
       branch,
       semester,
       verified,
+      markdownContent: dbContent,
     });
 
     const safeSlug = `${subjectCode}-${title}`

@@ -96,6 +96,7 @@ export interface NoteItem {
   academicYear: string;
   fileUrl: string;
   fileSize: number; // in bytes
+  content?: string | null;
   downloadsCount: number;
   status: VerificationStatus;
   uploaderId: string;
