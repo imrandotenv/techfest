@@ -27,19 +27,24 @@ export async function PATCH(
     const { id } = await context.params;
     const body = await req.json().catch(() => ({}));
     const rawRole = body.role || body.newRole;
+    const rawDepartment = body.department;
 
-    if (!id || !rawRole) {
+    if (!id || (!rawRole && !rawDepartment)) {
       return NextResponse.json(
-        { error: 'Both user id and role are required.' },
+        { error: 'User id and either role or department are required.' },
         { status: 400 }
       );
     }
 
-    const targetRoleLower: UserRole = normalizeUserRole(rawRole);
-    const targetRoleUpper = targetRoleLower.toUpperCase(); // "STUDENT" | "FACULTY" | "ADMIN"
+    const targetRoleLower: UserRole | null = rawRole ? normalizeUserRole(rawRole) : null;
+    const targetRoleUpper = targetRoleLower ? targetRoleLower.toUpperCase() : null;
+    const cleanDept =
+      typeof rawDepartment === 'string' && rawDepartment.trim()
+        ? rawDepartment.toUpperCase().trim()
+        : undefined;
 
     // Self-demotion safety check
-    if (id === caller.userId && targetRoleLower !== 'admin') {
+    if (id === caller.userId && targetRoleLower && targetRoleLower !== 'admin') {
       return NextResponse.json(
         { error: 'Self-demotion prevented: You cannot revoke admin clearance from your own account.' },
         { status: 400 }
@@ -59,9 +64,14 @@ export async function PATCH(
         updatedDbUser = await prisma.user.update({
           where: { id: existingUser.id },
           data: {
-            role: targetRoleUpper,
-            // If elevated to admin or faculty, ensure onboarding completion
-            onboardingCompleted: targetRoleLower === 'student' ? existingUser.onboardingCompleted : true,
+            ...(targetRoleUpper ? { role: targetRoleUpper } : {}),
+            ...(cleanDept ? { department: cleanDept, branch: existingUser.branch || cleanDept } : {}),
+            ...(targetRoleLower
+              ? {
+                  onboardingCompleted:
+                    targetRoleLower === 'student' ? existingUser.onboardingCompleted : true,
+                }
+              : {}),
           },
         });
       }
@@ -83,9 +93,15 @@ export async function PATCH(
       await client.users.updateUserMetadata(clerkUserId, {
         publicMetadata: {
           ...existingMetadata,
-          role: targetRoleLower,
-          isSuperAdmin: targetRoleLower === 'admin',
-          onboardingCompleted: targetRoleLower === 'student' ? existingMetadata.onboardingCompleted : true,
+          ...(targetRoleLower
+            ? {
+                role: targetRoleLower,
+                isSuperAdmin: targetRoleLower === 'admin',
+                onboardingCompleted:
+                  targetRoleLower === 'student' ? existingMetadata.onboardingCompleted : true,
+              }
+            : {}),
+          ...(cleanDept ? { department: cleanDept } : {}),
           updatedAt: new Date().toISOString(),
           promotedBy: caller.email || caller.userId,
         },
@@ -94,19 +110,25 @@ export async function PATCH(
       console.warn('[Admin Role API] Clerk publicMetadata update warning:', clerkErr?.message || clerkErr);
     }
 
+    const effectiveRoleLabel = targetRoleUpper || updatedDbUser?.role || 'UNCHANGED';
     await recordAuditLog({
       actorId: caller.userId || 'admin',
       actor: caller.email || caller.fullName || 'Super Admin',
+      actorEmail: caller.email || undefined,
+      actorRole: 'ADMIN',
       action: 'ROLE_CHANGE',
       target: updatedDbUser?.email || clerkUserId,
-      details: `Updated role clearance to ${targetRoleUpper} across Neon DB & Clerk publicMetadata`,
+      targetType: 'USER',
+      targetLabel: updatedDbUser?.fullName || updatedDbUser?.email || clerkUserId,
+      details: `Updated user to role=${effectiveRoleLabel}${cleanDept ? `, department=${cleanDept}` : ''} across Neon DB & Clerk`,
     });
 
     return NextResponse.json({
       success: true,
       userId: id,
-      role: targetRoleUpper,
-      message: `User role successfully updated to ${targetRoleUpper} across Neon DB and Clerk.`,
+      role: effectiveRoleLabel,
+      department: cleanDept || updatedDbUser?.department || null,
+      message: `User governance updated (${effectiveRoleLabel}${cleanDept ? ` • ${cleanDept}` : ''}).`,
     });
   } catch (err: any) {
     console.error('[Admin Role API] Unexpected failure:', err);

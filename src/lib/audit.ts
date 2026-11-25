@@ -3,8 +3,12 @@ import { prisma } from '@/lib/prisma';
 export interface AuditLogInput {
   actorId: string;
   actor: string;
+  actorEmail?: string;
+  actorRole?: string;
   action: string;
   target: string;
+  targetType?: string;
+  targetLabel?: string;
   details: string;
 }
 
@@ -18,8 +22,12 @@ export async function recordAuditLog(input: AuditLogInput): Promise<void> {
       data: {
         actorId: input.actorId,
         actor: input.actor,
+        actorEmail: input.actorEmail || input.actor,
+        actorRole: input.actorRole || 'ADMIN',
         action: input.action,
         target: input.target,
+        targetType: input.targetType || 'SYSTEM',
+        targetLabel: input.targetLabel || input.target,
         details: input.details,
       },
     });

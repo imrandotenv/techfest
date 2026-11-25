@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest) {
     const { type, id, action } = body as {
       type: 'note' | 'forum';
       id: string;
-      action: 'verify' | 'unverify' | 'delete';
+      action: 'verify' | 'unverify' | 'delete' | 'pin' | 'unpin' | 'lock' | 'unlock';
     };
 
     if (!type || !id || !action) {
@@ -105,11 +105,55 @@ export async function PATCH(req: NextRequest) {
         await recordAuditLog({
           actorId: caller.userId || 'admin',
           actor: caller.email || caller.fullName || 'Super Admin',
+          actorEmail: caller.email || undefined,
+          actorRole: 'ADMIN',
           action: 'FORUM_MODERATED',
           target: post.title,
+          targetType: 'FORUM_POST',
+          targetLabel: post.title,
           details: 'Removed forum thread during moderation review',
         });
         return NextResponse.json({ success: true, message: 'Forum thread removed.' });
+      }
+
+      if (action === 'pin' || action === 'unpin') {
+        const isPinned = action === 'pin';
+        const updated = await prisma.forumPost.update({
+          where: { id },
+          data: { isPinned },
+        });
+        await recordAuditLog({
+          actorId: caller.userId || 'admin',
+          actor: caller.email || caller.fullName || 'Super Admin',
+          actorEmail: caller.email || undefined,
+          actorRole: 'ADMIN',
+          action: 'FORUM_MODERATED',
+          target: post.title,
+          targetType: 'FORUM_POST',
+          targetLabel: post.title,
+          details: `${isPinned ? 'Pinned' : 'Unpinned'} forum thread`,
+        });
+        return NextResponse.json({ success: true, post: updated });
+      }
+
+      if (action === 'lock' || action === 'unlock') {
+        const isLocked = action === 'lock';
+        const updated = await prisma.forumPost.update({
+          where: { id },
+          data: { isLocked },
+        });
+        await recordAuditLog({
+          actorId: caller.userId || 'admin',
+          actor: caller.email || caller.fullName || 'Super Admin',
+          actorEmail: caller.email || undefined,
+          actorRole: 'ADMIN',
+          action: 'FORUM_MODERATED',
+          target: post.title,
+          targetType: 'FORUM_POST',
+          targetLabel: post.title,
+          details: `${isLocked ? 'Locked' : 'Unlocked'} forum thread`,
+        });
+        return NextResponse.json({ success: true, post: updated });
       }
     }
 

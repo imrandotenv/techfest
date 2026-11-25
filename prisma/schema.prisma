@@ -14,6 +14,7 @@ model User {
   email               String   @unique
   fullName            String?
   role                String   @default("STUDENT") // "STUDENT" | "FACULTY" | "ADMIN"
+  department          String?  // SETGOI department: "CSE" | "CSE-AIML" | "CSE-DS" | "ECE" | "EE" | "EEE" | "ME" | "CE"
   degree              String   @default("B.Tech")  // strictly B.Tech
   branch              String?  // "CSE" | "ECE" | "EE" | "ME" | "CE" | "IT" | "AIML"
   semester            Int?     // 1 to 8
@@ -76,6 +77,8 @@ model ForumPost {
   semester   Int?         // optional semester e.g. 3
   upvotes    Int          @default(0)
   isResolved Boolean      @default(false)
+  isPinned   Boolean      @default(false)
+  isLocked   Boolean      @default(false)
   
   authorId   String
   author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -249,15 +252,33 @@ model RateLimit {
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  actorId   String
-  actor     String
-  action    String   // e.g. "ROLE_CHANGE", "NOTICE_PUBLISHED", "NOTE_VERIFIED", "FORUM_MODERATED", "DIRECTORY_UPDATED"
-  target    String
-  details   String   @db.Text
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  actorId     String
+  actor       String
+  actorEmail  String?
+  actorRole   String?
+  action      String   // e.g. "ROLE_CHANGE", "NOTICE_PUBLISHED", "NOTE_VERIFIED", "FORUM_MODERATED", "DIRECTORY_UPDATED"
+  target      String
+  targetType  String?
+  targetLabel String?
+  details     String   @db.Text
+  createdAt   DateTime @default(now())
 
   @@index([action])
+  @@index([createdAt])
+}
+
+model CampusEvent {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   @default("TECHFEST") // "TECHFEST" | "WORKSHOP" | "SEMINAR" | "CULTURAL"
+  dateLabel   String
+  venue       String
+  description String   @db.Text
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([isFeatured])
   @@index([createdAt])
 }
 

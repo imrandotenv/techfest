@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
           'SETGOI Member',
         email: du.email,
         role: effectiveRole,
-        department: du.branch ? `B.Tech ${du.branch} (Sem ${du.semester || 1})` : 'B.Tech Core',
+        department: du.department || du.branch || 'CSE',
         branch: du.branch,
         semester: du.semester,
         studentId: du.universityRoll || '',

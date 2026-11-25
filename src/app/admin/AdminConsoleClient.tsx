@@ -2,38 +2,30 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Activity,
   Users,
-  Bell,
+  BookOpen,
+  Calendar,
   ShieldCheck,
-  Building2,
-  FileText,
   Search,
+  RefreshCw,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw,
   Pin,
   PinOff,
-  Trash2,
-  Edit3,
-  Plus,
-  Calendar,
-  Save,
-  Check,
-  BookOpen,
-  MessageSquare,
-  Database,
   Lock,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  PlayCircle,
+  Unlock,
+  Trash2,
+  Plus,
+  Send,
+  Sparkles,
+  Save,
+  Star,
 } from 'lucide-react';
 import { UserRole } from '@/lib/rbac';
-import { CourseLectureManager } from '@/components/CourseLectureManager';
+import { SYLLABUS_BRANCHES } from '@/lib/makaut-syllabus';
 import { AdminSyllabusManager } from '@/components/AdminSyllabusManager';
 
-type AdminTab = 'overview' | 'users' | 'notices' | 'moderation' | 'lectures' | 'syllabus' | 'directory' | 'audit';
+type AdminTab = 'users' | 'syllabus' | 'schedule' | 'governance';
 
 interface ManagedUser {
   id: string;
@@ -42,44 +34,31 @@ interface ManagedUser {
   email: string;
   role: UserRole;
   department: string;
+  branch?: string | null;
+  semester?: number | null;
   studentId?: string;
-  createdAt?: string;
-  onboardingCompleted?: boolean;
 }
 
-interface OverviewData {
-  kpis: {
-    totalStudents: number;
-    activeFaculty: number;
-    totalAdmins: number;
-    totalNotes: number;
-    verifiedNotes: number;
-    pendingNotes: number;
-    totalForumPosts: number;
-    totalNotices: number;
-  };
-  recentAuditLogs: AuditEntry[];
-  recentUsers: Array<{
-    id: string;
-    fullName: string | null;
-    email: string;
-    role: string;
-    branch: string | null;
-    createdAt: string;
-  }>;
-  health: {
-    neonDb: string;
-    clerkAuth: string;
-    checkedAt: string;
-  };
+interface OverviewKPIs {
+  totalStudents: number;
+  activeFaculty: number;
+  totalAdmins: number;
+  totalNotes: number;
+  verifiedNotes: number;
+  totalForumPosts: number;
+  totalNotices: number;
 }
 
 interface AuditEntry {
   id: string;
   actorId: string;
   actor: string;
+  actorEmail?: string | null;
+  actorRole?: string | null;
   action: string;
   target: string;
+  targetType?: string | null;
+  targetLabel?: string | null;
   details: string;
   createdAt: string;
 }
@@ -90,1378 +69,973 @@ interface NoticeItem {
   content: string;
   category: string;
   targetBranch: string;
+  examDate?: string | null;
   isPinned: boolean;
   createdAt: string;
-  author?: { fullName?: string | null; role?: string | null };
 }
 
-interface ModerationNote {
+interface CampusEventItem {
   id: string;
   title: string;
-  subjectCode: string;
-  branch: string;
-  semester: number;
-  verified: boolean;
-  fileUrl: string;
+  category: string;
+  dateLabel: string;
+  venue: string;
+  description: string;
+  isFeatured: boolean;
   createdAt: string;
-  uploader?: { fullName?: string | null; email?: string | null };
 }
 
 interface ModerationForumPost {
   id: string;
   title: string;
-  content: string;
   category: string | null;
   branch: string | null;
-  semester: number | null;
-  upvotes: number;
+  isPinned: boolean;
+  isLocked: boolean;
+  isResolved: boolean;
   createdAt: string;
-  author?: { fullName?: string | null; email?: string | null };
+  author?: { fullName?: string | null; email?: string | null; role?: string | null };
   _count?: { replies: number };
 }
 
-interface CampusFacilityItem {
-  id: string;
-  category: string;
-  name: string;
-  building: string | null;
-  description: string;
-  inCharge: string | null;
-  contactPhone: string | null;
-  contactEmail: string | null;
-}
-
 export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string }) {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
-  const [statusMessage, setStatusMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [activeTab, setActiveTab] = useState<AdminTab>('users');
+  const [toast, setToast] = useState<{ text: string; isError?: boolean } | null>(null);
 
   const showToast = useCallback((text: string, isError = false) => {
-    setStatusMessage({ text, isError });
-    setTimeout(() => setStatusMessage(null), 4500);
+    setToast({ text, isError });
+    setTimeout(() => setToast(null), 4000);
   }, []);
 
-  // 1. Overview state
-  const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [loadingOverview, setLoadingOverview] = useState(false);
+  // KPIs
+  const [kpis, setKpis] = useState<OverviewKPIs>({
+    totalStudents: 0,
+    activeFaculty: 0,
+    totalAdmins: 0,
+    totalNotes: 0,
+    verifiedNotes: 0,
+    totalForumPosts: 0,
+    totalNotices: 0,
+  });
 
-  // 2. Users state (real Neon DB + Clerk, zero mocks)
+  // Tab 1: Users & Department Roles
   const [users, setUsers] = useState<ManagedUser[]>([]);
-  const [userCounts, setUserCounts] = useState({ total: 0, admin: 0, faculty: 0, student: 0 });
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [userSearch, setUserSearch] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState<'ALL' | 'ADMIN' | 'FACULTY' | 'STUDENT'>('ALL');
-  const [userPage, setUserPage] = useState(1);
-  const [userTotalPages, setUserTotalPages] = useState(1);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<'ALL' | 'STUDENT' | 'FACULTY' | 'ADMIN'>('ALL');
+  const [userEdits, setUserEdits] = useState<Record<string, { role: UserRole; department: string }>>({});
+  const [savingUserId, setSavingUserId] = useState<string | null>(null);
 
-  // 3. Notices state
+  // Tab 3: Notices, Exam Countdown & Campus Events
   const [notices, setNotices] = useState<NoticeItem[]>([]);
-  const [loadingNotices, setLoadingNotices] = useState(false);
-  const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
   const [noticeTitle, setNoticeTitle] = useState('');
   const [noticeContent, setNoticeContent] = useState('');
-  const [noticeCategory, setNoticeCategory] = useState<'EXAM' | 'ACADEMIC' | 'URGENT' | 'EVENT'>('ACADEMIC');
+  const [noticeCategory, setNoticeCategory] = useState<'EXAM' | 'ACADEMIC' | 'URGENT'>('EXAM');
   const [noticeBranch, setNoticeBranch] = useState('ALL');
-  const [noticePinned, setNoticePinned] = useState(false);
-  const [savingNotice, setSavingNotice] = useState(false);
+  const [noticeExamDate, setNoticeExamDate] = useState('');
+  const [noticePinned, setNoticePinned] = useState(true);
+  const [publishingNotice, setPublishingNotice] = useState(false);
 
-  // 4. Moderation state
-  const [modNotes, setModNotes] = useState<ModerationNote[]>([]);
-  const [modForumPosts, setModForumPosts] = useState<ModerationForumPost[]>([]);
-  const [loadingMod, setLoadingMod] = useState(false);
+  const [events, setEvents] = useState<CampusEventItem[]>([]);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventCategory, setEventCategory] = useState<'TECHFEST' | 'WORKSHOP' | 'SEMINAR' | 'CULTURAL'>('TECHFEST');
+  const [eventDateLabel, setEventDateLabel] = useState('');
+  const [eventVenue, setEventVenue] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [eventFeatured, setEventFeatured] = useState(true);
+  const [publishingEvent, setPublishingEvent] = useState(false);
 
-  // 5. Directory state
-  const [facilities, setFacilities] = useState<CampusFacilityItem[]>([]);
-  const [loadingDir, setLoadingDir] = useState(false);
-  const [examDate, setExamDate] = useState('2026-12-04T10:00');
-  const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
-  const [facCategory, setFacCategory] = useState('department');
-  const [facName, setFacName] = useState('');
-  const [facBuilding, setFacBuilding] = useState('');
-  const [facInCharge, setFacInCharge] = useState('');
-  const [facPhone, setFacPhone] = useState('');
-  const [facEmail, setFacEmail] = useState('');
-  const [facDesc, setFacDesc] = useState('');
-  const [savingFac, setSavingFac] = useState(false);
-
-  // 6. Audit Logs state
+  // Tab 4: Forum Moderation & Audit Logs
+  const [forumPosts, setForumPosts] = useState<ModerationForumPost[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
   const [auditSearch, setAuditSearch] = useState('');
-  const [auditActionFilter, setAuditActionFilter] = useState('ALL');
-  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [loadingGov, setLoadingGov] = useState(false);
 
-  // Sync hash navigation (#users, #audit, etc.)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const hash = window.location.hash.replace('#', '') as AdminTab;
-    if (['overview', 'users', 'notices', 'moderation', 'directory', 'audit'].includes(hash)) {
-      setActiveTab(hash);
-    }
-    const savedExam = localStorage.getItem('settech_exam_target_date');
-    if (savedExam) setExamDate(savedExam);
-  }, []);
-
-  const fetchOverview = useCallback(async () => {
-    setLoadingOverview(true);
+  const loadOverview = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/overview');
-      if (res.ok) {
-        const data = await res.json();
-        setOverview(data);
+      const data = await res.json();
+      if (data.success && data.kpis) {
+        setKpis(data.kpis);
       }
-    } catch (e) {
-      console.error('Overview load error:', e);
-    } finally {
-      setLoadingOverview(false);
-    }
+    } catch {}
   }, []);
 
-  const fetchUsers = useCallback(async () => {
+  const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
-      const params = new URLSearchParams({
-        q: userSearch,
-        role: userRoleFilter,
-        page: String(userPage),
-        limit: '15',
-      });
+      const params = new URLSearchParams();
+      if (userSearch.trim()) params.set('q', userSearch.trim());
+      if (roleFilter !== 'ALL') params.set('role', roleFilter);
+      params.set('limit', '50');
       const res = await fetch(`/api/admin/users?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data.users || []);
-        setUserTotalPages(data.totalPages || 1);
-        if (data.counts) setUserCounts(data.counts);
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Failed to load users', true);
+      const data = await res.json();
+      if (data.success) {
+        const list: ManagedUser[] = data.users || [];
+        setUsers(list);
+        const initialEdits: Record<string, { role: UserRole; department: string }> = {};
+        for (const u of list) {
+          const deptMatch = SYLLABUS_BRANCHES.find((b) =>
+            String(u.department || u.branch || '').toUpperCase().includes(b.code)
+          );
+          initialEdits[u.id] = {
+            role: u.role,
+            department: deptMatch?.code || u.branch || 'CSE',
+          };
+        }
+        setUserEdits(initialEdits);
       }
-    } catch (e: any) {
-      showToast(e?.message || 'Network error loading users', true);
+    } catch {
+      showToast('Failed to load user directory.', true);
     } finally {
       setLoadingUsers(false);
     }
-  }, [userSearch, userRoleFilter, userPage, showToast]);
+  }, [userSearch, roleFilter, showToast]);
 
-  const fetchNotices = useCallback(async () => {
-    setLoadingNotices(true);
+  const loadScheduleAndEvents = useCallback(async () => {
     try {
-      const res = await fetch('/api/notices');
-      if (res.ok) {
-        const data = await res.json();
-        setNotices(data.notices || []);
-      }
-    } finally {
-      setLoadingNotices(false);
+      const [noticesRes, eventsRes] = await Promise.all([
+        fetch('/api/notices'),
+        fetch('/api/events'),
+      ]);
+      const [noticesJson, eventsJson] = await Promise.all([
+        noticesRes.json(),
+        eventsRes.json(),
+      ]);
+      if (noticesJson.success) setNotices(noticesJson.notices || []);
+      if (eventsJson.success) setEvents(eventsJson.events || []);
+    } catch {
+      showToast('Failed to load notices and events.', true);
     }
-  }, []);
+  }, [showToast]);
 
-  const fetchModeration = useCallback(async () => {
-    setLoadingMod(true);
+  const loadGovernance = useCallback(async () => {
+    setLoadingGov(true);
     try {
-      const res = await fetch('/api/admin/moderation');
-      if (res.ok) {
-        const data = await res.json();
-        setModNotes(data.notes || []);
-        setModForumPosts(data.forumPosts || []);
-      }
+      const [modRes, auditRes] = await Promise.all([
+        fetch('/api/admin/moderation'),
+        fetch(`/api/admin/audit?q=${encodeURIComponent(auditSearch.trim())}`),
+      ]);
+      const [modJson, auditJson] = await Promise.all([modRes.json(), auditRes.json()]);
+      if (modJson.success) setForumPosts(modJson.forumPosts || []);
+      if (auditJson.success) setAuditLogs(auditJson.logs || []);
+    } catch {
+      showToast('Failed to load forum moderation & audit logs.', true);
     } finally {
-      setLoadingMod(false);
+      setLoadingGov(false);
     }
-  }, []);
-
-  const fetchDirectory = useCallback(async () => {
-    setLoadingDir(true);
-    try {
-      const res = await fetch('/api/admin/directory');
-      if (res.ok) {
-        const data = await res.json();
-        setFacilities(data.facilities || []);
-      }
-    } finally {
-      setLoadingDir(false);
-    }
-  }, []);
-
-  const fetchAuditLogs = useCallback(async () => {
-    setLoadingAudit(true);
-    try {
-      const params = new URLSearchParams({
-        q: auditSearch,
-        action: auditActionFilter,
-      });
-      const res = await fetch(`/api/admin/audit?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setAuditLogs(data.logs || []);
-      }
-    } finally {
-      setLoadingAudit(false);
-    }
-  }, [auditSearch, auditActionFilter]);
+  }, [auditSearch, showToast]);
 
   useEffect(() => {
-    if (activeTab === 'overview') fetchOverview();
-    if (activeTab === 'users') fetchUsers();
-    if (activeTab === 'notices') fetchNotices();
-    if (activeTab === 'moderation') fetchModeration();
-    if (activeTab === 'directory') fetchDirectory();
-    if (activeTab === 'audit') fetchAuditLogs();
-  }, [activeTab, fetchOverview, fetchUsers, fetchNotices, fetchModeration, fetchDirectory, fetchAuditLogs]);
+    loadOverview();
+    loadUsers();
+  }, [loadOverview, loadUsers]);
 
-  // Role Change Handler
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+  useEffect(() => {
+    if (activeTab === 'schedule') loadScheduleAndEvents();
+    if (activeTab === 'governance') loadGovernance();
+  }, [activeTab, loadScheduleAndEvents, loadGovernance]);
+
+  const handleSaveUserGovernance = async (userId: string) => {
+    const edit = userEdits[userId];
+    if (!edit) return;
+    setSavingUserId(userId);
     try {
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: edit.role, department: edit.department }),
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || 'Failed to update role', true);
-        fetchUsers();
-      } else {
-        showToast(`Role updated to ${newRole.toUpperCase()} across Neon DB & Clerk.`);
-        fetchUsers();
+        showToast(data.error || 'Failed to update user role.', true);
+        return;
       }
-    } catch (err: any) {
-      showToast(err?.message || 'Network error updating role', true);
-      fetchUsers();
+      showToast(data.message || 'User role & department updated.');
+      loadUsers();
+      loadOverview();
+    } catch {
+      showToast('Network error updating user governance.', true);
+    } finally {
+      setSavingUserId(null);
     }
   };
 
-  // Notice Save Handler
-  const handleSaveNotice = async (e: React.FormEvent) => {
+  const handlePublishNotice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!noticeTitle.trim() || !noticeContent.trim()) return;
-    setSavingNotice(true);
+    if (!noticeTitle.trim() || !noticeContent.trim()) {
+      showToast('Notice title and content are required.', true);
+      return;
+    }
+    setPublishingNotice(true);
     try {
-      const url = editingNoticeId ? `/api/notices/${editingNoticeId}` : '/api/notices';
-      const method = editingNoticeId ? 'PATCH' : 'POST';
-      const res = await fetch(url, {
-        method,
+      const res = await fetch('/api/notices', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: noticeTitle,
-          content: noticeContent,
+          title: noticeTitle.trim(),
+          content: noticeContent.trim(),
           category: noticeCategory,
           targetBranch: noticeBranch,
+          examDate: noticeExamDate || null,
           isPinned: noticePinned,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || 'Failed to save notice', true);
-      } else {
-        showToast(editingNoticeId ? 'Notice updated successfully.' : 'Official notice published.');
-        setEditingNoticeId(null);
-        setNoticeTitle('');
-        setNoticeContent('');
-        setNoticeCategory('ACADEMIC');
-        setNoticeBranch('ALL');
-        setNoticePinned(false);
-        fetchNotices();
+        showToast(data.error || 'Failed to publish notice.', true);
+        return;
       }
+      showToast('Notice & exam schedule published.');
+      setNoticeTitle('');
+      setNoticeContent('');
+      setNoticeExamDate('');
+      loadScheduleAndEvents();
+      loadOverview();
+    } catch {
+      showToast('Network error publishing notice.', true);
     } finally {
-      setSavingNotice(false);
+      setPublishingNotice(false);
     }
   };
 
-  const handleTogglePinNotice = async (notice: NoticeItem) => {
-    try {
-      const res = await fetch(`/api/notices/${notice.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isPinned: !notice.isPinned }),
-      });
-      if (res.ok) {
-        showToast(notice.isPinned ? 'Notice unpinned.' : 'Notice pinned to top.');
-        fetchNotices();
-      }
-    } catch {}
+  const handleToggleNoticePin = async (notice: NoticeItem) => {
+    const res = await fetch(`/api/notices/${notice.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPinned: !notice.isPinned }),
+    });
+    if (res.ok) {
+      showToast(notice.isPinned ? 'Notice unpinned.' : 'Notice pinned.');
+      loadScheduleAndEvents();
+    }
   };
 
   const handleDeleteNotice = async (id: string) => {
-    try {
-      const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        showToast('Notice deleted.');
-        fetchNotices();
-      }
-    } catch {}
+    const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Notice deleted.');
+      loadScheduleAndEvents();
+      loadOverview();
+    }
   };
 
-  // Moderation Handler
-  const handleModerate = async (
-    type: 'note' | 'forum',
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventTitle.trim() || !eventDateLabel.trim() || !eventVenue.trim() || !eventDescription.trim()) {
+      showToast('Fill in event title, date, venue, and description.', true);
+      return;
+    }
+    setPublishingEvent(true);
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: eventTitle.trim(),
+          category: eventCategory,
+          dateLabel: eventDateLabel.trim(),
+          venue: eventVenue.trim(),
+          description: eventDescription.trim(),
+          isFeatured: eventFeatured,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to publish event.', true);
+        return;
+      }
+      showToast('Campus event published to /tools.');
+      setEventTitle('');
+      setEventDateLabel('');
+      setEventVenue('');
+      setEventDescription('');
+      loadScheduleAndEvents();
+    } catch {
+      showToast('Network error publishing event.', true);
+    } finally {
+      setPublishingEvent(false);
+    }
+  };
+
+  const handleToggleEventFeature = async (ev: CampusEventItem) => {
+    const res = await fetch('/api/events', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: ev.id, isFeatured: !ev.isFeatured }),
+    });
+    if (res.ok) {
+      showToast(ev.isFeatured ? 'Removed featured flag.' : 'Event featured.');
+      loadScheduleAndEvents();
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    const res = await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Event deleted.');
+      loadScheduleAndEvents();
+    }
+  };
+
+  const handleForumModerate = async (
     id: string,
-    action: 'verify' | 'unverify' | 'delete'
+    action: 'pin' | 'unpin' | 'lock' | 'unlock' | 'delete'
   ) => {
     try {
       const res = await fetch('/api/admin/moderation', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, id, action }),
+        body: JSON.stringify({ type: 'forum', id, action }),
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || 'Moderation failed', true);
-      } else {
-        showToast(`Moderation action (${action}) completed and logged.`);
-        fetchModeration();
+        showToast(data.error || 'Moderation failed.', true);
+        return;
       }
-    } catch (e: any) {
-      showToast(e?.message || 'Network error', true);
+      showToast(`Forum thread ${action}ed.`);
+      loadGovernance();
+    } catch {
+      showToast('Network error moderating thread.', true);
     }
   };
-
-  // Directory Save Handler
-  const handleSaveFacility = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!facName.trim() || !facDesc.trim()) return;
-    setSavingFac(true);
-    try {
-      const res = await fetch('/api/admin/directory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingFacilityId,
-          category: facCategory,
-          name: facName,
-          building: facBuilding,
-          inCharge: facInCharge,
-          contactPhone: facPhone,
-          contactEmail: facEmail,
-          description: facDesc,
-        }),
-      });
-      if (res.ok) {
-        showToast(editingFacilityId ? 'Directory entry updated.' : 'Directory entry added.');
-        setEditingFacilityId(null);
-        setFacName('');
-        setFacBuilding('');
-        setFacInCharge('');
-        setFacPhone('');
-        setFacEmail('');
-        setFacDesc('');
-        fetchDirectory();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Failed to save directory entry', true);
-      }
-    } finally {
-      setSavingFac(false);
-    }
-  };
-
-  const handleDeleteFacility = async (id: string) => {
-    try {
-      const res = await fetch(`/api/admin/directory?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        showToast('Directory entry removed.');
-        fetchDirectory();
-      }
-    } catch {}
-  };
-
-  const handleSaveExamDate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('settech_exam_target_date', examDate);
-    }
-    showToast('MAKAUT Exam target date updated.');
-  };
-
-  const tabs: Array<{ id: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-    { id: 'overview', label: 'Overview & Pulse', icon: Activity },
-    { id: 'users', label: 'User & Role Manager', icon: Users },
-    { id: 'notices', label: 'Notices & Circulars', icon: Bell },
-    { id: 'moderation', label: 'Moderation Queue', icon: BookOpen },
-    { id: 'lectures', label: 'Course Lectures (NPTEL)', icon: PlayCircle },
-    { id: 'syllabus', label: 'Syllabus & Subjects', icon: FileText },
-    { id: 'directory', label: 'Campus & HOD Directory', icon: Building2 },
-    { id: 'audit', label: 'System Audit Logs', icon: ShieldCheck },
-  ];
 
   return (
-    <div className="w-full space-y-6">
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#E4E4E7]">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold font-sans whitespace-nowrap transition-all inline-flex items-center gap-2 cursor-pointer ${
-                isActive
-                  ? 'bg-[#09090B] text-white shadow-2xs'
-                  : 'bg-white text-zinc-600 border border-[#E4E4E7] hover:bg-zinc-50 hover:text-[#09090B]'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Global Toast */}
-      {statusMessage && (
+    <div className="space-y-6">
+      {toast && (
         <div
-          className={`p-3.5 rounded-xl border text-xs font-sans flex items-center justify-between ${
-            statusMessage.isError
-              ? 'bg-rose-50 border-rose-200 text-rose-900'
+          className={`fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 px-4 py-3 rounded-xl border shadow-lg text-xs font-medium flex items-center gap-2 ${
+            toast.isError
+              ? 'bg-red-50 border-red-200 text-red-800'
               : 'bg-emerald-50 border-emerald-200 text-emerald-900'
           }`}
         >
-          <div className="flex items-center gap-2">
-            {statusMessage.isError ? (
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            )}
-            <span>{statusMessage.text}</span>
-          </div>
-          <button onClick={() => setStatusMessage(null)} className="text-[11px] font-mono underline cursor-pointer">
-            Dismiss
-          </button>
+          {toast.isError ? (
+            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
+          <span>{toast.text}</span>
         </div>
       )}
 
-      {/* =========================================================================
-          TAB 1: OVERVIEW & SYSTEM PULSE
-          ========================================================================= */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Total Students</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#09090B]">
-                {overview ? overview.kpis.totalStudents : '—'}
-              </div>
-              <div className="text-[11px] text-blue-600 font-mono">Registered in Neon DB</div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Active Faculty</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#09090B]">
-                {overview ? overview.kpis.activeFaculty : '—'}
-              </div>
-              <div className="text-[11px] text-emerald-700 font-mono">
-                +{overview ? overview.kpis.totalAdmins : 0} Super Admins
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Verified Notes &amp; PYQs</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#09090B]">
-                {overview ? overview.kpis.verifiedNotes : '—'}
-              </div>
-              <div className="text-[11px] text-amber-700 font-mono">
-                {overview ? overview.kpis.pendingNotes : 0} pending review
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Forum Threads</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#09090B]">
-                {overview ? overview.kpis.totalForumPosts : '—'}
-              </div>
-              <div className="text-[11px] text-purple-700 font-mono">
-                {overview ? overview.kpis.totalNotices : 0} active notices
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Recent Activity Feed */}
-            <div className="lg:col-span-8 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-                <div>
-                  <h2 className="text-sm font-bold text-[#09090B]">Recent Administrative Activity</h2>
-                  <p className="text-xs text-zinc-500">Live events persisted in Neon PostgreSQL</p>
-                </div>
-                <button
-                  onClick={fetchOverview}
-                  className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50 cursor-pointer"
-                  title="Refresh"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loadingOverview ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-
-              {!overview || overview.recentAuditLogs.length === 0 ? (
-                <div className="p-6 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                  No audit events recorded yet. Role changes, notices, and moderation actions will appear here.
-                </div>
-              ) : (
-                <div className="divide-y divide-zinc-100">
-                  {overview.recentAuditLogs.map((log) => (
-                    <div key={log.id} className="py-3 first:pt-0 last:pb-0 flex items-start justify-between gap-3 text-xs">
-                      <div className="space-y-0.5 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 font-mono text-[10px] font-bold">
-                            {log.action}
-                          </span>
-                          <span className="font-semibold text-[#09090B] truncate">{log.target}</span>
-                        </div>
-                        <p className="text-zinc-500 text-[11px] truncate">{log.details} • by {log.actor}</p>
-                      </div>
-                      <span className="text-[10px] font-mono text-zinc-400 shrink-0 tabular-nums">
-                        {new Date(log.createdAt).toLocaleString('en-IN', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Infrastructure Sync Health */}
-            <div className="lg:col-span-4 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="pb-3 border-b border-zinc-100">
-                <h2 className="text-sm font-bold text-[#09090B]">Clerk &amp; Neon Sync Health</h2>
-                <p className="text-xs text-zinc-500">Zero-Trust RBAC Infrastructure</p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Database className="w-4 h-4 text-emerald-700" />
-                    <div>
-                      <div className="text-xs font-bold text-emerald-950">Neon PostgreSQL</div>
-                      <div className="text-[10px] font-mono text-emerald-700">Prisma ORM Pooled</div>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold uppercase">
-                    {overview?.health.neonDb || 'connected'}
-                  </span>
-                </div>
-
-                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Lock className="w-4 h-4 text-blue-700" />
-                    <div>
-                      <div className="text-xs font-bold text-blue-950">Clerk Auth &amp; RBAC</div>
-                      <div className="text-[10px] font-mono text-blue-700">Auto-Heal + Metadata Sync</div>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-mono text-[10px] font-bold uppercase">
-                    {overview?.health.clerkAuth || 'connected'}
-                  </span>
-                </div>
-              </div>
-
-              {overview && overview.recentUsers.length > 0 && (
-                <div className="pt-2 space-y-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                    Newest Registered Accounts
-                  </div>
-                  {overview.recentUsers.map((ru) => (
-                    <div key={ru.id} className="flex items-center justify-between text-xs py-1 border-b border-zinc-50 last:border-0">
-                      <span className="truncate font-medium text-zinc-800 max-w-[160px]">{ru.fullName || ru.email}</span>
-                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600">
-                        {ru.role}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Swiss KPI Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Students / Faculty
+          </p>
+          <p className="text-2xl font-bold text-[#09090B] mt-1 font-mono">
+            {kpis.totalStudents} / {kpis.activeFaculty}
+          </p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">{kpis.totalAdmins} Admin(s)</p>
         </div>
-      )}
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Notes Vault
+          </p>
+          <p className="text-2xl font-bold text-emerald-700 mt-1 font-mono">
+            {kpis.verifiedNotes}/{kpis.totalNotes}
+          </p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Faculty verified</p>
+        </div>
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Forum Threads
+          </p>
+          <p className="text-2xl font-bold text-blue-600 mt-1 font-mono">
+            {kpis.totalForumPosts}
+          </p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Active discussions</p>
+        </div>
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Official Notices
+          </p>
+          <p className="text-2xl font-bold text-[#09090B] mt-1 font-mono">
+            {kpis.totalNotices}
+          </p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Campus announcements</p>
+        </div>
+      </div>
 
-      {/* =========================================================================
-          TAB 2: USER & ROLE MANAGER (REAL NEON DB + CLERK)
-          ========================================================================= */}
+      {/* 4-Tab Segmented Navigation */}
+      <div className="bg-white border border-[#E4E4E7] rounded-2xl p-1.5 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <button
+          type="button"
+          onClick={() => setActiveTab('users')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'users'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Users & Dept Roles</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('syllabus')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'syllabus'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">8-Branch Syllabus</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('schedule')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'schedule'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <Calendar className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Exams, Notices & Events</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('governance')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'governance'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Forum & Audit Logs</span>
+        </button>
+      </div>
+
+      {/* TAB 1: Users & Department Roles */}
       {activeTab === 'users' && (
-        <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#E4E4E7]">
+        <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-[#09090B]">Registered Users &amp; RBAC Clearance</h2>
+              <h2 className="text-base font-bold text-[#09090B]">
+                Users & SETGOI Department Role Management
+              </h2>
               <p className="text-xs text-zinc-500">
-                Live directory from Neon PostgreSQL &amp; Clerk ({userCounts.total} total accounts). Role updates sync both databases immediately.
+                Assign STUDENT, FACULTY, or ADMIN clearance and SETGOI department across Neon DB &amp; Clerk.
               </p>
             </div>
-
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={userSearch}
-                  onChange={(e) => {
-                    setUserSearch(e.target.value);
-                    setUserPage(1);
-                  }}
-                  placeholder="Search name, email, roll..."
-                  className="pl-8 pr-3 py-1.5 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs text-[#09090B] focus:outline-hidden focus:border-[#2563EB] w-56"
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Search name or email..."
+                  className="pl-8 pr-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900 w-52"
                 />
               </div>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value as any)}
+                className="px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-800"
+              >
+                <option value="ALL">All Roles</option>
+                <option value="STUDENT">Student</option>
+                <option value="FACULTY">Faculty</option>
+                <option value="ADMIN">Admin</option>
+              </select>
               <button
-                onClick={fetchUsers}
-                className="p-2 rounded-xl border border-[#E4E4E7] text-zinc-600 hover:bg-zinc-50 cursor-pointer"
-                title="Refresh"
+                type="button"
+                onClick={loadUsers}
+                className="p-1.5 rounded-lg border border-[#E4E4E7] text-zinc-600 hover:bg-zinc-100 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingUsers ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Role Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(['ALL', 'ADMIN', 'FACULTY', 'STUDENT'] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => {
-                  setUserRoleFilter(r);
-                  setUserPage(1);
-                }}
-                className={`px-3 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                  userRoleFilter === r
-                    ? 'bg-zinc-900 text-white border-zinc-900'
-                    : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
-                }`}
-              >
-                {r} (
-                {r === 'ALL'
-                  ? userCounts.total
-                  : r === 'ADMIN'
-                  ? userCounts.admin
-                  : r === 'FACULTY'
-                  ? userCounts.faculty
-                  : userCounts.student}
-                )
-              </button>
-            ))}
-          </div>
-
-          {/* User Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto border border-[#E4E4E7] rounded-xl">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[#E4E4E7] text-[11px] font-mono text-zinc-500 uppercase">
-                  <th className="py-2.5 px-3">Member</th>
-                  <th className="py-2.5 px-3">Email</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Role</th>
-                  <th className="py-2.5 px-3 text-right">Assign Clearance</th>
+                <tr className="bg-[#FAFAFA] border-b border-[#E4E4E7] text-[11px] font-mono uppercase text-zinc-500">
+                  <th className="py-2.5 px-4">Member</th>
+                  <th className="py-2.5 px-4">Role Clearance</th>
+                  <th className="py-2.5 px-4">SETGOI Department</th>
+                  <th className="py-2.5 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E4E4E7]">
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-zinc-500">
-                      {loadingUsers ? 'Loading registered accounts...' : 'No matching accounts found.'}
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((u) => {
-                    const isCurrentAdmin = u.id === currentAdminId || u.clerkId === currentAdminId;
-                    return (
-                      <tr key={u.id} className="hover:bg-zinc-50/70 transition-colors">
-                        <td className="py-3 px-3">
-                          <div className="font-semibold text-[#09090B] font-sans">{u.fullName}</div>
-                          <div className="text-[10px] font-mono text-zinc-500">{u.department}</div>
-                        </td>
-                        <td className="py-3 px-3 font-mono text-zinc-600">{u.email}</td>
-                        <td className="py-3 px-3">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono ${
-                              u.onboardingCompleted
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}
-                          >
-                            {u.onboardingCompleted ? 'Active' : 'Onboarding'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
-                              u.role === 'admin'
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                : u.role === 'faculty'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                : 'bg-zinc-100 text-[#09090B] border-zinc-200'
-                            }`}
-                          >
-                            {u.role.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <select
-                            value={u.role.toLowerCase()}
-                            onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                            disabled={isCurrentAdmin}
-                            className="px-2.5 py-1 rounded-lg bg-white border border-[#E4E4E7] text-xs font-mono font-medium text-[#09090B] focus:outline-hidden focus:border-[#2563EB] cursor-pointer disabled:bg-zinc-100 disabled:cursor-not-allowed"
-                          >
-                            <option value="student">STUDENT</option>
-                            <option value="faculty">FACULTY</option>
-                            <option value="admin">ADMIN</option>
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {userTotalPages > 1 && (
-            <div className="flex items-center justify-between pt-3 border-t border-zinc-100 text-xs font-mono text-zinc-500">
-              <span>
-                Page {userPage} of {userTotalPages}
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  disabled={userPage <= 1}
-                  onClick={() => setUserPage((p) => Math.max(1, p - 1))}
-                  className="p-1.5 rounded-lg border border-zinc-200 disabled:opacity-40 cursor-pointer"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  disabled={userPage >= userTotalPages}
-                  onClick={() => setUserPage((p) => Math.min(userTotalPages, p + 1))}
-                  className="p-1.5 rounded-lg border border-zinc-200 disabled:opacity-40 cursor-pointer"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 3: NOTICES & ANNOUNCEMENTS MANAGER
-          ========================================================================= */}
-      {activeTab === 'notices' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Publish / Edit Form */}
-          <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 h-fit">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <h2 className="text-sm font-bold text-[#09090B]">
-                {editingNoticeId ? 'Edit Official Notice' : 'Publish Official SETGOI Notice'}
-              </h2>
-              {editingNoticeId && (
-                <button
-                  onClick={() => {
-                    setEditingNoticeId(null);
-                    setNoticeTitle('');
-                    setNoticeContent('');
-                  }}
-                  className="text-xs text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-1"
-                >
-                  <X className="w-3.5 h-3.5" /> Cancel
-                </button>
-              )}
-            </div>
-
-            <form onSubmit={handleSaveNotice} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Notice Title</label>
-                <input
-                  type="text"
-                  value={noticeTitle}
-                  onChange={(e) => setNoticeTitle(e.target.value)}
-                  placeholder="e.g. MAKAUT Odd Sem Form Fill-up Deadline"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs text-[#09090B] focus:outline-hidden focus:border-[#2563EB]"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Category</label>
-                  <select
-                    value={noticeCategory}
-                    onChange={(e) => setNoticeCategory(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono text-[#09090B]"
-                  >
-                    <option value="ACADEMIC">Academic</option>
-                    <option value="EXAM">Exam</option>
-                    <option value="URGENT">Urgent</option>
-                    <option value="EVENT">Event</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Target Branch</label>
-                  <select
-                    value={noticeBranch}
-                    onChange={(e) => setNoticeBranch(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono text-[#09090B]"
-                  >
-                    <option value="ALL">ALL B.Tech</option>
-                    <option value="CSE">CSE</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EE">EE</option>
-                    <option value="ME">ME</option>
-                    <option value="CE">CE</option>
-                    <option value="IT">IT</option>
-                    <option value="AIML">AIML</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Circular Details</label>
-                <textarea
-                  rows={4}
-                  value={noticeContent}
-                  onChange={(e) => setNoticeContent(e.target.value)}
-                  placeholder="Enter full notice text, dates, or instructions..."
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs text-[#09090B] focus:outline-hidden focus:border-[#2563EB]"
-                  required
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-xs text-zinc-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={noticePinned}
-                  onChange={(e) => setNoticePinned(e.target.checked)}
-                  className="rounded border-zinc-300"
-                />
-                <span>Pin this notice to top of Student &amp; Campus dashboards</span>
-              </label>
-
-              <button
-                type="submit"
-                disabled={savingNotice}
-                className="w-full py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{savingNotice ? 'Saving...' : editingNoticeId ? 'Update Notice' : 'Publish Official Notice'}</span>
-              </button>
-            </form>
-          </div>
-
-          {/* Live Notices List */}
-          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Published Circulars ({notices.length})</h2>
-                <p className="text-xs text-zinc-500">Live in Neon DB &amp; visible to students</p>
-              </div>
-              <button onClick={fetchNotices} className="p-1.5 rounded-lg border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingNotices ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
-            {notices.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No notices published yet. Use the form on the left to publish your first circular.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {notices.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`p-4 rounded-xl border space-y-2 ${
-                      n.isPinned ? 'bg-amber-50/40 border-amber-200' : 'bg-zinc-50/60 border-zinc-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-200/70 text-zinc-800">
-                            {n.category}
-                          </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200">
-                            {n.targetBranch}
-                          </span>
-                          {n.isPinned && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-200 text-amber-900">
-                              PINNED
+              <tbody className="divide-y divide-[#E4E4E7] text-xs">
+                {users.map((u) => {
+                  const edit = userEdits[u.id] || { role: u.role, department: 'CSE' };
+                  const isSelf = u.clerkId === currentAdminId || u.id === currentAdminId;
+                  return (
+                    <tr key={u.id} className="hover:bg-[#FAFAFA]">
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-[#09090B]">
+                          {u.fullName}{' '}
+                          {isSelf && (
+                            <span className="ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                              You
                             </span>
                           )}
                         </div>
-                        <h3 className="text-xs font-bold text-[#09090B]">{n.title}</h3>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => handleTogglePinNotice(n)}
-                          className="p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-zinc-200 text-zinc-600 cursor-pointer"
-                          title={n.isPinned ? 'Unpin' : 'Pin to top'}
+                        <div className="text-[11px] font-mono text-zinc-500">{u.email}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <select
+                          value={edit.role}
+                          disabled={isSelf}
+                          onChange={(e) =>
+                            setUserEdits((prev) => ({
+                              ...prev,
+                              [u.id]: { ...edit, role: e.target.value as UserRole },
+                            }))
+                          }
+                          className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-zinc-900 disabled:opacity-60"
                         >
-                          {n.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingNoticeId(n.id);
-                            setNoticeTitle(n.title);
-                            setNoticeContent(n.content);
-                            setNoticeCategory((n.category as any) || 'ACADEMIC');
-                            setNoticeBranch(n.targetBranch || 'ALL');
-                            setNoticePinned(n.isPinned);
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-zinc-200 text-zinc-600 cursor-pointer"
-                          title="Edit"
+                          <option value="student">STUDENT</option>
+                          <option value="faculty">FACULTY</option>
+                          <option value="admin">ADMIN</option>
+                        </select>
+                      </td>
+                      <td className="py-3 px-4">
+                        <select
+                          value={edit.department}
+                          onChange={(e) =>
+                            setUserEdits((prev) => ({
+                              ...prev,
+                              [u.id]: { ...edit, department: e.target.value },
+                            }))
+                          }
+                          className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-zinc-900"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                          {SYLLABUS_BRANCHES.map((b) => (
+                            <option key={b.code} value={b.code}>
+                              {b.code} — {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-3 px-4 text-right">
                         <button
-                          onClick={() => handleDeleteNotice(n.id)}
-                          className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 cursor-pointer"
-                          title="Delete"
+                          type="button"
+                          disabled={savingUserId === u.id}
+                          onClick={() => handleSaveUserGovernance(u.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#09090B] hover:bg-zinc-800 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Save className="w-3.5 h-3.5" />
+                          <span>{savingUserId === u.id ? 'Saving...' : 'Save'}</span>
                         </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-600 leading-relaxed">{n.content}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 4: CONTENT & FORUM MODERATION QUEUE
-          ========================================================================= */}
-      {activeTab === 'moderation' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Uploaded Notes & PYQs */}
-          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Notes &amp; PYQ Moderation ({modNotes.length})</h2>
-                <p className="text-xs text-zinc-500">Approve, unverify, or remove uploaded resources</p>
-              </div>
-              <button onClick={fetchModeration} className="p-1.5 rounded-lg border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingMod ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
-            {modNotes.length === 0 ? (
-              <div className="p-6 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No uploaded notes in database yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {modNotes.map((note) => (
-                  <div key={note.id} className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded bg-blue-100 text-[#2563EB] font-mono text-[10px] font-bold">
-                            {note.subjectCode}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            {note.branch} • Sem {note.semester}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                              note.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {note.verified ? 'Verified' : 'Pending'}
-                          </span>
-                        </div>
-                        <div className="text-xs font-semibold text-[#09090B] mt-1">{note.title}</div>
-                        <div className="text-[10px] font-mono text-zinc-500">
-                          By {note.uploader?.fullName || note.uploader?.email || 'Student'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => handleModerate('note', note.id, note.verified ? 'unverify' : 'verify')}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer ${
-                          note.verified
-                            ? 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        }`}
-                      >
-                        {note.verified ? 'Revoke Verification' : 'Approve & Verify'}
-                      </button>
-                      <button
-                        onClick={() => handleModerate('note', note.id, 'delete')}
-                        className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-[11px] font-semibold cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Forum Threads */}
-          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Campus Forum Threads ({modForumPosts.length})</h2>
-                <p className="text-xs text-zinc-500">Review Q&amp;A threads and remove spam</p>
-              </div>
-              <MessageSquare className="w-4 h-4 text-zinc-400" />
-            </div>
-
-            {modForumPosts.length === 0 ? (
-              <div className="p-6 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No forum threads in database yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {modForumPosts.map((post) => (
-                  <div key={post.id} className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
-                          <span className="px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-800 font-bold">
-                            {post.category || 'Academic'}
-                          </span>
-                          <span>{post._count?.replies || 0} replies</span>
-                          <span>• {post.upvotes} upvotes</span>
-                        </div>
-                        <div className="text-xs font-semibold text-[#09090B] mt-1">{post.title}</div>
-                        <p className="text-[11px] text-zinc-600 line-clamp-2 mt-0.5">{post.content}</p>
-                        <div className="text-[10px] font-mono text-zinc-400 mt-1">
-                          Author: {post.author?.fullName || post.author?.email || 'Member'}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleModerate('forum', post.id, 'delete')}
-                        className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 shrink-0 cursor-pointer"
-                        title="Remove thread"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 4B: COURSE LECTURES (SWAYAM / NPTEL)
-          ========================================================================= */}
-      {activeTab === 'lectures' && <CourseLectureManager />}
-
-      {/* =========================================================================
-          TAB 4C: SYLLABUS & SUBJECTS MANAGER
-          ========================================================================= */}
-      {activeTab === 'syllabus' && <AdminSyllabusManager />}
-
-      {/* =========================================================================
-          TAB 5: CAMPUS & HOD DIRECTORY MANAGER
-          ========================================================================= */}
-      {activeTab === 'directory' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-5 space-y-5">
-            {/* Exam Countdown Setter */}
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-3">
-              <h2 className="text-sm font-bold text-[#09090B] flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#2563EB]" />
-                <span>MAKAUT Exam Countdown Target</span>
-              </h2>
-              <form onSubmit={handleSaveExamDate} className="flex items-center gap-2">
-                <input
-                  type="datetime-local"
-                  value={examDate}
-                  onChange={(e) => setExamDate(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="px-3.5 py-2 rounded-xl bg-[#09090B] text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save</span>
-                </button>
-              </form>
-            </div>
-
-            {/* Add / Edit HOD or Helpline */}
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
-                <h2 className="text-sm font-bold text-[#09090B]">
-                  {editingFacilityId ? 'Edit Directory Entry' : 'Add HOD / Helpline Contact'}
-                </h2>
-                {editingFacilityId && (
-                  <button
-                    onClick={() => {
-                      setEditingFacilityId(null);
-                      setFacName('');
-                      setFacDesc('');
-                    }}
-                    className="text-xs text-zinc-500 underline"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-
-              <form onSubmit={handleSaveFacility} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-mono text-zinc-500 mb-1">Category</label>
-                    <select
-                      value={facCategory}
-                      onChange={(e) => setFacCategory(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                    >
-                      <option value="department">Department / HOD</option>
-                      <option value="emergency">Helpline / SOS</option>
-                      <option value="hostel">Hostel / Block</option>
-                      <option value="bus">Campus Transport</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-mono text-zinc-500 mb-1">Building / Cabin</label>
-                    <input
-                      type="text"
-                      value={facBuilding}
-                      onChange={(e) => setFacBuilding(e.target.value)}
-                      placeholder="e.g. Block B, Room 204"
-                      className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Department / Facility Name</label>
-                  <input
-                    type="text"
-                    value={facName}
-                    onChange={(e) => setFacName(e.target.value)}
-                    placeholder="e.g. CSE Department Office"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-mono text-zinc-500 mb-1">HOD / In-Charge</label>
-                    <input
-                      type="text"
-                      value={facInCharge}
-                      onChange={(e) => setFacInCharge(e.target.value)}
-                      placeholder="Prof. Name"
-                      className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-mono text-zinc-500 mb-1">Contact Phone</label>
-                    <input
-                      type="text"
-                      value={facPhone}
-                      onChange={(e) => setFacPhone(e.target.value)}
-                      placeholder="+91 94340 ..."
-                      className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={facEmail}
-                    onChange={(e) => setFacEmail(e.target.value)}
-                    placeholder="hod.cse@setgoi.ac.in"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Description / Office Hours</label>
-                  <textarea
-                    rows={2}
-                    value={facDesc}
-                    onChange={(e) => setFacDesc(e.target.value)}
-                    placeholder="Mon–Fri 10:00 AM – 4:30 PM..."
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={savingFac}
-                  className="w-full py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{savingFac ? 'Saving...' : editingFacilityId ? 'Update Entry' : 'Save Directory Entry'}</span>
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Saved Directory Entries */}
-          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Neon DB Campus Directory ({facilities.length})</h2>
-                <p className="text-xs text-zinc-500">HOD cabins, blocks &amp; official helplines</p>
-              </div>
-              <button onClick={fetchDirectory} className="p-1.5 rounded-lg border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingDir ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
-            {facilities.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No custom directory entries in Neon DB yet. Add department HODs or helpline contacts on the left.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {facilities.map((f) => (
-                  <div key={f.id} className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-zinc-200/70 text-zinc-800 font-mono text-[10px] uppercase font-bold">
-                          {f.category}
-                        </span>
-                        <span className="text-xs font-bold text-[#09090B]">{f.name}</span>
-                      </div>
-                      <div className="text-[11px] font-mono text-zinc-600">
-                        {f.inCharge && <span>HOD/In-Charge: {f.inCharge} • </span>}
-                        {f.building && <span>{f.building} • </span>}
-                        {f.contactPhone && <span>{f.contactPhone}</span>}
-                      </div>
-                      <p className="text-xs text-zinc-500">{f.description}</p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => {
-                          setEditingFacilityId(f.id);
-                          setFacCategory(f.category);
-                          setFacName(f.name);
-                          setFacBuilding(f.building || '');
-                          setFacInCharge(f.inCharge || '');
-                          setFacPhone(f.contactPhone || '');
-                          setFacEmail(f.contactEmail || '');
-                          setFacDesc(f.description);
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-white text-zinc-600 cursor-pointer"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFacility(f.id)}
-                        className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 6: SYSTEM AUDIT LOGS
-          ========================================================================= */}
-      {activeTab === 'audit' && (
-        <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4E4E7]">
-            <div>
-              <h2 className="text-base font-bold text-[#09090B]">System Audit Logs</h2>
-              <p className="text-xs text-zinc-500">
-                Searchable, immutable record of role changes, notice publications, and moderation actions.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={auditSearch}
-                  onChange={(e) => setAuditSearch(e.target.value)}
-                  placeholder="Search actor, target, details..."
-                  className="pl-8 pr-3 py-1.5 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs w-56"
-                />
-              </div>
-              <select
-                value={auditActionFilter}
-                onChange={(e) => setAuditActionFilter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-              >
-                <option value="ALL">ALL ACTIONS</option>
-                <option value="ROLE_CHANGE">ROLE_CHANGE</option>
-                <option value="NOTICE_PUBLISHED">NOTICE_PUBLISHED</option>
-                <option value="NOTICE_UPDATED">NOTICE_UPDATED</option>
-                <option value="NOTICE_DELETED">NOTICE_DELETED</option>
-                <option value="NOTE_VERIFIED">NOTE_VERIFIED</option>
-                <option value="FORUM_MODERATED">FORUM_MODERATED</option>
-                <option value="DIRECTORY_UPDATED">DIRECTORY_UPDATED</option>
-              </select>
-              <button onClick={fetchAuditLogs} className="p-2 rounded-xl border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#E4E4E7] text-[11px] font-mono text-zinc-500 uppercase">
-                  <th className="py-2.5 px-3">Timestamp</th>
-                  <th className="py-2.5 px-3">Action</th>
-                  <th className="py-2.5 px-3">Actor</th>
-                  <th className="py-2.5 px-3">Target</th>
-                  <th className="py-2.5 px-3">Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E4E4E7]">
-                {auditLogs.length === 0 ? (
+                      </td>
+                    </tr>
+                  );
+                })}
+                {users.length === 0 && !loadingUsers && (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-zinc-500">
-                      {loadingAudit ? 'Loading audit trail...' : 'No audit log entries match your filter.'}
+                    <td colSpan={4} className="py-8 text-center text-zinc-500">
+                      No matching users found.
                     </td>
                   </tr>
-                ) : (
-                  auditLogs.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-zinc-50/70">
-                      <td className="py-2.5 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap tabular-nums">
-                        {new Date(entry.createdAt).toLocaleString('en-IN', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200 font-mono text-[10px] font-bold">
-                          {entry.action}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-zinc-700">{entry.actor}</td>
-                      <td className="py-2.5 px-3 font-mono text-zinc-900 font-medium">{entry.target}</td>
-                      <td className="py-2.5 px-3 text-zinc-600">{entry.details}</td>
-                    </tr>
-                  ))
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: 8-Branch MAKAUT Syllabus Manager */}
+      {activeTab === 'syllabus' && <AdminSyllabusManager />}
+
+      {/* TAB 3: Exam Schedule, Notices & TechFest Events */}
+      {activeTab === 'schedule' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Official Exam Schedule & Notices */}
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-5">
+            <div>
+              <h2 className="text-base font-bold text-[#09090B]">
+                Official Exam Countdown &amp; Notices
+              </h2>
+              <p className="text-xs text-zinc-500">
+                Set MAKAUT Theory/Practical exam dates and broadcast institution-wide priority notices.
+              </p>
+            </div>
+
+            <form onSubmit={handlePublishNotice} className="space-y-3">
+              <div className="grid grid-cols-3 gap-2.5">
+                <select
+                  value={noticeCategory}
+                  onChange={(e) => setNoticeCategory(e.target.value as any)}
+                  className="px-2.5 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium"
+                >
+                  <option value="EXAM">EXAM</option>
+                  <option value="ACADEMIC">ACADEMIC</option>
+                  <option value="URGENT">URGENT</option>
+                </select>
+                <select
+                  value={noticeBranch}
+                  onChange={(e) => setNoticeBranch(e.target.value)}
+                  className="px-2.5 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium"
+                >
+                  <option value="ALL">All Branches</option>
+                  {SYLLABUS_BRANCHES.map((b) => (
+                    <option key={b.code} value={b.code}>
+                      {b.code}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={noticeExamDate}
+                  onChange={(e) => setNoticeExamDate(e.target.value)}
+                  className="px-2.5 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                  title="Official Exam Date"
+                />
+              </div>
+
+              <input
+                type="text"
+                value={noticeTitle}
+                onChange={(e) => setNoticeTitle(e.target.value)}
+                placeholder="e.g. MAKAUT Odd Semester Theory Exam Schedule"
+                className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                required
+              />
+
+              <textarea
+                rows={3}
+                value={noticeContent}
+                onChange={(e) => setNoticeContent(e.target.value)}
+                placeholder="Exam reporting guidelines, admit card instructions, or campus directive..."
+                className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                required
+              />
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-zinc-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={noticePinned}
+                    onChange={(e) => setNoticePinned(e.target.checked)}
+                  />
+                  <span>Pin Priority Notice</span>
+                </label>
+                <button
+                  type="submit"
+                  disabled={publishingNotice}
+                  className="px-4 py-2 rounded-xl bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{publishingNotice ? 'Publishing...' : 'Publish Notice'}</span>
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-2.5 max-h-[340px] overflow-y-auto pt-2 border-t border-[#E4E4E7]">
+              {notices.map((n) => (
+                <div
+                  key={n.id}
+                  className="p-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex items-start justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-[#E4E4E7] font-semibold">
+                        {n.category} • {n.targetBranch}
+                      </span>
+                      {n.examDate && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+                          Exam: {new Date(n.examDate).toLocaleDateString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs font-semibold text-[#09090B] truncate">{n.title}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleNoticePin(n)}
+                      className="p-1.5 rounded-lg border border-[#E4E4E7] bg-white text-zinc-600 cursor-pointer"
+                    >
+                      {n.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteNotice(n.id)}
+                      className="p-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* TechFest & Campus Events Manager */}
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <h2 className="text-base font-bold text-[#09090B]">
+                  TechFest &amp; Campus Events (/tools)
+                </h2>
+              </div>
+              <p className="text-xs text-zinc-500">
+                Publish live campus events and workshops synced directly to /tools.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateEvent} className="space-y-3">
+              <div className="grid grid-cols-2 gap-2.5">
+                <select
+                  value={eventCategory}
+                  onChange={(e) => setEventCategory(e.target.value as any)}
+                  className="px-2.5 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium"
+                >
+                  <option value="TECHFEST">TECHFEST</option>
+                  <option value="WORKSHOP">WORKSHOP</option>
+                  <option value="SEMINAR">SEMINAR</option>
+                  <option value="CULTURAL">CULTURAL</option>
+                </select>
+                <input
+                  type="text"
+                  value={eventDateLabel}
+                  onChange={(e) => setEventDateLabel(e.target.value)}
+                  placeholder="Date e.g. Dec 12–13, 2026"
+                  className="px-2.5 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <input
+                  type="text"
+                  value={eventTitle}
+                  onChange={(e) => setEventTitle(e.target.value)}
+                  placeholder="Event Title e.g. SETGOI TechExpo 2026"
+                  className="px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                  required
+                />
+                <input
+                  type="text"
+                  value={eventVenue}
+                  onChange={(e) => setEventVenue(e.target.value)}
+                  placeholder="Venue e.g. Main Auditorium"
+                  className="px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                  required
+                />
+              </div>
+
+              <textarea
+                rows={3}
+                value={eventDescription}
+                onChange={(e) => setEventDescription(e.target.value)}
+                placeholder="Describe tracks, prizes, eligibility, or registration notes..."
+                className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                required
+              />
+
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-zinc-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={eventFeatured}
+                    onChange={(e) => setEventFeatured(e.target.checked)}
+                  />
+                  <span>Feature on /tools</span>
+                </label>
+                <button
+                  type="submit"
+                  disabled={publishingEvent}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{publishingEvent ? 'Publishing...' : 'Add Campus Event'}</span>
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-2.5 max-h-[340px] overflow-y-auto pt-2 border-t border-[#E4E4E7]">
+              {events.length === 0 ? (
+                <p className="text-xs text-zinc-500 text-center py-4">
+                  No custom events published yet.
+                </p>
+              ) : (
+                events.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="p-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex items-start justify-between gap-2"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-[#E4E4E7] font-semibold">
+                          {ev.category} • {ev.dateLabel}
+                        </span>
+                        {ev.isFeatured && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-semibold">
+                            Featured
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-[#09090B] truncate">{ev.title}</p>
+                      <p className="text-[11px] text-zinc-500 truncate">{ev.venue}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleEventFeature(ev)}
+                        className="p-1.5 rounded-lg border border-[#E4E4E7] bg-white text-amber-600 cursor-pointer"
+                        title="Toggle Featured"
+                      >
+                        <Star className={`w-3.5 h-3.5 ${ev.isFeatured ? 'fill-amber-500' : ''}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEvent(ev.id)}
+                        className="p-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 cursor-pointer"
+                        title="Delete Event"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: Forum Moderation & Audit Logs */}
+      {activeTab === 'governance' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Forum Thread Moderation */}
+          <div className="lg:col-span-6 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-[#09090B]">Forum Thread Moderation</h2>
+                <p className="text-xs text-zinc-500">
+                  Pin, lock, or remove /forum threads with automatic AuditLog tracking.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadGovernance}
+                className="p-1.5 rounded-lg border border-[#E4E4E7] text-zinc-600 hover:bg-zinc-100 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingGov ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 max-h-[540px] overflow-y-auto pr-1">
+              {forumPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="p-3.5 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex items-start justify-between gap-3"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {post.isPinned && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-semibold">
+                          Pinned
+                        </span>
+                      )}
+                      {post.isLocked && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700 font-semibold">
+                          Locked
+                        </span>
+                      )}
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-[#E4E4E7] text-zinc-600">
+                        {post.category || 'Academic'} • {post._count?.replies || 0} replies
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-[#09090B] truncate">{post.title}</p>
+                    <p className="text-[11px] text-zinc-500">
+                      By {post.author?.fullName || post.author?.email || 'Student'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleForumModerate(post.id, post.isPinned ? 'unpin' : 'pin')}
+                      className="p-1.5 rounded-lg border border-[#E4E4E7] bg-white hover:bg-zinc-100 text-zinc-700 cursor-pointer"
+                      title={post.isPinned ? 'Unpin' : 'Pin'}
+                    >
+                      {post.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleForumModerate(post.id, post.isLocked ? 'unlock' : 'lock')}
+                      className="p-1.5 rounded-lg border border-[#E4E4E7] bg-white hover:bg-zinc-100 text-zinc-700 cursor-pointer"
+                      title={post.isLocked ? 'Unlock' : 'Lock'}
+                    >
+                      {post.isLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleForumModerate(post.id, 'delete')}
+                      className="p-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 cursor-pointer"
+                      title="Delete thread"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {forumPosts.length === 0 && (
+                <p className="text-xs text-zinc-500 text-center py-8">No forum threads found.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Immutable Audit Log Feed */}
+          <div className="lg:col-span-6 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-bold text-[#09090B]">Immutable Audit Log</h2>
+                <p className="text-xs text-zinc-500">
+                  Chronological record of role changes, syllabus edits, notices, and deletions.
+                </p>
+              </div>
+              <input
+                type="text"
+                value={auditSearch}
+                onChange={(e) => setAuditSearch(e.target.value)}
+                placeholder="Filter logs..."
+                className="px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs w-40"
+              />
+            </div>
+
+            <div className="space-y-2 max-h-[540px] overflow-y-auto pr-1">
+              {auditLogs.map((log) => (
+                <div
+                  key={log.id}
+                  className="p-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] space-y-1"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-semibold text-[#09090B]">
+                      {log.action}
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      {new Date(log.createdAt).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-[#09090B]">
+                    {log.targetLabel || log.target}
+                  </p>
+                  <p className="text-[11px] text-zinc-600">{log.details}</p>
+                  <p className="text-[10px] font-mono text-zinc-400">
+                    Actor: {log.actorEmail || log.actor} ({log.actorRole || 'ADMIN'})
+                  </p>
+                </div>
+              ))}
+              {auditLogs.length === 0 && (
+                <p className="text-xs text-zinc-500 text-center py-8">No audit logs recorded.</p>
+              )}
+            </div>
           </div>
         </div>
       )}

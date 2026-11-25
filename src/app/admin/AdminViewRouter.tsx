@@ -21,15 +21,60 @@ export function AdminViewRouter({
   adminEmail,
   studentPreviewProps,
 }: AdminViewRouterProps) {
-  const { previewRole } = useRolePreview();
+  const { previewRole, setPreviewRole } = useRolePreview();
+
+  const roleSwitcherBar = (
+    <div className="bg-white border border-[#E4E4E7] rounded-2xl p-3 sm:px-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+        <span className="text-xs font-mono font-semibold text-[#09090B]">
+          Live Role View Switcher
+        </span>
+        <span className="hidden sm:inline text-[11px] text-zinc-500">
+          • 1-click exhibition preview
+        </span>
+      </div>
+      <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-[#FAFAFA] border border-[#E4E4E7]">
+        {(['ADMIN', 'FACULTY', 'STUDENT'] as const).map((roleOption) => {
+          const active = previewRole === roleOption;
+          const label =
+            roleOption === 'ADMIN'
+              ? 'Admin View'
+              : roleOption === 'FACULTY'
+              ? 'Faculty View'
+              : 'Student View';
+          return (
+            <button
+              key={roleOption}
+              type="button"
+              onClick={() => setPreviewRole(roleOption)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                active
+                  ? 'bg-[#09090B] text-white shadow-xs'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   if (previewRole === 'STUDENT') {
-    return <StudentCockpitView {...studentPreviewProps} />;
+    return (
+      <div className="space-y-6">
+        {roleSwitcherBar}
+        <StudentCockpitView {...studentPreviewProps} />
+      </div>
+    );
   }
 
   if (previewRole === 'FACULTY') {
     return (
       <div className="space-y-6 sm:space-y-8">
+        {roleSwitcherBar}
         <div className="bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -65,6 +110,7 @@ export function AdminViewRouter({
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {roleSwitcherBar}
       {/* Admin Welcome Strip */}
       <div className="bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5">

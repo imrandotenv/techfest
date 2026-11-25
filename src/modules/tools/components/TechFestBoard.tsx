@@ -58,7 +58,7 @@ export function TechFestBoard() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Load registered passes from localStorage on mount
+  // Load registered passes from localStorage + live CampusEvent items from Neon DB
   useEffect(() => {
     try {
       const stored = localStorage.getItem('settech_techfest_registrations') || localStorage.getItem('sanakahub_techfest_registrations');
@@ -68,6 +68,34 @@ export function TechFestBoard() {
     } catch (e) {
       console.warn('LocalStorage unavailable for TechFest passes');
     }
+
+    fetch('/api/events')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.events) && data.events.length > 0) {
+          const liveEvents: TechFestEvent[] = data.events.map((ev: any) => ({
+            id: ev.id,
+            title: ev.title,
+            category:
+              ev.category === 'WORKSHOP'
+                ? 'workshop'
+                : ev.category === 'SEMINAR'
+                ? 'seminar'
+                : ev.category === 'CULTURAL'
+                ? 'cultural'
+                : 'hackathon',
+            date: ev.dateLabel,
+            venue: ev.venue,
+            description: ev.description,
+            teamSize: ev.isFeatured ? 'Featured Campus Event' : 'Open to All Branches',
+            prizePool: ev.category,
+            organizer: 'SETGOI Admin Desk',
+            isLive: Boolean(ev.isFeatured),
+          }));
+          setEvents([...liveEvents, ...TECHFEST_EVENTS]);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Filter events
