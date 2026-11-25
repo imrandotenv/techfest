@@ -13,7 +13,9 @@ import {
   Sparkles,
   Minus,
   Save,
-  Check
+  Check,
+  Copy,
+  Printer
 } from 'lucide-react';
 
 export interface AttendanceSubject {
@@ -39,6 +41,19 @@ export function AttendanceTracker() {
   const [savingToDashboard, setSavingToDashboard] = useState(false);
   const [savedToDashboard, setSavedToDashboard] = useState(false);
   const [saveStatusMsg, setSaveStatusMsg] = useState<string | null>(null);
+  const [copiedSummary, setCopiedSummary] = useState(false);
+
+  const handleCopyAttendanceSummary = () => {
+    const lines = [
+      `SETGOI MAKAUT 75% ATTENDANCE SUMMARY`,
+      `Overall Attendance: ${overallStats.percentage}% (${overallStats.totalAttended}/${overallStats.totalHeld})`,
+      `Status: ${overallStats.isSafe ? `ELIGIBLE (Cushion: ${overallStats.safeBunks} lectures)` : `DEBARRED RISK (Need ${overallStats.classesNeeded} classes)`}`,
+      ...subjects.map((s) => `• ${s.code} (${s.name}): ${s.attended}/${s.total} (${s.total > 0 ? ((s.attended / s.total) * 100).toFixed(1) : '0.0'}%)`),
+    ];
+    navigator.clipboard.writeText(lines.join('\n'));
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2500);
+  };
 
   const handleSaveToDashboard = async () => {
     setSavingToDashboard(true);
@@ -404,15 +419,36 @@ export function AttendanceTracker() {
               </div>
             </div>
 
-            {/* Save to Dashboard Button */}
-            <button
-              onClick={handleSaveToDashboard}
-              disabled={savingToDashboard}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer disabled:opacity-50"
-            >
-              {savedToDashboard ? <Check className="w-3.5 h-3.5 text-white" /> : <Save className="w-3.5 h-3.5 text-white" />}
-              <span>{savedToDashboard ? 'Saved to Dashboard!' : savingToDashboard ? 'Saving...' : 'Save to My Dashboard'}</span>
-            </button>
+            {/* Save, Copy & Print Summary Buttons */}
+            <div className="space-y-2">
+              <button
+                onClick={handleSaveToDashboard}
+                disabled={savingToDashboard}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {savedToDashboard ? <Check className="w-3.5 h-3.5 text-white" /> : <Save className="w-3.5 h-3.5 text-white" />}
+                <span>{savedToDashboard ? 'Saved to Dashboard!' : savingToDashboard ? 'Saving...' : 'Save to My Dashboard'}</span>
+              </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyAttendanceSummary}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-semibold font-sans transition-colors cursor-pointer"
+                >
+                  {copiedSummary ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedSummary ? 'Copied!' : 'Copy Summary'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-[#E4E4E7] bg-white hover:bg-zinc-50 text-[#09090B] text-xs font-semibold font-sans transition-colors cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+              </div>
+            </div>
 
             {saveStatusMsg && (
               <p className="text-[11px] font-mono text-center text-emerald-700 bg-emerald-50 border border-emerald-200 py-1 px-2 rounded-lg">

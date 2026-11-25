@@ -162,36 +162,36 @@ export function TechFestBoard() {
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-r from-zinc-900 via-zinc-850 to-zinc-900 text-white p-6 sm:p-8 shadow-sm">
+      {/* Swiss-Minimalist Light-Mode Featured Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white text-[#09090B] p-6 sm:p-8 shadow-xs">
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-sky-400 text-xs font-mono font-semibold border border-white/10 mb-3">
-            <Flame className="w-3.5 h-3.5 text-amber-400" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-[#2563EB] text-xs font-mono font-semibold border border-blue-200/70 mb-3">
+            <Flame className="w-3.5 h-3.5 text-[#2563EB]" />
             SETGOI ANNUAL FESTIVAL 2026
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            TechFest & Cultural Fiesta 2026
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-[#09090B]">
+            TechFest &amp; Cultural Fiesta 2026
           </h2>
-          <p className="text-xs sm:text-sm text-zinc-300 mt-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#52525B] mt-2 leading-relaxed font-sans">
             The flagship campus convention for engineering innovation, coding sprints, robotics arena, and multi-disciplinary cultural celebrations. Free entry for SETGOI students with registered digital pass.
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowPassesDrawer(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold transition-colors shadow-xs cursor-pointer"
             >
               <Ticket className="w-4 h-4" />
               My Registered Passes ({myPasses.length})
             </button>
-            <span className="text-xs text-zinc-400 font-mono">
-              Venue: SETGOI Campus, Durgapur
+            <span className="text-xs text-[#52525B] font-mono">
+              Venue: SETGOI Campus, Malandighi, Durgapur
             </span>
           </div>
         </div>
 
-        {/* Decorative Grid Lines */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+        {/* Subtle Swiss Dot Grid Accent */}
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
       </div>
 
       {/* Filter Chips */}

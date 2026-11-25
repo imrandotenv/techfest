@@ -20,7 +20,8 @@ import {
   TrendingUp,
   Save,
   Loader2,
-  Download
+  Download,
+  Printer
 } from 'lucide-react';
 import { 
   SemesterDetail, 
@@ -715,13 +716,23 @@ export function SgpaCgpaCalculator() {
                 <span>{savedToDashboard ? 'Saved to Dashboard!' : savingToDashboard ? 'Saving to Neon...' : 'Save to My Dashboard'}</span>
               </button>
 
-              <button
-                onClick={handleCopyReport}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Audit Copied!' : 'Copy Result'}</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleCopyReport}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-semibold font-sans transition-all shadow-xs cursor-pointer"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border border-[#E4E4E7] bg-white hover:bg-zinc-50 text-[#09090B] text-xs font-semibold font-sans transition-all cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print Summary</span>
+                </button>
+              </div>
 
               <button
                 onClick={handleResetCumulative}
