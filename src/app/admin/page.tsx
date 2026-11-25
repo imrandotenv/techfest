@@ -1,9 +1,10 @@
 import React from 'react';
-import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
 import { requireRole } from '@/lib/rbac';
-import { AdminConsoleClient } from './AdminConsoleClient';
-import { AppShell } from '@/components/AppShell';
+import { prisma } from '@/lib/prisma';
+import { BTechBranch } from '@/config/curriculum';
+import { AcademicStats } from '@/app/api/student/stats/route';
+import { WorkspaceShell } from '@/components/WorkspaceShell';
+import { AdminViewRouter } from './AdminViewRouter';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +18,45 @@ export default async function AdminPage() {
     redirectTo: '/sign-in?redirect_url=/admin',
   });
 
+  const adminName = user.fullName || 'Super Admin';
+  const adminEmail = user.email || 'admin@setgoi.ac.in';
+  const branch = (user.branch?.toUpperCase() as BTechBranch) || 'CSE';
+  const semester = Number(user.semester) || 3;
+  const passoutYear = Number(user.passoutYear) || 2028;
+
+  let stats: AcademicStats = {
+    cgpa: 8.84,
+    targetSgpa: 9.10,
+    attendancePct: 81.4,
+    attendedClasses: 48,
+    totalClasses: 59,
+  };
+  let liveNotices: any[] = [];
+
+  try {
+    const [dbUser, notices] = await Promise.all([
+      user.userId
+        ? prisma.user.findUnique({
+            where: { clerkId: user.userId },
+            select: { academicStats: true },
+          })
+        : Promise.resolve(null),
+      prisma.notice.findMany({
+        orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+        take: 4,
+        include: { author: { select: { fullName: true, role: true } } },
+      }),
+    ]);
+    if (dbUser?.academicStats) {
+      stats = { ...stats, ...(dbUser.academicStats as unknown as AcademicStats) };
+    }
+    liveNotices = notices;
+  } catch (err) {
+    console.warn('[admin/page] DB preview fetch note:', err);
+  }
+
   return (
-    <AppShell
+    <WorkspaceShell
       breadcrumbs={[
         { label: 'SETTech', href: '/' },
         { label: 'Super Admin', href: '/admin' },
@@ -26,53 +64,28 @@ export default async function AdminPage() {
       ]}
       roleTitle="Super Admin"
       currentRole="admin"
-      userName={user.fullName || 'Super Admin Imran'}
-      userEmail={user.email || 'mail@ceimran.in'}
+      userName={adminName}
+      userEmail={adminEmail}
       primaryAction={{
         label: '+ Manage Users',
         href: '/admin#users',
         variant: 'purple',
       }}
     >
-      {/* Admin Welcome Strip */}
-      <div className="bg-white border border-[#E4E4E7] rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-mono text-xs font-semibold">
-              Live Zero-Trust RBAC
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded">
-              Super Admin Authority
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-display font-bold tracking-tight text-[#09090B]">
-            System Administration • {user.fullName || 'Admin'}
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 max-w-2xl leading-relaxed">
-            Manage user roles in Clerk publicMetadata, monitor system audit trails, and oversee campus platform moderation.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/faculty"
-            className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 font-mono text-xs font-medium inline-flex items-center gap-1.5 transition-colors border border-zinc-200"
-          >
-            <span>Faculty View</span>
-            <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
-          </Link>
-          <Link
-            href="/student"
-            className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 font-mono text-xs font-medium inline-flex items-center gap-1.5 transition-colors border border-zinc-200"
-          >
-            <span>Student View</span>
-            <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Admin Client Operations Console */}
-      <AdminConsoleClient currentAdminId={user.userId || ''} />
-    </AppShell>
+      <AdminViewRouter
+        currentAdminId={user.userId || ''}
+        adminName={adminName}
+        adminEmail={adminEmail}
+        studentPreviewProps={{
+          studentName: adminName,
+          branch,
+          semester,
+          passoutYear,
+          universityRoll: user.universityRoll,
+          stats,
+          liveNotices,
+        }}
+      />
+    </WorkspaceShell>
   );
 }

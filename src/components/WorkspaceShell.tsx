@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUser, UserButton } from '@clerk/nextjs';
 import {
   LayoutDashboard,
@@ -25,8 +25,11 @@ import {
   ChevronRight,
   ShieldAlert,
   GraduationCap,
+  Eye,
+  RotateCcw,
 } from 'lucide-react';
 import { getResolvedRole, getDisplayRole } from '@/lib/auth-client';
+import { useRolePreview } from '@/context/RolePreviewContext';
 import { CommandPalette } from '@/components/navigation/CommandPalette';
 import { ExamCountdown } from '@/components/ExamCountdown';
 import { SetTechLogo } from '@/components/SetTechLogo';
@@ -58,8 +61,10 @@ export function WorkspaceShell({
   primaryAction,
 }: WorkspaceShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isLoaded } = useUser();
   const { profile, updateProfile } = useAcademicProfile();
+  const { previewRole, setPreviewRole, resetToAdmin, isRealAdmin, isPreviewMode } = useRolePreview();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -86,11 +91,20 @@ export function WorkspaceShell({
     setMobileDrawerOpen(false);
   }, [pathname]);
 
-  const resolvedRole = currentRole
+  const baseRole = currentRole
     ? currentRole === 'faculty'
       ? 'college'
       : currentRole
     : getResolvedRole(user);
+
+  const canPreviewRoles = isRealAdmin || baseRole === 'admin';
+  const resolvedRole =
+    canPreviewRoles && previewRole !== 'ADMIN'
+      ? previewRole === 'FACULTY'
+        ? 'college'
+        : 'student'
+      : baseRole;
+
   const roleDisplay = getDisplayRole(resolvedRole);
 
   const roleBadgeStyle =
@@ -665,39 +679,49 @@ export function WorkspaceShell({
               </kbd>
             </button>
 
-            {/* Admin Role View Switcher Slot */}
-            {resolvedRole === 'admin' && (
-              <div className="hidden xl:flex items-center gap-0.5 p-0.5 bg-zinc-100/90 border border-zinc-200 rounded-xl text-[11px] font-mono">
-                <Link
-                  href="/admin"
-                  className={`px-2 py-0.5 rounded-lg transition-colors ${
-                    pathname.startsWith('/admin')
+            {/* Admin Role View Switcher Slot (Live Preview Mode) */}
+            {canPreviewRoles && (
+              <div
+                className="hidden md:flex items-center gap-0.5 p-0.5 bg-zinc-100/90 border border-zinc-200 rounded-xl text-[11px] font-mono"
+                role="group"
+                aria-label="Admin Role View Switcher"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewRole('ADMIN');
+                    if (pathname !== '/admin') router.push('/admin');
+                  }}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    previewRole === 'ADMIN'
                       ? 'bg-white text-purple-700 font-bold shadow-2xs'
                       : 'text-zinc-500 hover:text-zinc-900'
                   }`}
                 >
-                  Admin
-                </Link>
-                <Link
-                  href="/faculty"
-                  className={`px-2 py-0.5 rounded-lg transition-colors ${
-                    pathname.startsWith('/faculty')
+                  Admin View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewRole('FACULTY')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    previewRole === 'FACULTY'
                       ? 'bg-white text-emerald-700 font-bold shadow-2xs'
                       : 'text-zinc-500 hover:text-zinc-900'
                   }`}
                 >
-                  Faculty
-                </Link>
-                <Link
-                  href="/student"
-                  className={`px-2 py-0.5 rounded-lg transition-colors ${
-                    pathname.startsWith('/student')
+                  Faculty View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewRole('STUDENT')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                    previewRole === 'STUDENT'
                       ? 'bg-white text-blue-700 font-bold shadow-2xs'
                       : 'text-zinc-500 hover:text-zinc-900'
                   }`}
                 >
-                  Student
-                </Link>
+                  Student View
+                </button>
               </div>
             )}
 
@@ -730,6 +754,44 @@ export function WorkspaceShell({
             </div>
           </div>
         </header>
+
+        {/* High-Visibility Admin Preview Mode Banner */}
+        {canPreviewRoles && isPreviewMode && (
+          <div className="bg-amber-50 border-b border-amber-200/90 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-mono text-amber-950">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-amber-200/70 text-amber-800">
+                <Eye className="w-3.5 h-3.5" />
+              </span>
+              <span>
+                Viewing as <strong className="font-bold">{previewRole}</strong> (Admin Preview Mode) — Real permissions remain <strong className="font-bold text-purple-800">ADMIN</strong>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Mobile quick switch */}
+              <div className="flex md:hidden items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPreviewRole(previewRole === 'STUDENT' ? 'FACULTY' : 'STUDENT')}
+                  className="px-2 py-1 rounded-lg bg-white border border-amber-300 text-[11px] font-mono text-amber-900"
+                >
+                  Switch to {previewRole === 'STUDENT' ? 'Faculty' : 'Student'}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  resetToAdmin();
+                  if (pathname !== '/admin') router.push('/admin');
+                }}
+                className="px-3 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Return to Admin View</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content Body Canvas with Alabaster background and mobile bottom clearance */}
         <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 pb-24 md:pb-8">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentAuthUser } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
+import { recordAuditLog } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -100,6 +101,14 @@ export async function POST(req: NextRequest) {
           select: { id: true, fullName: true, role: true },
         },
       },
+    });
+
+    await recordAuditLog({
+      actorId: caller.userId || 'faculty',
+      actor: caller.email || caller.fullName || 'Faculty/Admin',
+      action: 'NOTICE_PUBLISHED',
+      target: notice.title,
+      details: `Published ${notice.category} notice for ${notice.targetBranch}${notice.isPinned ? ' (Pinned)' : ''}`,
     });
 
     return NextResponse.json({

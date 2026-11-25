@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { FloatingNav } from "@/components/FloatingNav";
 import { Footer } from "@/components/navigation/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
+import { RolePreviewProvider } from "@/context/RolePreviewContext";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -117,10 +118,12 @@ export default function RootLayout({
         className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
       >
         <body className="min-h-screen flex flex-col bg-[#FAFAFA] text-[#09090B] font-sans antialiased selection:bg-[#2563EB] selection:text-white">
-          <FloatingNav />
-          <main className="flex-1 w-full">{children}</main>
-          <Footer />
-          <CookieBanner />
+          <RolePreviewProvider>
+            <FloatingNav />
+            <main className="flex-1 w-full">{children}</main>
+            <Footer />
+            <CookieBanner />
+          </RolePreviewProvider>
         </body>
       </html>
     </ClerkProvider>

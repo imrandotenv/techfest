@@ -1,15 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { getCurrentAuthUser, normalizeUserRole, UserRole } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
+import { recordAuditLog } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
 /**
  * GET /api/admin/users
- * Strictly admin-only: Returns unified list of users combining Clerk & Neon DB.
+ * Strictly admin-only: Returns real registered users from Neon DB + Clerk sync
+ * with search, role filter, and pagination.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const caller = await getCurrentAuthUser();
     if (!caller.isAuthenticated || caller.role !== 'admin') {
@@ -19,90 +21,128 @@ export async function GET() {
       );
     }
 
-    // 1. Fetch Clerk Users
-    let clerkUsers: any[] = [];
-    try {
-      const client = await clerkClient();
-      const userListRes = await client.users.getUserList({ limit: 100 });
-      clerkUsers = userListRes.data || [];
-    } catch (clerkErr) {
-      console.warn('[Admin Users API] Clerk list warning:', clerkErr);
-    }
+    const { searchParams } = new URL(req.url);
+    const q = (searchParams.get('q') || '').trim().toLowerCase();
+    const roleFilter = (searchParams.get('role') || 'ALL').toUpperCase();
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(50, Math.max(5, parseInt(searchParams.get('limit') || '20', 10) || 20));
 
-    // 2. Fetch Neon DB Users
-    let dbUsers: any[] = [];
-    try {
-      dbUsers = await prisma.user.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (dbErr) {
-      console.warn('[Admin Users API] Neon DB list warning:', dbErr);
-    }
+    // Fetch Neon DB users and Clerk users in parallel
+    const [dbUsers, clerkUsers] = await Promise.all([
+      prisma.user
+        .findMany({
+          orderBy: { createdAt: 'desc' },
+        })
+        .catch(() => []),
+      clerkClient()
+        .then((client) => client.users.getUserList({ limit: 100 }))
+        .then((res) => res.data || [])
+        .catch(() => []),
+    ]);
 
-    const dbUserMap = new Map<string, any>();
-    const dbEmailMap = new Map<string, any>();
-    dbUsers.forEach((u) => {
-      if (u.clerkId) dbUserMap.set(u.clerkId, u);
-      if (u.email) dbEmailMap.set(u.email.toLowerCase(), u);
-    });
+    const clerkMap = new Map<string, any>();
+    clerkUsers.forEach((cu) => clerkMap.set(cu.id, cu));
 
     const seenClerkIds = new Set<string>();
+    const combined: Array<{
+      id: string;
+      clerkId: string;
+      fullName: string;
+      email: string;
+      role: UserRole;
+      department: string;
+      branch?: string | null;
+      semester?: number | null;
+      studentId: string;
+      imageUrl?: string;
+      createdAt: string;
+      onboardingCompleted: boolean;
+    }> = [];
 
-    const users = clerkUsers.map((u) => {
-      seenClerkIds.add(u.id);
-      const primaryEmail =
-        u.emailAddresses.find((e: any) => e.id === u.primaryEmailAddressId)?.emailAddress ||
-        u.emailAddresses[0]?.emailAddress ||
-        '';
-
-      const metadata = (u.publicMetadata || {}) as {
-        role?: string;
-        department?: string;
-        studentId?: string;
-      };
-
-      // Correlate with Neon DB
-      const matchedDb = dbUserMap.get(u.id) || (primaryEmail ? dbEmailMap.get(primaryEmail.toLowerCase()) : null);
-
-      const effectiveRole: UserRole = matchedDb?.role
-        ? normalizeUserRole(matchedDb.role)
-        : normalizeUserRole(metadata.role);
-
-      const department = matchedDb?.branch
-        ? `B.Tech ${matchedDb.branch} (Sem ${matchedDb.semester || 1})`
-        : metadata.department || 'B.Tech Core';
-
-      return {
-        id: u.id,
-        fullName: matchedDb?.fullName || [u.firstName, u.lastName].filter(Boolean).join(' ') || 'SETGOI Member',
-        email: primaryEmail || matchedDb?.email || '',
+    // Primary source: Neon DB users
+    for (const du of dbUsers) {
+      seenClerkIds.add(du.clerkId);
+      const cu = clerkMap.get(du.clerkId);
+      const effectiveRole = normalizeUserRole(du.role);
+      combined.push({
+        id: du.clerkId || du.id,
+        clerkId: du.clerkId,
+        fullName:
+          du.fullName ||
+          (cu ? [cu.firstName, cu.lastName].filter(Boolean).join(' ') : '') ||
+          'SETGOI Member',
+        email: du.email,
         role: effectiveRole,
-        department,
-        studentId: matchedDb?.universityRoll || metadata.studentId || '',
-        imageUrl: u.imageUrl,
-        createdAt: u.createdAt,
-        onboardingCompleted: matchedDb?.onboardingCompleted ?? metadata?.role ? true : false,
-      };
-    });
+        department: du.branch ? `B.Tech ${du.branch} (Sem ${du.semester || 1})` : 'B.Tech Core',
+        branch: du.branch,
+        semester: du.semester,
+        studentId: du.universityRoll || '',
+        imageUrl: cu?.imageUrl,
+        createdAt: du.createdAt.toISOString(),
+        onboardingCompleted: du.onboardingCompleted,
+      });
+    }
 
-    // Add any Neon DB users that might not have been returned in the first 100 Clerk users
-    dbUsers.forEach((du) => {
-      if (!seenClerkIds.has(du.clerkId)) {
-        users.push({
-          id: du.clerkId,
-          fullName: du.fullName || 'SETGOI Member',
-          email: du.email,
-          role: normalizeUserRole(du.role),
-          department: du.branch ? `B.Tech ${du.branch} (Sem ${du.semester || 1})` : 'B.Tech Core',
-          studentId: du.universityRoll || '',
-          imageUrl: undefined,
-          createdAt: du.createdAt.toISOString(),
-          onboardingCompleted: du.onboardingCompleted,
-        });
+    // Secondary: any Clerk users not yet synced to Neon DB
+    for (const cu of clerkUsers) {
+      if (seenClerkIds.has(cu.id)) continue;
+      const primaryEmail =
+        cu.emailAddresses.find((e: any) => e.id === cu.primaryEmailAddressId)?.emailAddress ||
+        cu.emailAddresses[0]?.emailAddress ||
+        '';
+      const metadata = (cu.publicMetadata || {}) as Record<string, any>;
+      combined.push({
+        id: cu.id,
+        clerkId: cu.id,
+        fullName: [cu.firstName, cu.lastName].filter(Boolean).join(' ') || 'SETGOI Member',
+        email: primaryEmail,
+        role: normalizeUserRole(metadata.role),
+        department: metadata.branch
+          ? `B.Tech ${metadata.branch} (Sem ${metadata.semester || 1})`
+          : metadata.department || 'Pending Onboarding',
+        branch: metadata.branch || null,
+        semester: metadata.semester ? Number(metadata.semester) : null,
+        studentId: metadata.studentId || '',
+        imageUrl: cu.imageUrl,
+        createdAt: new Date(cu.createdAt).toISOString(),
+        onboardingCompleted: Boolean(metadata.onboardingCompleted),
+      });
+    }
+
+    const counts = {
+      total: combined.length,
+      admin: combined.filter((u) => u.role === 'admin').length,
+      faculty: combined.filter((u) => u.role === 'faculty').length,
+      student: combined.filter((u) => u.role === 'student').length,
+    };
+
+    const filtered = combined.filter((u) => {
+      if (roleFilter !== 'ALL' && u.role.toUpperCase() !== roleFilter) {
+        return false;
       }
+      if (!q) return true;
+      return (
+        u.fullName.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.department.toLowerCase().includes(q) ||
+        u.studentId.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q)
+      );
     });
 
-    return NextResponse.json({ users, total: users.length });
+    const totalFiltered = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / limit));
+    const safePage = Math.min(page, totalPages);
+    const paginated = filtered.slice((safePage - 1) * limit, safePage * limit);
+
+    return NextResponse.json({
+      users: paginated,
+      total: totalFiltered,
+      page: safePage,
+      limit,
+      totalPages,
+      counts,
+    });
   } catch (err: any) {
     console.error('[Admin Users API] GET Error:', err);
     return NextResponse.json(
@@ -139,7 +179,6 @@ export async function PATCH(req: Request) {
     const targetRoleLower: UserRole = normalizeUserRole(role);
     const targetRoleUpper = targetRoleLower.toUpperCase();
 
-    // Self-demotion prevention
     if (userId === caller.userId && targetRoleLower !== 'admin') {
       return NextResponse.json(
         { error: 'Self-demotion prevented: You cannot revoke admin clearance from your own account.' },
@@ -147,52 +186,56 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // 1. Update Neon PostgreSQL
     let updatedDbUser = null;
     try {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [{ id: userId }, { clerkId: userId }],
-        },
+      const existing = await prisma.user.findFirst({
+        where: { OR: [{ clerkId: userId }, { id: userId }] },
       });
-
-      if (existingUser) {
+      if (existing) {
         updatedDbUser = await prisma.user.update({
-          where: { id: existingUser.id },
+          where: { id: existing.id },
           data: {
             role: targetRoleUpper,
-            onboardingCompleted: targetRoleLower === 'student' ? existingUser.onboardingCompleted : true,
+            onboardingCompleted: targetRoleLower === 'student' ? existing.onboardingCompleted : true,
           },
         });
       }
-    } catch (dbErr: any) {
-      console.warn('[Admin Users API] Neon DB update warning:', dbErr?.message || dbErr);
+    } catch (dbErr) {
+      console.warn('[Admin Users API] Neon DB update warning:', dbErr);
     }
 
-    // 2. Update Clerk
-    const clerkIdToUse = updatedDbUser?.clerkId || userId;
+    const clerkId = updatedDbUser?.clerkId || userId;
     try {
       const client = await clerkClient();
-      const targetUser = await client.users.getUser(clerkIdToUse);
-      const existingMetadata = (targetUser.publicMetadata || {}) as Record<string, any>;
-
-      await client.users.updateUserMetadata(clerkIdToUse, {
+      const targetClerkUser = await client.users.getUser(clerkId);
+      const existingMetadata = (targetClerkUser.publicMetadata || {}) as Record<string, any>;
+      await client.users.updateUserMetadata(clerkId, {
         publicMetadata: {
           ...existingMetadata,
           role: targetRoleLower,
+          isSuperAdmin: targetRoleLower === 'admin',
+          onboardingCompleted: targetRoleLower === 'student' ? existingMetadata.onboardingCompleted : true,
           updatedAt: new Date().toISOString(),
           promotedBy: caller.email || caller.userId,
         },
       });
-    } catch (clerkErr: any) {
-      console.warn('[Admin Users API] Clerk update warning:', clerkErr?.message || clerkErr);
+    } catch (clerkErr) {
+      console.warn('[Admin Users API] Clerk metadata update warning:', clerkErr);
     }
+
+    await recordAuditLog({
+      actorId: caller.userId || 'admin',
+      actor: caller.email || caller.fullName || 'Super Admin',
+      action: 'ROLE_CHANGE',
+      target: updatedDbUser?.email || clerkId,
+      details: `Updated role clearance to ${targetRoleUpper}`,
+    });
 
     return NextResponse.json({
       success: true,
       userId,
       role: targetRoleUpper,
-      message: `User role successfully updated to ${targetRoleUpper}.`,
+      message: `User role updated to ${targetRoleUpper} across Neon DB & Clerk.`,
     });
   } catch (err: any) {
     console.error('[Admin Users API] PATCH Error:', err);

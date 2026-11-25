@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { getCurrentAuthUser, normalizeUserRole, UserRole } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
+import { recordAuditLog } from '@/lib/audit';
 
 export const runtime = 'nodejs';
 
@@ -83,6 +84,8 @@ export async function PATCH(
         publicMetadata: {
           ...existingMetadata,
           role: targetRoleLower,
+          isSuperAdmin: targetRoleLower === 'admin',
+          onboardingCompleted: targetRoleLower === 'student' ? existingMetadata.onboardingCompleted : true,
           updatedAt: new Date().toISOString(),
           promotedBy: caller.email || caller.userId,
         },
@@ -90,6 +93,14 @@ export async function PATCH(
     } catch (clerkErr: any) {
       console.warn('[Admin Role API] Clerk publicMetadata update warning:', clerkErr?.message || clerkErr);
     }
+
+    await recordAuditLog({
+      actorId: caller.userId || 'admin',
+      actor: caller.email || caller.fullName || 'Super Admin',
+      action: 'ROLE_CHANGE',
+      target: updatedDbUser?.email || clerkUserId,
+      details: `Updated role clearance to ${targetRoleUpper} across Neon DB & Clerk publicMetadata`,
+    });
 
     return NextResponse.json({
       success: true,

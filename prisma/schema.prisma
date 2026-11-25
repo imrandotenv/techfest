@@ -223,3 +223,16 @@ model RateLimit {
 
   @@index([resetAt])
 }
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     String
+  action    String   // e.g. "ROLE_CHANGE", "NOTICE_PUBLISHED", "NOTE_VERIFIED", "FORUM_MODERATED", "DIRECTORY_UPDATED"
+  target    String
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}
