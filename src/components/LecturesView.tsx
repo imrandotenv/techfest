@@ -18,8 +18,8 @@ import {
   SYLLABUS_BRANCHES,
   SyllabusBranch,
   normalizeSyllabusBranch,
-  getSubjectsForBranchAndSemester,
 } from '@/lib/makaut-syllabus';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
 interface LectureRecord {
   id: string;
@@ -100,10 +100,7 @@ export function LecturesView() {
     });
   };
 
-  const syllabusSubjects = useMemo(
-    () => getSubjectsForBranchAndSemester(branch, semester),
-    [branch, semester]
-  );
+  const syllabusSubjects = useSyllabusSubjects(branch, semester);
 
   // Group lectures by official MAKAUT subject
   const groupedBySubject = useMemo(() => {
@@ -124,6 +121,7 @@ export function LecturesView() {
       name: string;
       credits?: number;
       category?: string;
+      type?: string;
       courses: LectureRecord[];
     }> = [];
 
@@ -141,6 +139,7 @@ export function LecturesView() {
           name: sub.name,
           credits: sub.credits,
           category: sub.category,
+          type: sub.type,
           courses: matching,
         });
       }
@@ -288,6 +287,19 @@ export function LecturesView() {
                     </h2>
                   </div>
                   <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                    {group.type && (
+                      <span
+                        className={`px-2 py-0.5 rounded font-bold border ${
+                          group.type === 'LAB'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : group.type === 'ELECTIVE'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-blue-50 text-[#2563EB] border-blue-200'
+                        }`}
+                      >
+                        {group.type === 'LAB' ? 'Lab' : group.type === 'ELECTIVE' ? 'Elective' : 'Theory'}
+                      </span>
+                    )}
                     {group.category && (
                       <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
                         {group.category}

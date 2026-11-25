@@ -1,5 +1,6 @@
 export type SyllabusBranch = 'CSE' | 'ECE' | 'ME' | 'CE' | 'EE';
 export type SubjectCategory = 'PCC' | 'ESC' | 'BS' | 'HSMC' | 'PEC' | 'OEC' | 'MC';
+export type SubjectType = 'THEORY' | 'LAB' | 'ELECTIVE';
 
 export interface SwayamCourseRef {
   title: string;
@@ -15,6 +16,7 @@ export interface MakautSubject {
   name: string;
   credits: number;
   category: SubjectCategory;
+  type?: SubjectType;
   swayamCourses: SwayamCourseRef[];
 }
 
@@ -269,6 +271,38 @@ export const MAKAUT_SYLLABUS: Record<SyllabusBranch, Record<number, MakautSubjec
           },
         ],
       },
+      {
+        code: 'PCC-CS391',
+        name: 'Data Structure & Algorithms Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'PCC-CS392',
+        name: 'Computer Organisation Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'ESC391',
+        name: 'Analog & Digital Electronics Lab',
+        credits: 2,
+        category: 'ESC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'PCC-CS393',
+        name: 'IT Workshop (SciLab / MATLAB / Python)',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
     ],
     4: [
       {
@@ -367,6 +401,22 @@ export const MAKAUT_SYLLABUS: Record<SyllabusBranch, Record<number, MakautSubjec
           },
         ],
       },
+      {
+        code: 'PCC-CS492',
+        name: 'Computer Architecture Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'PCC-CS494',
+        name: 'Design & Analysis of Algorithms Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
     ],
     5: [
       {
@@ -454,6 +504,7 @@ export const MAKAUT_SYLLABUS: Record<SyllabusBranch, Record<number, MakautSubjec
         name: 'Artificial Intelligence',
         credits: 3,
         category: 'PEC',
+        type: 'ELECTIVE',
         swayamCourses: [
           {
             title: 'Artificial Intelligence: Search Methods for Problem Solving',
@@ -464,6 +515,30 @@ export const MAKAUT_SYLLABUS: Record<SyllabusBranch, Record<number, MakautSubjec
             platform: 'NPTEL',
           },
         ],
+      },
+      {
+        code: 'PCC-CS592',
+        name: 'Operating Systems Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'PCC-CS593',
+        name: 'Object Oriented Programming Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'ESC591',
+        name: 'Software Engineering Lab',
+        credits: 2,
+        category: 'ESC',
+        type: 'LAB',
+        swayamCourses: [],
       },
     ],
     6: [
@@ -536,6 +611,7 @@ export const MAKAUT_SYLLABUS: Record<SyllabusBranch, Record<number, MakautSubjec
         name: 'Numerical Methods',
         credits: 3,
         category: 'OEC',
+        type: 'ELECTIVE',
         swayamCourses: [
           {
             title: 'Numerical Methods for Engineers',
@@ -546,6 +622,22 @@ export const MAKAUT_SYLLABUS: Record<SyllabusBranch, Record<number, MakautSubjec
             platform: 'NPTEL',
           },
         ],
+      },
+      {
+        code: 'PCC-CS691',
+        name: 'Database Management Systems Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
+      },
+      {
+        code: 'PCC-CS692',
+        name: 'Computer Networks Lab',
+        credits: 2,
+        category: 'PCC',
+        type: 'LAB',
+        swayamCourses: [],
       },
     ],
     7: [
@@ -1524,13 +1616,26 @@ export function normalizeSyllabusBranch(branch?: string | null): SyllabusBranch 
   return 'CSE';
 }
 
+export function resolveSubjectType(sub: Pick<MakautSubject, 'type' | 'category' | 'code'>): SubjectType {
+  if (sub.type) return sub.type;
+  if (sub.category === 'PEC' || sub.category === 'OEC') return 'ELECTIVE';
+  if (sub.code.toUpperCase().includes('91') || sub.code.toUpperCase().includes('92') || sub.code.toUpperCase().includes('93') || sub.code.toUpperCase().includes('94')) {
+    return 'LAB';
+  }
+  return 'THEORY';
+}
+
 export function getSubjectsForBranchAndSemester(
   branch?: string | null,
   semester?: number | null
-): MakautSubject[] {
+): Array<MakautSubject & { type: SubjectType }> {
   const normBranch = normalizeSyllabusBranch(branch);
   const sem = Math.min(8, Math.max(1, Number(semester) || 3));
-  return MAKAUT_SYLLABUS[normBranch]?.[sem] || [];
+  const raw = MAKAUT_SYLLABUS[normBranch]?.[sem] || [];
+  return raw.map((sub) => ({
+    ...sub,
+    type: resolveSubjectType(sub),
+  }));
 }
 
 export function findSubjectByCode(code: string): (MakautSubject & { branch: SyllabusBranch; semester: number }) | null {

@@ -20,7 +20,7 @@ import { NotePreviewModal } from './NotePreviewModal';
 import { LabPracticalsView } from './LabPracticalsView';
 import { LAB_PRACTICALS } from '../data/lab-practicals-data';
 import { useAcademicProfile } from '@/hooks/useAcademicProfile';
-import { getSubjectsForBranchAndSemester } from '@/lib/makaut-syllabus';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 import { 
   Laptop, 
   Cpu, 
@@ -859,39 +859,12 @@ export function NotesVaultView() {
           ) : (
             <>
               {/* Subject Code Filter Chips from Official MAKAUT Syllabus */}
-              {getSubjectsForBranchAndSemester(selectedBranch, selectedSemester).length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 bg-white border border-[#E4E4E7] rounded-2xl p-3 shadow-xs">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 px-1.5">
-                    Syllabus Codes:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                      !searchQuery
-                        ? 'bg-[#09090B] text-white border-[#09090B]'
-                        : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
-                    }`}
-                  >
-                    ALL
-                  </button>
-                  {getSubjectsForBranchAndSemester(selectedBranch, selectedSemester).map((sub) => (
-                    <button
-                      key={sub.code}
-                      type="button"
-                      onClick={() => setSearchQuery(sub.code)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
-                        searchQuery.toUpperCase() === sub.code.toUpperCase()
-                          ? 'bg-[#2563EB] text-white border-[#2563EB]'
-                          : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
-                      }`}
-                      title={sub.name}
-                    >
-                      {sub.code}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <SyllabusChipsBar
+                branch={selectedBranch}
+                semester={selectedSemester}
+                searchQuery={searchQuery}
+                onSelectCode={setSearchQuery}
+              />
 
               {/* Section Toolbar: Search + Category Pills + Upload CTA */}
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-[#E4E4E7] rounded-2xl p-3.5 shadow-xs">
@@ -1025,6 +998,72 @@ export function NotesVaultView() {
         onClose={() => setAuthPromptReason(null)}
         reason={authPromptReason || 'upload_notes'}
       />
+    </div>
+  );
+}
+
+function SyllabusChipsBar({
+  branch,
+  semester,
+  searchQuery,
+  onSelectCode,
+}: {
+  branch: BranchCode;
+  semester: number;
+  searchQuery: string;
+  onSelectCode: (code: string) => void;
+}) {
+  const subjects = useSyllabusSubjects(branch, semester);
+  if (subjects.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 bg-white border border-[#E4E4E7] rounded-2xl p-3 shadow-xs">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 px-1.5">
+        Syllabus Codes:
+      </span>
+      <button
+        type="button"
+        onClick={() => onSelectCode('')}
+        className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+          !searchQuery
+            ? 'bg-[#09090B] text-white border-[#09090B]'
+            : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+        }`}
+      >
+        ALL
+      </button>
+      {subjects.map((sub) => {
+        const isActive = searchQuery.toUpperCase() === sub.code.toUpperCase();
+        const typeLabel = sub.type === 'LAB' ? 'Lab' : sub.type === 'ELECTIVE' ? 'Elective' : 'Theory';
+        return (
+          <button
+            key={sub.code}
+            type="button"
+            onClick={() => onSelectCode(sub.code)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+              isActive
+                ? 'bg-[#2563EB] text-white border-[#2563EB]'
+                : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
+            }`}
+            title={`${sub.name} (${typeLabel})`}
+          >
+            <span>{sub.code}</span>
+            <span
+              className={`text-[9px] px-1 py-0.2 rounded ${
+                isActive
+                  ? 'bg-white/20 text-white'
+                  : sub.type === 'LAB'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : sub.type === 'ELECTIVE'
+                  ? 'bg-purple-100 text-purple-800'
+                  : 'bg-blue-100 text-[#2563EB]'
+              }`}
+            >
+              {typeLabel}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -288,3 +288,20 @@ model CourseLecture {
   @@index([branch, semester])
   @@index([subjectCode])
 }
+
+model SyllabusSubject {
+  id        String   @id @default(cuid())
+  code      String
+  name      String
+  branch    String   // "CSE" | "ECE" | "EE" | "ME" | "CE"
+  semester  Int      // 1 to 8
+  credits   Float    @default(3)
+  category  String   @default("PCC")
+  type      String   @default("THEORY") // "THEORY" | "LAB" | "ELECTIVE"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([code, branch, semester])
+  @@index([branch, semester, isActive])
+}

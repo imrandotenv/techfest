@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { CustomUserRole, NoteCategory } from '@/types';
 import { BranchCode, UploadNoteFormData } from '../types';
-import { getSubjectsForBranchAndSemester } from '@/lib/makaut-syllabus';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
 interface UploadNoteModalProps {
   isOpen: boolean;
@@ -52,6 +52,8 @@ export function UploadNoteModal({
   const [error, setError] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
+  const availableSubjects = useSyllabusSubjects(departmentCode, semester);
+
   // Sync with default props whenever modal opens
   useEffect(() => {
     if (isOpen) {
@@ -59,35 +61,24 @@ export function UploadNoteModal({
       const targetSem = defaultSemester || 3;
       setDepartmentCode(targetBranch);
       setSemester(targetSem);
-      const firstMatching = getSubjectsForBranchAndSemester(targetBranch, targetSem)[0];
-      if (firstMatching) {
-        setSubjectCode(firstMatching.code);
-        setSubjectName(firstMatching.name);
-      }
     }
   }, [isOpen, defaultBranch, defaultSemester]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (availableSubjects.length > 0 && !availableSubjects.some((s) => s.code === subjectCode)) {
+      setSubjectCode(availableSubjects[0].code);
+      setSubjectName(availableSubjects[0].name);
+    }
+  }, [availableSubjects, subjectCode]);
 
-  // Filter subjects strictly from official MAKAUT syllabus
-  const availableSubjects = getSubjectsForBranchAndSemester(departmentCode, semester);
+  if (!isOpen) return null;
 
   const handleDepartmentChange = (dept: BranchCode) => {
     setDepartmentCode(dept);
-    const firstMatching = getSubjectsForBranchAndSemester(dept, semester)[0];
-    if (firstMatching) {
-      setSubjectCode(firstMatching.code);
-      setSubjectName(firstMatching.name);
-    }
   };
 
   const handleSemesterChange = (sem: number) => {
     setSemester(sem);
-    const firstMatching = getSubjectsForBranchAndSemester(departmentCode, sem)[0];
-    if (firstMatching) {
-      setSubjectCode(firstMatching.code);
-      setSubjectName(firstMatching.name);
-    }
   };
 
   const handleSubjectSelect = (code: string) => {
@@ -278,7 +269,7 @@ export function UploadNoteModal({
             >
               {availableSubjects.map((sub) => (
                 <option key={sub.code} value={sub.code}>
-                  {sub.code} — {sub.name}
+                  {sub.code} — {sub.name} [{sub.type === 'LAB' ? 'Lab' : sub.type === 'ELECTIVE' ? 'Elective' : 'Theory'}]
                 </option>
               ))}
             </select>

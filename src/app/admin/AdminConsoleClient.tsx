@@ -31,8 +31,9 @@ import {
 } from 'lucide-react';
 import { UserRole } from '@/lib/rbac';
 import { CourseLectureManager } from '@/components/CourseLectureManager';
+import { AdminSyllabusManager } from '@/components/AdminSyllabusManager';
 
-type AdminTab = 'overview' | 'users' | 'notices' | 'moderation' | 'lectures' | 'directory' | 'audit';
+type AdminTab = 'overview' | 'users' | 'notices' | 'moderation' | 'lectures' | 'syllabus' | 'directory' | 'audit';
 
 interface ManagedUser {
   id: string;
@@ -479,6 +480,7 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
     { id: 'notices', label: 'Notices & Circulars', icon: Bell },
     { id: 'moderation', label: 'Moderation Queue', icon: BookOpen },
     { id: 'lectures', label: 'Course Lectures (NPTEL)', icon: PlayCircle },
+    { id: 'syllabus', label: 'Syllabus & Subjects', icon: FileText },
     { id: 'directory', label: 'Campus & HOD Directory', icon: Building2 },
     { id: 'audit', label: 'System Audit Logs', icon: ShieldCheck },
   ];
@@ -1156,6 +1158,11 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
           TAB 4B: COURSE LECTURES (SWAYAM / NPTEL)
           ========================================================================= */}
       {activeTab === 'lectures' && <CourseLectureManager />}
+
+      {/* =========================================================================
+          TAB 4C: SYLLABUS & SUBJECTS MANAGER
+          ========================================================================= */}
+      {activeTab === 'syllabus' && <AdminSyllabusManager />}
 
       {/* =========================================================================
           TAB 5: CAMPUS & HOD DIRECTORY MANAGER

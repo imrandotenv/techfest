@@ -35,7 +35,7 @@ import {
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
 import { useAcademicProfile } from '@/hooks/useAcademicProfile';
-import { getSubjectsForBranchAndSemester } from '@/lib/makaut-syllabus';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
@@ -179,6 +179,7 @@ export interface MessageItem {
 export default function VivaStudioPage() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { profile } = useAcademicProfile();
+  const liveSyllabusSubjects = useSyllabusSubjects(profile.branch, profile.semester);
 
   // Control bar state
   const [subject, setSubject] = useState<VivaSubject>('DSA');
@@ -960,7 +961,7 @@ export default function VivaStudioPage() {
               );
             })}
             {profile.onboardingCompleted &&
-              getSubjectsForBranchAndSemester(profile.branch, profile.semester)
+              liveSyllabusSubjects
                 .slice(0, 3)
                 .map((sub) => (
                   <button
@@ -974,10 +975,13 @@ export default function VivaStudioPage() {
                       else if (upper.includes('601')) setSubject('DBMS');
                       else setCurrentQuestion(`Let us begin your MAKAUT viva for ${sub.name} (${sub.code}). Explain its core foundational principle.`);
                     }}
-                    title={`${sub.code} — ${sub.name}`}
-                    className="hidden xl:inline-flex px-2 py-1 rounded-lg text-[11px] font-mono bg-blue-50 text-[#2563EB] border border-blue-200/70 hover:bg-blue-100 transition-colors shrink-0 cursor-pointer"
+                    title={`${sub.code} — ${sub.name} [${sub.type}]`}
+                    className="hidden xl:inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-mono bg-blue-50 text-[#2563EB] border border-blue-200/70 hover:bg-blue-100 transition-colors shrink-0 cursor-pointer"
                   >
-                    {sub.code}
+                    <span>{sub.code}</span>
+                    <span className="text-[9px] px-1 rounded bg-white/80 text-zinc-600">
+                      {sub.type === 'LAB' ? 'Lab' : sub.type === 'ELECTIVE' ? 'Elec' : 'Th'}
+                    </span>
                   </button>
                 ))}
           </div>
