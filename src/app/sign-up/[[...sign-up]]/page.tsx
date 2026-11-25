@@ -48,6 +48,7 @@ export default function SignUpPage() {
               appearance={{
                 elements: {
                   rootBox: 'w-full',
+                  cardBox: 'shadow-none border-0 bg-transparent w-full',
                   card: 'shadow-none p-0 border-0 bg-transparent w-full',
                   headerTitle: 'hidden',
                   headerSubtitle: 'hidden',
