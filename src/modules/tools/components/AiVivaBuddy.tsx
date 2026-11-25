@@ -59,7 +59,7 @@ const SUBJECT_REGISTRY: Record<VivaSubject, SubjectMeta> = {
   },
   COA: {
     code: 'PCC-CS302',
-    name: 'Computer Organization & Architecture',
+    name: 'Computer Organisation',
     semester: 'Sem 3',
     iconName: 'COA',
     starterQuestions: {
@@ -78,9 +78,9 @@ const SUBJECT_REGISTRY: Record<VivaSubject, SubjectMeta> = {
     },
   },
   OS: {
-    code: 'PCC-CS402',
+    code: 'PCC-CS502',
     name: 'Operating Systems',
-    semester: 'Sem 4',
+    semester: 'Sem 5',
     iconName: 'OS',
     starterQuestions: {
       'Quick Viva': [
@@ -118,9 +118,9 @@ const SUBJECT_REGISTRY: Record<VivaSubject, SubjectMeta> = {
     },
   },
   DBMS: {
-    code: 'PCC-CS501',
+    code: 'PCC-CS601',
     name: 'Database Management Systems',
-    semester: 'Sem 5',
+    semester: 'Sem 6',
     iconName: 'DBMS',
     starterQuestions: {
       'Quick Viva': [

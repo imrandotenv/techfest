@@ -26,8 +26,8 @@ import {
 import { CourseLectureManager } from '@/components/CourseLectureManager';
 import {
   SYLLABUS_BRANCHES,
-  getSubjectsForBranchAndSemester,
 } from '@/lib/makaut-syllabus';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
 type FacultyTab = 'overview' | 'notes' | 'lectures' | 'notices' | 'doubts' | 'viva';
 
@@ -118,18 +118,17 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
   const [pubTitle, setPubTitle] = useState('');
   const [pubBranch, setPubBranch] = useState('CSE');
   const [pubSemester, setPubSemester] = useState(3);
-  const pubAvailableSubjects = getSubjectsForBranchAndSemester(pubBranch, pubSemester);
+  const pubAvailableSubjects = useSyllabusSubjects(pubBranch, pubSemester);
   const [pubSubjectCode, setPubSubjectCode] = useState(pubAvailableSubjects[0]?.code || 'PCC-CS301');
   const [pubSubjectName, setPubSubjectName] = useState(pubAvailableSubjects[0]?.name || 'Data Structure & Algorithms');
   const [pubUnit, setPubUnit] = useState('');
 
   useEffect(() => {
-    const subs = getSubjectsForBranchAndSemester(pubBranch, pubSemester);
-    if (subs.length > 0 && !subs.some((s) => s.code === pubSubjectCode)) {
-      setPubSubjectCode(subs[0].code);
-      setPubSubjectName(subs[0].name);
+    if (pubAvailableSubjects.length > 0 && !pubAvailableSubjects.some((s) => s.code === pubSubjectCode)) {
+      setPubSubjectCode(pubAvailableSubjects[0].code);
+      setPubSubjectName(pubAvailableSubjects[0].name);
     }
-  }, [pubBranch, pubSemester, pubSubjectCode]);
+  }, [pubAvailableSubjects, pubSubjectCode]);
   const [pubMode, setPubMode] = useState<'url' | 'file'>('url');
   const [pubUrl, setPubUrl] = useState('');
   const [pubFile, setPubFile] = useState<File | null>(null);

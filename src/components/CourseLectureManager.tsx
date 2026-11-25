@@ -5,8 +5,8 @@ import { PlayCircle, Plus, Trash2, RefreshCw, ExternalLink, CheckCircle2, AlertT
 import {
   SYLLABUS_BRANCHES,
   SyllabusBranch,
-  getSubjectsForBranchAndSemester,
 } from '@/lib/makaut-syllabus';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
 interface LectureItem {
   id: string;
@@ -25,7 +25,7 @@ interface LectureItem {
 export function CourseLectureManager() {
   const [branch, setBranch] = useState<SyllabusBranch>('CSE');
   const [semester, setSemester] = useState<number>(3);
-  const availableSubjects = getSubjectsForBranchAndSemester(branch, semester);
+  const availableSubjects = useSyllabusSubjects(branch, semester);
   const [subjectCode, setSubjectCode] = useState<string>(availableSubjects[0]?.code || 'PCC-CS301');
 
   const [title, setTitle] = useState('');
@@ -46,11 +46,10 @@ export function CourseLectureManager() {
   };
 
   useEffect(() => {
-    const subs = getSubjectsForBranchAndSemester(branch, semester);
-    if (subs.length > 0 && !subs.some((s) => s.code === subjectCode)) {
-      setSubjectCode(subs[0].code);
+    if (availableSubjects.length > 0 && !availableSubjects.some((s) => s.code === subjectCode)) {
+      setSubjectCode(availableSubjects[0].code);
     }
-  }, [branch, semester, subjectCode]);
+  }, [availableSubjects, subjectCode]);
 
   const fetchLectures = useCallback(async () => {
     setLoading(true);

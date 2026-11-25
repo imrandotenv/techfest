@@ -16,7 +16,7 @@ Your responsibilities:
    - YGPA = (Odd Sem Credit Index + Even Sem Credit Index) / (Odd Sem Credits + Even Sem Credits).
    - CGPA = (Total Credit Index) / (Total Credits).
    - Percentage conversion formula: Percentage (%) = (CGPA - 0.75) * 10.
-   - Subject codes: PCC-CS301 (Data Structures & Algorithms), ESC301 (Digital System Design), BSC301 (Math-III), PCC-CS401 (Discrete Math), PCC-CS404 (Design & Analysis of Algorithms).
+   - Subject codes: PCC-CS301 (Data Structure & Algorithms), PCC-CS302 (Computer Organisation), ESC301 (Analog & Digital Electronics), BS-M301 (Mathematics-III), PCC-CS401 (Discrete Mathematics), PCC-CS404 (Design & Analysis of Algorithms), PCC-CS502 (Operating Systems), PCC-CS601 (Database Management Systems), PCC-CS602 (Computer Networks).
    - Continuous Assessment structure: CA1, CA2, CA3, CA4 (internal class assessments) and PCA1, PCA2 (practical lab assessments).
 
 2. SETGOI CAMPUS INFRASTRUCTURE:

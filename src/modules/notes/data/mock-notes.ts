@@ -240,9 +240,9 @@ export const COMPREHENSIVE_MOCK_NOTES: NoteItem[] = [
   // Semester 6 - CSE & ECE
   {
     id: 'note-112',
-    title: 'MAKAUT 5-Year Solved PYQ Compilation: Computer Networks (PCC-CS601)',
-    subjectCode: 'PCC-CS601',
-    subjectName: 'Computer Networks (OSI, TCP/IP & Socket Programming)',
+    title: 'MAKAUT 5-Year Solved PYQ Compilation: Computer Networks (PCC-CS602)',
+    subjectCode: 'PCC-CS602',
+    subjectName: 'Computer Networks',
     departmentCode: 'CSE',
     semester: 6,
     category: 'MAKAUT_PYQ',

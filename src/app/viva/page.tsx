@@ -77,7 +77,7 @@ export const SUBJECT_CATALOG: Record<VivaSubject, SubjectInfo> = {
   },
   COA: {
     code: 'PCC-CS302',
-    name: 'Computer Organization & Architecture',
+    name: 'Computer Organisation',
     semester: 'Sem 3',
     starterQuestions: {
       en: [
@@ -97,9 +97,9 @@ export const SUBJECT_CATALOG: Record<VivaSubject, SubjectInfo> = {
     },
   },
   OS: {
-    code: 'PCC-CS402',
+    code: 'PCC-CS502',
     name: 'Operating Systems',
-    semester: 'Sem 4',
+    semester: 'Sem 5',
     starterQuestions: {
       en: [
         'What are the 4 Coffman conditions that must hold simultaneously for a system deadlock to occur?',
@@ -139,9 +139,9 @@ export const SUBJECT_CATALOG: Record<VivaSubject, SubjectInfo> = {
     },
   },
   DBMS: {
-    code: 'PCC-CS501',
+    code: 'PCC-CS601',
     name: 'Database Management Systems',
-    semester: 'Sem 5',
+    semester: 'Sem 6',
     starterQuestions: {
       en: [
         'What do the four letters in ACID transaction properties guarantee?',
@@ -1125,11 +1125,11 @@ export default function VivaStudioPage() {
                     key={sub.code}
                     onClick={() => {
                       const upper = sub.code.toUpperCase();
-                      if (upper.includes('301') && profile.branch === 'CSE') setSubject('DSA');
-                      else if (upper.includes('302')) setSubject('COA');
-                      else if (upper.includes('ESC301')) setSubject('Digital Electronics');
-                      else if (upper.includes('502') || upper.includes('402')) setSubject('OS');
-                      else if (upper.includes('601')) setSubject('DBMS');
+                      if (upper === 'PCC-CS301') setSubject('DSA');
+                      else if (upper === 'PCC-CS302') setSubject('COA');
+                      else if (upper === 'ESC301') setSubject('Digital Electronics');
+                      else if (upper === 'PCC-CS502') setSubject('OS');
+                      else if (upper === 'PCC-CS601') setSubject('DBMS');
                       else setCurrentQuestion(`Let us begin your MAKAUT viva for ${sub.name} (${sub.code}). Explain its core foundational principle.`);
                     }}
                     title={`${sub.code} — ${sub.name} [${sub.type}]`}
