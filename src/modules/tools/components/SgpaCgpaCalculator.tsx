@@ -89,12 +89,11 @@ export function SgpaCgpaCalculator() {
   });
 
   useEffect(() => {
-    if (profile?.branch) {
-      setSelectedBranch(normalizeSyllabusBranch(profile.branch));
-    }
-    if (profile?.semester) {
-      setSelectedSemesterNum(profile.semester);
-    }
+    const b = profile?.branch ? normalizeSyllabusBranch(profile.branch) : 'CSE';
+    const s = profile?.semester || 3;
+    setSelectedBranch(b);
+    setSelectedSemesterNum(s);
+    handleLoadFromLiveSyllabus(b, s);
   }, [profile?.branch, profile?.semester]);
 
   const handleLoadFromLiveSyllabus = async (
@@ -587,7 +586,7 @@ export function SgpaCgpaCalculator() {
                           <td className="py-2 px-3">
                             <input
                               type="number"
-                              min="0.5"
+                              min="0"
                               max="10"
                               step="0.5"
                               value={sub.credits}
@@ -596,17 +595,23 @@ export function SgpaCgpaCalculator() {
                             />
                           </td>
                           <td className="py-2 px-3">
-                            <select
-                              value={sub.grade}
-                              onChange={(e) => handleSubjectChange(sub.id, 'grade', e.target.value as LetterGrade)}
-                              className="px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono font-bold text-xs bg-white text-[#2563EB] focus:border-[#2563EB] outline-none cursor-pointer"
-                            >
-                              {MAKAUT_GRADE_SYSTEM.map((g) => (
-                                <option key={g.letter} value={g.letter}>
-                                  {g.letter} ({g.points} pts)
-                                </option>
-                              ))}
-                            </select>
+                            {sub.credits <= 0 ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-lg bg-zinc-100 border border-[#E4E4E7] text-[10px] font-mono text-[#52525B]">
+                                Non-Credit (Pass/Fail)
+                              </span>
+                            ) : (
+                              <select
+                                value={sub.grade}
+                                onChange={(e) => handleSubjectChange(sub.id, 'grade', e.target.value as LetterGrade)}
+                                className="px-2 py-1 border border-[#E4E4E7] rounded-lg font-mono font-bold text-xs bg-white text-[#2563EB] focus:border-[#2563EB] outline-none cursor-pointer"
+                              >
+                                {MAKAUT_GRADE_SYSTEM.map((g) => (
+                                  <option key={g.letter} value={g.letter}>
+                                    {g.letter} ({g.points} pts)
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="py-2 px-3 text-right">
                             <button

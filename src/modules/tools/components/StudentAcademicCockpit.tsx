@@ -19,72 +19,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-interface EnrolledCourse {
-  code: string;
-  name: string;
-  category: 'Core Engineering' | 'Engineering Science' | 'Basic Science' | 'Humanities' | 'Mandatory';
-  credits: number;
-  faculty: string;
-  room: string;
-  status: 'Active';
-}
-
-const ENROLLED_COURSES: EnrolledCourse[] = [
-  {
-    code: 'PCC-CS301',
-    name: 'Data Structures & Algorithms',
-    category: 'Core Engineering',
-    credits: 4.0,
-    faculty: 'Dr. Sourav Sengupta',
-    room: 'Lab 301 / Room 306',
-    status: 'Active',
-  },
-  {
-    code: 'ESC301',
-    name: 'Digital Electronics & Logic Design',
-    category: 'Engineering Science',
-    credits: 3.0,
-    faculty: 'Dr. Debabrata Roy',
-    room: 'Digital Lab 204',
-    status: 'Active',
-  },
-  {
-    code: 'BS-M301',
-    name: 'Mathematics-III (Differential Calculus)',
-    category: 'Basic Science',
-    credits: 4.0,
-    faculty: 'Prof. Kaushik Chatterjee',
-    room: 'Lecture Hall 102',
-    status: 'Active',
-  },
-  {
-    code: 'PCC-CS302',
-    name: 'IT Workshop (Python & Linux Shell Automation)',
-    category: 'Core Engineering',
-    credits: 3.0,
-    faculty: 'Prof. Riya Karmakar',
-    room: 'Computer Center Lab 02',
-    status: 'Active',
-  },
-  {
-    code: 'HSMC301',
-    name: 'Principles of Management & Engineering Economics',
-    category: 'Humanities',
-    credits: 2.0,
-    faculty: 'Prof. Anirban Mukherjee',
-    room: 'Lecture Hall 105',
-    status: 'Active',
-  },
-  {
-    code: 'MC301',
-    name: 'Constitution of India (Mandatory Compliance)',
-    category: 'Mandatory',
-    credits: 0.0,
-    faculty: 'Academic Cell Guest Lecturer',
-    room: 'Central Seminar Hall',
-    status: 'Active',
-  },
-];
+import { useAcademicProfile } from '@/hooks/useAcademicProfile';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
 const UPCOMING_EXAMINATIONS = [
   {
@@ -114,6 +50,18 @@ const UPCOMING_EXAMINATIONS = [
 ];
 
 export function StudentAcademicCockpit() {
+  const { profile } = useAcademicProfile();
+  const liveSubjects = useSyllabusSubjects(profile.branch || 'CSE', profile.semester || 3);
+  const ENROLLED_COURSES = liveSubjects.map((s) => ({
+    code: s.code,
+    name: s.name,
+    category: s.type === 'LAB' ? 'Lab' : s.type === 'ELECTIVE' ? 'Elective' : 'Core',
+    credits: s.credits,
+    faculty: `${profile.branch || 'CSE'} Dept. Faculty`,
+    room: s.type === 'LAB' ? 'Departmental Lab' : 'Academic Lecture Hall',
+    status: 'Active' as const,
+  }));
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Student Profile Card (Ported & Elevated from student-dashboard.html) */}

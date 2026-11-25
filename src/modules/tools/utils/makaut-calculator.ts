@@ -41,6 +41,8 @@ export function calculateSubjectSGPA(subjects: SubjectEntry[]): {
 
   for (const subject of subjects) {
     const credits = Math.max(0, Number(subject.credits) || 0);
+    // Non-credit mandatory courses (0 credits) are excluded from SGPA denominator
+    if (credits <= 0) continue;
     const points = getGradePoints(subject.grade);
     if (subject.grade === 'F') {
       hasBacklog = true;
