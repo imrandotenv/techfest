@@ -14,6 +14,11 @@ model User {
   email               String   @unique
   fullName            String?
   role                String   @default("STUDENT") // "STUDENT" | "FACULTY" | "ADMIN"
+  isMasterAdmin       Boolean  @default(false)
+  requestedRole       String?  // "FACULTY" | "ADMIN" | null when awaiting approval
+  approvalStatus      String   @default("APPROVED") // "APPROVED" | "PENDING" | "REJECTED"
+  employeeId          String?  // Faculty/Admin employee ID
+  designation         String?  // e.g. "Assistant Professor", "HOD", "Dean Academics", "Master Admin"
   department          String?  // SETGOI department: "CSE" | "CSE-AIML" | "CSE-DS" | "ECE" | "EE" | "EEE" | "ME" | "CE"
   degree              String   @default("B.Tech")  // strictly B.Tech
   branch              String?  // "CSE" | "ECE" | "EE" | "ME" | "CE" | "IT" | "AIML"
@@ -21,6 +26,9 @@ model User {
   passoutYear         Int?     // e.g. 2026–2030
   universityRoll      String?  // optional MAKAUT roll number
   onboardingCompleted Boolean  @default(false)
+  requestedScopes     Json?    // e.g. [{ "branch": "CSE", "semesters": [3, 5] }]
+  assignedScopes      Json?    // e.g. [{ "branch": "CSE", "semesters": [3] }]
+  onboardingNote      String?  @db.Text
   academicStats       Json?    // { cgpa, attendancePct, attendedClasses, totalClasses, semesterSgpas }
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

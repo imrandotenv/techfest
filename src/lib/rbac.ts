@@ -5,6 +5,13 @@ import { prisma } from '@/lib/prisma';
 
 export type UserRole = 'admin' | 'faculty' | 'student';
 
+export interface FacultyScope {
+  branch: string;
+  semesters: number[];
+}
+
+export const MASTER_ADMIN_EMAIL = 'mdimransps955@gmail.com';
+
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   admin: 3,
   faculty: 2,
@@ -125,7 +132,8 @@ export async function resolveAndHealUser({
   if (!clerkUserId) return null;
 
   const normalizedEmail = email?.trim().toLowerCase() || null;
-  const isWhitelisted = isSuperAdminEmail(normalizedEmail);
+  const isMaster = normalizedEmail === MASTER_ADMIN_EMAIL;
+  const isWhitelisted = isMaster || isSuperAdminEmail(normalizedEmail);
 
   // 1. Try finding by clerkId first
   let dbUser = await prisma.user.findUnique({
@@ -182,12 +190,19 @@ export async function resolveAndHealUser({
   }
 
   // 3. If whitelisted super admin, ensure ADMIN role in DB and Clerk
-  if (dbUser && isWhitelisted && dbUser.role.toUpperCase() !== 'ADMIN') {
+  if (
+    dbUser &&
+    isWhitelisted &&
+    (dbUser.role.toUpperCase() !== 'ADMIN' ||
+      (isMaster && (!dbUser.isMasterAdmin || dbUser.approvalStatus !== 'APPROVED')))
+  ) {
     dbUser = await prisma.user.update({
       where: { id: dbUser.id },
       data: {
         role: 'ADMIN',
         onboardingCompleted: true,
+        approvalStatus: 'APPROVED',
+        ...(isMaster ? { isMasterAdmin: true, requestedRole: null, designation: dbUser.designation || 'Master Admin' } : {}),
       },
     });
 
@@ -197,6 +212,8 @@ export async function resolveAndHealUser({
         publicMetadata: {
           role: 'admin',
           isSuperAdmin: true,
+          isMasterAdmin: isMaster,
+          approvalStatus: 'APPROVED',
           onboardingCompleted: true,
         },
       });
@@ -213,8 +230,11 @@ export async function resolveAndHealUser({
         data: {
           clerkId: clerkUserId,
           email: normalizedEmail,
-          fullName: fullName || (isWhitelisted ? 'Super Admin' : 'SETGOI Member'),
+          fullName: fullName || (isMaster ? 'Master Admin' : isWhitelisted ? 'Super Admin' : 'SETGOI Member'),
           role: assignedRole,
+          isMasterAdmin: isMaster,
+          approvalStatus: 'APPROVED',
+          designation: isMaster ? 'Master Admin' : undefined,
           degree: 'B.Tech',
           onboardingCompleted: isWhitelisted,
         },
@@ -226,6 +246,8 @@ export async function resolveAndHealUser({
           publicMetadata: {
             role: assignedRole.toLowerCase(),
             isSuperAdmin: assignedRole === 'ADMIN',
+            isMasterAdmin: isMaster,
+            approvalStatus: 'APPROVED',
             onboardingCompleted: isWhitelisted,
           },
         });
@@ -452,4 +474,123 @@ export async function requireRole(
   }
 
   return user;
+}
+
+/**
+ * Fetches the current Clerk user, enforces Master Admin (`mdimransps955@gmail.com`)
+ * across both Neon PostgreSQL and Clerk publicMetadata, and returns the synced DB user.
+ */
+export async function syncAndGetCurrentUser() {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const clerkUser = await currentUser();
+  if (!clerkUser) return null;
+
+  const primaryEmail =
+    clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ||
+    clerkUser.emailAddresses[0]?.emailAddress ||
+    null;
+
+  const fullName =
+    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') ||
+    clerkUser.username ||
+    null;
+
+  const isMaster = primaryEmail?.trim().toLowerCase() === MASTER_ADMIN_EMAIL;
+
+  const dbUser = await resolveAndHealUser({
+    clerkUserId: userId,
+    email: primaryEmail,
+    fullName,
+    autoCreate: true,
+  });
+
+  if (dbUser && isMaster) {
+    if (
+      dbUser.role.toUpperCase() !== 'ADMIN' ||
+      !dbUser.isMasterAdmin ||
+      dbUser.approvalStatus !== 'APPROVED'
+    ) {
+      const updated = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: {
+          role: 'ADMIN',
+          isMasterAdmin: true,
+          approvalStatus: 'APPROVED',
+          requestedRole: null,
+          onboardingCompleted: true,
+          designation: dbUser.designation || 'Master Admin',
+        },
+      });
+      try {
+        const client = await clerkClient();
+        await client.users.updateUserMetadata(userId, {
+          publicMetadata: {
+            ...(clerkUser.publicMetadata || {}),
+            role: 'admin',
+            isSuperAdmin: true,
+            isMasterAdmin: true,
+            approvalStatus: 'APPROVED',
+            onboardingCompleted: true,
+          },
+        });
+      } catch (clerkErr) {
+        console.warn('[RBAC] Master Admin metadata sync warning:', clerkErr);
+      }
+      return updated;
+    }
+  }
+
+  return dbUser;
+}
+
+/**
+ * Verifies whether a user has Faculty/Admin clearance for a specific SETGOI branch and semester.
+ */
+export function canFacultyAccessScope(
+  user: {
+    role?: string | null;
+    isMasterAdmin?: boolean | null;
+    approvalStatus?: string | null;
+    assignedScopes?: unknown;
+  } | null | undefined,
+  branch: string,
+  semester: number
+): boolean {
+  if (!user) return false;
+  const roleUpper = (user.role || '').toUpperCase();
+  if (roleUpper === 'ADMIN' || Boolean(user.isMasterAdmin)) return true;
+  if (roleUpper !== 'FACULTY' || (user.approvalStatus || '').toUpperCase() !== 'APPROVED') {
+    return false;
+  }
+
+  if (!Array.isArray(user.assignedScopes)) return false;
+
+  const targetBranch = branch.trim().toUpperCase();
+  const targetSemester = Number(semester);
+
+  return user.assignedScopes.some((scope: any) => {
+    if (!scope || typeof scope.branch !== 'string' || !Array.isArray(scope.semesters)) {
+      return false;
+    }
+    return (
+      scope.branch.trim().toUpperCase() === targetBranch &&
+      scope.semesters.map((s: any) => Number(s)).includes(targetSemester)
+    );
+  });
+}
+
+/**
+ * Guards against any mutation targeting the protected Master Admin account.
+ */
+export function assertNotMasterAdminTarget(targetEmail?: string | null): void {
+  if (!targetEmail) return;
+  if (targetEmail.trim().toLowerCase() === MASTER_ADMIN_EMAIL) {
+    throw new RBACError(
+      `Protected Master Admin (${MASTER_ADMIN_EMAIL}) cannot be demoted, rejected, or modified.`,
+      403,
+      'MASTER_ADMIN_PROTECTED'
+    );
+  }
 }

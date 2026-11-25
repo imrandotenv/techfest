@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { getCurrentAuthUser, normalizeUserRole, UserRole } from '@/lib/rbac';
+import {
+  getCurrentAuthUser,
+  normalizeUserRole,
+  UserRole,
+  assertNotMasterAdminTarget,
+  RBACError,
+} from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -61,6 +67,7 @@ export async function PATCH(
       });
 
       if (existingUser) {
+        assertNotMasterAdminTarget(existingUser.email);
         updatedDbUser = await prisma.user.update({
           where: { id: existingUser.id },
           data: {
@@ -76,6 +83,9 @@ export async function PATCH(
         });
       }
     } catch (dbErr: any) {
+      if (dbErr instanceof RBACError) {
+        return NextResponse.json({ error: dbErr.message }, { status: dbErr.statusCode });
+      }
       console.warn('[Admin Role API] Neon DB update warning:', dbErr?.message || dbErr);
     }
 
