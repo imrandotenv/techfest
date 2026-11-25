@@ -33,6 +33,7 @@ const isPublicRoute = createRouteMatcher([
   '/auth-callback(.*)',
   '/viva(.*)',
   '/lectures(.*)',
+  '/poster(.*)',
   '/notes',
   '/campus',
   '/forum',

@@ -19,7 +19,8 @@ export function Footer() {
     pathname.startsWith('/admin') ||
     pathname.startsWith('/student') ||
     pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/viva')
+    pathname.startsWith('/viva') ||
+    pathname.startsWith('/poster')
   ) {
     return null;
   }
