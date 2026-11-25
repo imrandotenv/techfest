@@ -26,6 +26,7 @@ export default function PosterStudioPage() {
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [format, setFormat] = useState<'a4' | 'social'>('a4');
   const [collegeLogoSrc, setCollegeLogoSrc] = useState<string>('/setgoi-logo.png');
   const [logoError, setLogoError] = useState<boolean>(false);
 
@@ -53,15 +54,20 @@ export default function PosterStudioPage() {
     if (!posterRef.current || isExporting) return;
     setIsExporting(true);
     try {
+      const targetWidth = format === 'social' ? 1080 : 794;
+      const targetHeight = format === 'social' ? 1080 : 1123;
       const dataUrl = await toPng(posterRef.current, {
         pixelRatio: 3,
         cacheBust: true,
         backgroundColor: '#FAFAFA',
-        width: 794,
-        height: 1123,
+        width: targetWidth,
+        height: targetHeight,
       });
       const link = document.createElement('a');
-      link.download = 'SETTech-SETGOI-A4-Poster-300DPI.png';
+      link.download =
+        format === 'social'
+          ? 'SETTech-SETGOI-WhatsApp-Card-1080x1080.png'
+          : 'SETTech-SETGOI-A4-Poster-300DPI.png';
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -94,8 +100,38 @@ export default function PosterStudioPage() {
               SETTech A4 Poster Studio
             </div>
             <div className="text-[10px] font-mono text-zinc-500">
-              794 × 1123px • Swiss Minimalist Print Sheet
+              {format === 'social' ? '1080 × 1080px • 1:1 Social Card' : '794 × 1123px • A4 Print Sheet'}
             </div>
+          </div>
+
+          {/* Format Switcher Segmented Toggle */}
+          <div
+            className="flex items-center gap-0.5 p-0.5 bg-zinc-100 border border-[#E4E4E7] rounded-xl text-[11px] font-mono ml-2"
+            role="group"
+            aria-label="Poster Format Switcher"
+          >
+            <button
+              type="button"
+              onClick={() => setFormat('a4')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                format === 'a4'
+                  ? 'bg-white text-[#09090B] font-bold shadow-2xs'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              A4 Print Poster
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormat('social')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                format === 'social'
+                  ? 'bg-white text-[#2563EB] font-bold shadow-2xs'
+                  : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+            >
+              WhatsApp Share Card
+            </button>
           </div>
         </div>
 
@@ -169,7 +205,11 @@ export default function PosterStudioPage() {
       <div className="overflow-x-auto max-w-full pb-8 print:pb-0 print:overflow-visible">
         <div
           ref={posterRef}
-          className="w-[794px] h-[1123px] print:w-[210mm] print:h-[297mm] bg-[#FAFAFA] text-[#09090B] border border-[#E4E4E7] print:border-0 shadow-2xl print:shadow-none relative overflow-hidden flex flex-col justify-between p-10 select-none"
+          className={`${
+            format === 'social'
+              ? 'w-[1080px] h-[1080px] p-11'
+              : 'w-[794px] h-[1123px] p-10'
+          } print:w-[210mm] print:h-[297mm] bg-[#FAFAFA] text-[#09090B] border border-[#E4E4E7] print:border-0 shadow-2xl print:shadow-none relative overflow-hidden flex flex-col justify-between select-none`}
           style={{
             backgroundImage: 'radial-gradient(rgba(148, 163, 184, 0.22) 1px, transparent 1px)',
             backgroundSize: '20px 20px',
@@ -250,7 +290,11 @@ export default function PosterStudioPage() {
               </div>
 
               {/* Landing Page Screenshot OR Faithful High-Craft Architectural Composition */}
-              <div className="w-full h-[435px] bg-[#FAFAFA] overflow-hidden relative">
+              <div
+                className={`w-full ${
+                  format === 'social' ? 'h-[390px]' : 'h-[435px]'
+                } bg-[#FAFAFA] overflow-hidden relative`}
+              >
                 {!previewImgError ? (
                   <img
                     src={landingPreviewSrc}
