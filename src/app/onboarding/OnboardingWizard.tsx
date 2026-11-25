@@ -39,12 +39,13 @@ interface OnboardingWizardProps {
 
 const BRANCH_ICONS: Record<BTechBranch, React.ElementType> = {
   CSE: Laptop,
+  'CSE-AIML': BrainCircuit,
+  'CSE-DS': Network,
   ECE: Cpu,
   EE: Zap,
+  EEE: Zap,
   ME: Cog,
   CE: Building2,
-  IT: Network,
-  AIML: BrainCircuit,
 };
 
 const SEMESTERS = [

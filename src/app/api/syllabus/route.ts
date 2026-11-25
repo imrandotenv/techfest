@@ -66,14 +66,14 @@ export async function POST(req: NextRequest) {
 
     const subject = await prisma.syllabusSubject.upsert({
       where: {
-        code_branch_semester: {
-          code: normCode,
+        branch_semester_code_name: {
           branch: normBranch,
           semester: normSem,
+          code: normCode,
+          name: name.trim(),
         },
       },
       update: {
-        name: name.trim(),
         credits: Number(credits) || 0,
         category: category.toUpperCase().trim(),
         type: type.toUpperCase().trim(),

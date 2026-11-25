@@ -243,7 +243,9 @@ export function AdminSyllabusManager() {
                 >
                   <option value="THEORY">THEORY</option>
                   <option value="LAB">LAB</option>
+                  <option value="SESSIONAL">SESSIONAL</option>
                   <option value="ELECTIVE">ELECTIVE</option>
+                  <option value="MANDATORY">MANDATORY</option>
                 </select>
               </div>
               <div>
@@ -260,6 +262,7 @@ export function AdminSyllabusManager() {
                   <option value="PEC">PEC</option>
                   <option value="OEC">OEC</option>
                   <option value="MC">MC</option>
+                  <option value="PROJ">PROJ</option>
                 </select>
               </div>
               <div>

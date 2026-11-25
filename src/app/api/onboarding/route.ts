@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const rawBranch = typeof body.branch === 'string' ? body.branch.toUpperCase() : 'CSE';
-    const branch: BTechBranch = ['CSE', 'ECE', 'EE', 'ME', 'CE', 'IT', 'AIML'].includes(rawBranch)
+    const branch: BTechBranch = ['CSE', 'CSE-AIML', 'CSE-DS', 'ECE', 'EE', 'EEE', 'ME', 'CE'].includes(rawBranch)
       ? (rawBranch as BTechBranch)
       : 'CSE';
 

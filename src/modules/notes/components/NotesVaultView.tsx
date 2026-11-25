@@ -59,6 +59,18 @@ const BTECH_BRANCHES: BranchConfig[] = [
     icon: Laptop,
   },
   {
+    code: 'CSE-AIML',
+    name: 'CSE (Artificial Intelligence & Machine Learning)',
+    shortName: 'CSE (AI & ML)',
+    icon: BrainCircuit,
+  },
+  {
+    code: 'CSE-DS',
+    name: 'CSE (Data Science)',
+    shortName: 'CSE (Data Science)',
+    icon: Network,
+  },
+  {
     code: 'ECE',
     name: 'Electronics & Communication Engineering',
     shortName: 'Electronics & Comm (ECE)',
@@ -68,6 +80,12 @@ const BTECH_BRANCHES: BranchConfig[] = [
     code: 'EE',
     name: 'Electrical Engineering',
     shortName: 'Electrical Engg (EE)',
+    icon: Zap,
+  },
+  {
+    code: 'EEE',
+    name: 'Electrical & Electronics Engineering',
+    shortName: 'Electrical & Electronics (EEE)',
     icon: Zap,
   },
   {
@@ -81,18 +99,6 @@ const BTECH_BRANCHES: BranchConfig[] = [
     name: 'Civil Engineering',
     shortName: 'Civil Engg (CE)',
     icon: Building2,
-  },
-  {
-    code: 'IT',
-    name: 'Information Technology',
-    shortName: 'Information Tech (IT)',
-    icon: Network,
-  },
-  {
-    code: 'AIML',
-    name: 'AI & Machine Learning',
-    shortName: 'CSE (AI & ML)',
-    icon: BrainCircuit,
   },
 ];
 

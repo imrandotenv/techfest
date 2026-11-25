@@ -1,6 +1,6 @@
 import { NoteCategory, VerificationStatus } from '@/types';
 
-export type BranchCode = 'CSE' | 'ECE' | 'EE' | 'ME' | 'CE' | 'IT' | 'AIML';
+export type BranchCode = 'CSE' | 'CSE-AIML' | 'CSE-DS' | 'ECE' | 'EE' | 'EEE' | 'ME' | 'CE';
 
 export interface MAKAUTSubject {
   code: string;

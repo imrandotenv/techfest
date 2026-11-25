@@ -305,15 +305,15 @@ model SyllabusSubject {
   id        String   @id @default(cuid())
   code      String
   name      String
-  branch    String   // "CSE" | "ECE" | "EE" | "ME" | "CE"
+  branch    String   // "CSE" | "CSE-AIML" | "CSE-DS" | "ECE" | "EE" | "EEE" | "ME" | "CE"
   semester  Int      // 1 to 8
   credits   Float    @default(3)
   category  String   @default("PCC")
-  type      String   @default("THEORY") // "THEORY" | "LAB" | "ELECTIVE"
+  type      String   @default("THEORY") // "THEORY" | "LAB" | "SESSIONAL" | "ELECTIVE" | "MANDATORY"
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([code, branch, semester])
+  @@unique([branch, semester, code, name])
   @@index([branch, semester, isActive])
 }
