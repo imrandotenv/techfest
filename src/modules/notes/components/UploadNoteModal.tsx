@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { CustomUserRole, NoteCategory } from '@/types';
 import { BranchCode, UploadNoteFormData } from '../types';
-import { MAKAUT_SUBJECTS } from '../data/makaut-curriculum';
+import { getSubjectsForBranchAndSemester } from '@/lib/makaut-syllabus';
 
 interface UploadNoteModalProps {
   isOpen: boolean;
@@ -59,9 +59,7 @@ export function UploadNoteModal({
       const targetSem = defaultSemester || 3;
       setDepartmentCode(targetBranch);
       setSemester(targetSem);
-      const firstMatching = MAKAUT_SUBJECTS.find(
-        (s) => (s.branch === 'ALL' || s.branch === targetBranch) && s.semester === targetSem
-      );
+      const firstMatching = getSubjectsForBranchAndSemester(targetBranch, targetSem)[0];
       if (firstMatching) {
         setSubjectCode(firstMatching.code);
         setSubjectName(firstMatching.name);
@@ -71,18 +69,12 @@ export function UploadNoteModal({
 
   if (!isOpen) return null;
 
-  // Filter subjects matching department and semester
-  const availableSubjects = MAKAUT_SUBJECTS.filter(
-    (s) =>
-      (s.branch === 'ALL' || s.branch === departmentCode) &&
-      s.semester === semester
-  );
+  // Filter subjects strictly from official MAKAUT syllabus
+  const availableSubjects = getSubjectsForBranchAndSemester(departmentCode, semester);
 
   const handleDepartmentChange = (dept: BranchCode) => {
     setDepartmentCode(dept);
-    const firstMatching = MAKAUT_SUBJECTS.find(
-      (s) => (s.branch === 'ALL' || s.branch === dept) && s.semester === semester
-    );
+    const firstMatching = getSubjectsForBranchAndSemester(dept, semester)[0];
     if (firstMatching) {
       setSubjectCode(firstMatching.code);
       setSubjectName(firstMatching.name);
@@ -91,9 +83,7 @@ export function UploadNoteModal({
 
   const handleSemesterChange = (sem: number) => {
     setSemester(sem);
-    const firstMatching = MAKAUT_SUBJECTS.find(
-      (s) => (s.branch === 'ALL' || s.branch === departmentCode) && s.semester === sem
-    );
+    const firstMatching = getSubjectsForBranchAndSemester(departmentCode, sem)[0];
     if (firstMatching) {
       setSubjectCode(firstMatching.code);
       setSubjectName(firstMatching.name);

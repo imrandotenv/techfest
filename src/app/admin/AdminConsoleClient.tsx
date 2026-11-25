@@ -27,10 +27,12 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  PlayCircle,
 } from 'lucide-react';
 import { UserRole } from '@/lib/rbac';
+import { CourseLectureManager } from '@/components/CourseLectureManager';
 
-type AdminTab = 'overview' | 'users' | 'notices' | 'moderation' | 'directory' | 'audit';
+type AdminTab = 'overview' | 'users' | 'notices' | 'moderation' | 'lectures' | 'directory' | 'audit';
 
 interface ManagedUser {
   id: string;
@@ -476,6 +478,7 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
     { id: 'users', label: 'User & Role Manager', icon: Users },
     { id: 'notices', label: 'Notices & Circulars', icon: Bell },
     { id: 'moderation', label: 'Moderation Queue', icon: BookOpen },
+    { id: 'lectures', label: 'Course Lectures (NPTEL)', icon: PlayCircle },
     { id: 'directory', label: 'Campus & HOD Directory', icon: Building2 },
     { id: 'audit', label: 'System Audit Logs', icon: ShieldCheck },
   ];
@@ -1148,6 +1151,11 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
           </div>
         </div>
       )}
+
+      {/* =========================================================================
+          TAB 4B: COURSE LECTURES (SWAYAM / NPTEL)
+          ========================================================================= */}
+      {activeTab === 'lectures' && <CourseLectureManager />}
 
       {/* =========================================================================
           TAB 5: CAMPUS & HOD DIRECTORY MANAGER

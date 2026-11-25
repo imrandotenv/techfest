@@ -21,9 +21,15 @@ import {
   ExternalLink,
   Check,
   HelpCircle,
+  PlayCircle,
 } from 'lucide-react';
+import { CourseLectureManager } from '@/components/CourseLectureManager';
+import {
+  SYLLABUS_BRANCHES,
+  getSubjectsForBranchAndSemester,
+} from '@/lib/makaut-syllabus';
 
-type FacultyTab = 'overview' | 'notes' | 'notices' | 'doubts' | 'viva';
+type FacultyTab = 'overview' | 'notes' | 'lectures' | 'notices' | 'doubts' | 'viva';
 
 interface FacultyKPIs {
   uploadedNotes: number;
@@ -110,11 +116,20 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
 
   // Publish Note form state
   const [pubTitle, setPubTitle] = useState('');
-  const [pubSubjectCode, setPubSubjectCode] = useState('');
-  const [pubSubjectName, setPubSubjectName] = useState('');
   const [pubBranch, setPubBranch] = useState('CSE');
   const [pubSemester, setPubSemester] = useState(3);
+  const pubAvailableSubjects = getSubjectsForBranchAndSemester(pubBranch, pubSemester);
+  const [pubSubjectCode, setPubSubjectCode] = useState(pubAvailableSubjects[0]?.code || 'PCC-CS301');
+  const [pubSubjectName, setPubSubjectName] = useState(pubAvailableSubjects[0]?.name || 'Data Structure & Algorithms');
   const [pubUnit, setPubUnit] = useState('');
+
+  useEffect(() => {
+    const subs = getSubjectsForBranchAndSemester(pubBranch, pubSemester);
+    if (subs.length > 0 && !subs.some((s) => s.code === pubSubjectCode)) {
+      setPubSubjectCode(subs[0].code);
+      setPubSubjectName(subs[0].name);
+    }
+  }, [pubBranch, pubSemester, pubSubjectCode]);
   const [pubMode, setPubMode] = useState<'url' | 'file'>('url');
   const [pubUrl, setPubUrl] = useState('');
   const [pubFile, setPubFile] = useState<File | null>(null);
@@ -420,6 +435,7 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
   }> = [
     { id: 'overview', label: 'Overview Desk', icon: LayoutDashboard },
     { id: 'notes', label: 'Notes & Verification', icon: FileCheck2, badge: kpis.pendingSubmissions },
+    { id: 'lectures', label: 'Course Lectures (NPTEL)', icon: PlayCircle },
     { id: 'notices', label: 'Notices & Assignments', icon: Bell },
     { id: 'doubts', label: 'Official Doubt Solver', icon: MessageSquare, badge: kpis.unansweredDoubts },
     { id: 'viva', label: 'AI Viva Curator', icon: Sparkles },
@@ -599,43 +615,17 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">MAKAUT Code</label>
-                  <input
-                    type="text"
-                    value={pubSubjectCode}
-                    onChange={(e) => setPubSubjectCode(e.target.value)}
-                    placeholder="PCC-CS301"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono uppercase"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Unit / Module</label>
-                  <input
-                    type="text"
-                    value={pubUnit}
-                    onChange={(e) => setPubUnit(e.target.value)}
-                    placeholder="Module 3"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
                   <label className="block text-[11px] font-mono text-zinc-500 mb-1">Branch</label>
                   <select
                     value={pubBranch}
                     onChange={(e) => setPubBranch(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
                   >
-                    <option value="CSE">CSE</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EE">EE</option>
-                    <option value="ME">ME</option>
-                    <option value="CE">CE</option>
-                    <option value="IT">IT</option>
-                    <option value="AIML">AIML</option>
+                    {SYLLABUS_BRANCHES.map((b) => (
+                      <option key={b.code} value={b.code}>
+                        {b.code}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -652,6 +642,37 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-500 mb-1">MAKAUT Syllabus Subject</label>
+                <select
+                  value={pubSubjectCode}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setPubSubjectCode(code);
+                    const match = pubAvailableSubjects.find((s) => s.code === code);
+                    if (match) setPubSubjectName(match.name);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
+                >
+                  {pubAvailableSubjects.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.code} — {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Unit / Module</label>
+                <input
+                  type="text"
+                  value={pubUnit}
+                  onChange={(e) => setPubUnit(e.target.value)}
+                  placeholder="Module 3"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
+                />
               </div>
 
               <div className="flex items-center gap-2 pt-1">
@@ -804,6 +825,11 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
           </div>
         </div>
       )}
+
+      {/* =========================================================================
+          TAB 2B: SWAYAM / NPTEL COURSE LECTURES MANAGER
+          ========================================================================= */}
+      {activeTab === 'lectures' && <CourseLectureManager />}
 
       {/* =========================================================================
           TAB 3: ACADEMIC NOTICE & ASSIGNMENT BOARD

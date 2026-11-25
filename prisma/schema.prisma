@@ -267,3 +267,24 @@ model ForumVote {
   @@index([postId])
   @@index([replyId])
 }
+
+model CourseLecture {
+  id          String   @id @default(cuid())
+  title       String
+  subjectCode String
+  subjectName String
+  branch      String
+  semester    Int
+  platform    String   @default("NPTEL") // "SWAYAM" | "NPTEL" | "YOUTUBE"
+  courseUrl   String
+  instructor  String?
+  institute   String?
+  duration    String?
+  verified    Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([branch, semester])
+  @@index([subjectCode])
+}

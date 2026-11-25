@@ -20,6 +20,7 @@ import { NotePreviewModal } from './NotePreviewModal';
 import { LabPracticalsView } from './LabPracticalsView';
 import { LAB_PRACTICALS } from '../data/lab-practicals-data';
 import { useAcademicProfile } from '@/hooks/useAcademicProfile';
+import { getSubjectsForBranchAndSemester } from '@/lib/makaut-syllabus';
 import { 
   Laptop, 
   Cpu, 
@@ -857,6 +858,41 @@ export function NotesVaultView() {
             />
           ) : (
             <>
+              {/* Subject Code Filter Chips from Official MAKAUT Syllabus */}
+              {getSubjectsForBranchAndSemester(selectedBranch, selectedSemester).length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 bg-white border border-[#E4E4E7] rounded-2xl p-3 shadow-xs">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 px-1.5">
+                    Syllabus Codes:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                      !searchQuery
+                        ? 'bg-[#09090B] text-white border-[#09090B]'
+                        : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+                    }`}
+                  >
+                    ALL
+                  </button>
+                  {getSubjectsForBranchAndSemester(selectedBranch, selectedSemester).map((sub) => (
+                    <button
+                      key={sub.code}
+                      type="button"
+                      onClick={() => setSearchQuery(sub.code)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                        searchQuery.toUpperCase() === sub.code.toUpperCase()
+                          ? 'bg-[#2563EB] text-white border-[#2563EB]'
+                          : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100'
+                      }`}
+                      title={sub.name}
+                    >
+                      {sub.code}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Section Toolbar: Search + Category Pills + Upload CTA */}
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-[#E4E4E7] rounded-2xl p-3.5 shadow-xs">
             {/* Search Input */}

@@ -12,7 +12,8 @@ import {
   MessageSquare, 
   Compass, 
   Calculator, 
-  Search
+  Search,
+  PlayCircle
 } from 'lucide-react';
 import { getResolvedRole, getDisplayRole, ROLE_CONFIGS } from '@/lib/auth-client';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
@@ -76,6 +77,7 @@ export function FloatingNav() {
     ? [
         { href: roleDashboardHref, label: 'Dashboard', icon: LayoutDashboard },
         { href: '/viva', label: 'AI Viva', icon: Sparkles },
+        { href: '/lectures', label: 'Lectures', icon: PlayCircle },
         { href: '/notes', label: 'Notes', icon: BookOpen },
         { href: '/forum', label: 'Forum', icon: MessageSquare },
         { href: '/tools', label: 'Tools', icon: Calculator },
@@ -84,6 +86,7 @@ export function FloatingNav() {
     : [
         { href: '/', label: 'Home', icon: Home },
         { href: '/viva', label: 'AI Viva', icon: Sparkles },
+        { href: '/lectures', label: 'Lectures', icon: PlayCircle },
         { href: '/notes', label: 'Notes', icon: BookOpen },
         { href: '/forum', label: 'Forum', icon: MessageSquare },
         { href: '/tools', label: 'Tools', icon: Calculator },

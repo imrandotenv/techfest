@@ -27,6 +27,7 @@ import {
   GraduationCap,
   Eye,
   RotateCcw,
+  PlayCircle,
 } from 'lucide-react';
 import { getResolvedRole, getDisplayRole } from '@/lib/auth-client';
 import { useRolePreview } from '@/context/RolePreviewContext';
@@ -201,6 +202,23 @@ export function WorkspaceShell({
               </div>
               <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-100 text-[#2563EB]">
                 VOICE
+              </span>
+            </Link>
+
+            <Link
+              href="/lectures"
+              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-sans font-medium transition-all ${
+                isNavActive('/lectures')
+                  ? 'bg-[#F4F4F5] text-[#18181B] font-semibold before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#2563EB] before:rounded-r-full'
+                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <PlayCircle className="w-4 h-4 text-emerald-600" />
+                <span>Course Lectures</span>
+              </div>
+              <span className="text-[9px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                NPTEL
               </span>
             </Link>
 
@@ -475,6 +493,20 @@ export function WorkspaceShell({
                   </div>
                   <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-100 text-[#2563EB]">
                     VOICE
+                  </span>
+                </Link>
+
+                <Link
+                  href="/lectures"
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <PlayCircle className="w-4 h-4 text-emerald-600" />
+                    <span>Course Lectures</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                    NPTEL
                   </span>
                 </Link>
 
