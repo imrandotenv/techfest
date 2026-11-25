@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { requireRole } from '@/lib/rbac';
 import { FacultyWorkspaceClient } from './FacultyWorkspaceClient';
-import { AppShell } from '@/components/AppShell';
+import { WorkspaceShell } from '@/components/WorkspaceShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export default async function FacultyWorkspacePage() {
   });
 
   return (
-    <AppShell
+    <WorkspaceShell
       breadcrumbs={[
         { label: 'SETTech', href: '/' },
         { label: 'Faculty Desk', href: '/faculty' },
@@ -26,8 +26,8 @@ export default async function FacultyWorkspacePage() {
       ]}
       roleTitle="Faculty"
       currentRole="faculty"
-      userName={user.fullName || 'Prof. Subhash Mukherjee'}
-      userEmail={user.email || 'hod.cse@setgoi.ac.in'}
+      userName={user.fullName || 'Professor'}
+      userEmail={user.email || 'faculty@setgoi.ac.in'}
       primaryAction={{
         label: '+ Post Notice',
         href: '/faculty#notices',
@@ -49,7 +49,7 @@ export default async function FacultyWorkspacePage() {
             Faculty Academic Portal • {user.fullName || 'Professor'}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 max-w-2xl leading-relaxed">
-            Review and stamp student-uploaded notes, broadcast official department notices, and resolve verified engineering doubts.
+            Publish verified study materials, stamp student-uploaded notes, broadcast official notices, and answer engineering doubts.
           </p>
         </div>
 
@@ -66,6 +66,6 @@ export default async function FacultyWorkspacePage() {
 
       {/* Interactive Faculty Client Desk */}
       <FacultyWorkspaceClient userEmail={user.email || ''} userName={user.fullName || 'Faculty Member'} />
-    </AppShell>
+    </WorkspaceShell>
   );
 }
