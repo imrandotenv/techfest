@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Calculator, 
   Award, 
@@ -18,7 +18,9 @@ import {
   X,
   Sparkles,
   TrendingUp,
-  Save
+  Save,
+  Loader2,
+  Download
 } from 'lucide-react';
 import { 
   SemesterDetail, 
@@ -33,6 +35,8 @@ import {
   calculatePercentageFromGpa
 } from '../utils/makaut-calculator';
 import { MAKAUT_SEMESTER_PRESETS } from '../data/curriculum-data';
+import { SYLLABUS_BRANCHES, SyllabusBranch, normalizeSyllabusBranch } from '@/lib/makaut-syllabus';
+import { useAcademicProfile } from '@/hooks/useAcademicProfile';
 
 export function SgpaCgpaCalculator() {
   const [activeTab, setActiveTab] = useState<'cumulative' | 'subject'>('cumulative');
@@ -69,7 +73,10 @@ export function SgpaCgpaCalculator() {
   };
 
   // Subject-wise calculator state
+  const { profile } = useAcademicProfile();
+  const [selectedBranch, setSelectedBranch] = useState<SyllabusBranch>('CSE');
   const [selectedSemesterNum, setSelectedSemesterNum] = useState<number>(3);
+  const [loadingLiveSyllabus, setLoadingLiveSyllabus] = useState<boolean>(false);
   const [subjects, setSubjects] = useState<SubjectEntry[]>(() => {
     const preset = MAKAUT_SEMESTER_PRESETS.find((p) => p.semesterNumber === 3);
     if (!preset) return [];
@@ -79,6 +86,53 @@ export function SgpaCgpaCalculator() {
       grade: 'A' as LetterGrade,
     }));
   });
+
+  useEffect(() => {
+    if (profile?.branch) {
+      setSelectedBranch(normalizeSyllabusBranch(profile.branch));
+    }
+    if (profile?.semester) {
+      setSelectedSemesterNum(profile.semester);
+    }
+  }, [profile?.branch, profile?.semester]);
+
+  const handleLoadFromLiveSyllabus = async (
+    targetBranch: SyllabusBranch = selectedBranch,
+    targetSem: number = selectedSemesterNum
+  ) => {
+    setLoadingLiveSyllabus(true);
+    try {
+      const res = await fetch(
+        `/api/syllabus?branch=${encodeURIComponent(targetBranch)}&semester=${targetSem}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.subjects) && data.subjects.length > 0) {
+          setSubjects(
+            data.subjects.map((s: any, idx: number) => ({
+              id: `live-${targetBranch}-${targetSem}-${idx}`,
+              code: s.code,
+              name: s.name,
+              credits: typeof s.credits === 'number' ? s.credits : parseFloat(s.credits) || 0,
+              grade: 'A' as LetterGrade,
+            }))
+          );
+          setToastMessage(
+            `Loaded ${data.subjects.length} official ${targetBranch} Sem ${targetSem} subjects & credits from Neon DB!`
+          );
+          setTimeout(() => setToastMessage(null), 3500);
+          return;
+        }
+      }
+      setToastMessage('No subjects found for that branch/semester.');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch {
+      setToastMessage('Failed to load live syllabus.');
+      setTimeout(() => setToastMessage(null), 3000);
+    } finally {
+      setLoadingLiveSyllabus(false);
+    }
+  };
 
   // Calculate Cumulative CGPA & YGPAs
   const cumulativeSummary = useMemo(() => {
@@ -109,22 +163,7 @@ export function SgpaCgpaCalculator() {
   // Handler: Select semester preset in Subject mode
   const handleSemesterPresetSelect = (semNum: number) => {
     setSelectedSemesterNum(semNum);
-    const preset = MAKAUT_SEMESTER_PRESETS.find((p) => p.semesterNumber === semNum);
-    if (preset) {
-      setSubjects(
-        preset.subjects.map((sub, idx) => ({
-          ...sub,
-          id: `subj-${semNum}-${idx}`,
-          grade: 'A' as LetterGrade,
-        }))
-      );
-    } else {
-      setSubjects([
-        { id: `subj-${semNum}-0`, code: `TH${semNum}01`, name: 'Theory Paper 1', credits: 4, grade: 'A' },
-        { id: `subj-${semNum}-1`, code: `TH${semNum}02`, name: 'Theory Paper 2', credits: 3, grade: 'A' },
-        { id: `subj-${semNum}-2`, code: `PR${semNum}91`, name: 'Laboratory 1', credits: 2, grade: 'E' },
-      ]);
-    }
+    handleLoadFromLiveSyllabus(selectedBranch, semNum);
   };
 
   // Handler: Update subject field
@@ -430,19 +469,59 @@ export function SgpaCgpaCalculator() {
             </>
           ) : (
             <>
-              {/* Header & Semester Preset Selection */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-mono uppercase text-[#52525B]">Current Target Semester</p>
-                  <h3 className="text-base sm:text-lg font-bold text-[#09090B] mt-0.5 font-display">
-                    Semester {selectedSemesterNum} Curriculum
-                  </h3>
-                  <p className="text-xs text-[#52525B] mt-0.5 font-sans">
-                    Official MAKAUT subject codes with credit weighting.
-                  </p>
+              {/* Header & Branch + Semester Live Syllabus Loader */}
+              <div className="p-4 sm:p-5 rounded-2xl border border-[#E4E4E7] bg-white shadow-xs space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-mono uppercase text-[#52525B]">Current Target Curriculum</p>
+                    <h3 className="text-base sm:text-lg font-bold text-[#09090B] mt-0.5 font-display">
+                      {selectedBranch} • Semester {selectedSemesterNum}
+                    </h3>
+                    <p className="text-xs text-[#52525B] mt-0.5 font-sans">
+                      Official MAKAUT subject codes with exact credit weighting from Neon DB.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={selectedBranch}
+                      onChange={(e) => {
+                        const nextBranch = e.target.value as SyllabusBranch;
+                        setSelectedBranch(nextBranch);
+                        handleLoadFromLiveSyllabus(nextBranch, selectedSemesterNum);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono font-semibold text-[#09090B]"
+                      aria-label="Select B.Tech Branch"
+                    >
+                      {SYLLABUS_BRANCHES.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.code} — {b.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleLoadFromLiveSyllabus(
+                          normalizeSyllabusBranch(profile?.branch || selectedBranch),
+                          profile?.semester || selectedSemesterNum
+                        )
+                      }
+                      disabled={loadingLiveSyllabus}
+                      className="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
+                    >
+                      {loadingLiveSyllabus ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      <span>Load My Branch &amp; Semester Subjects</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-100">
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((sNum) => (
                     <button
                       key={sNum}
