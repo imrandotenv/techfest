@@ -49,6 +49,10 @@ model Note {
   category    String   @default("LECTURE_NOTE") // "LECTURE_NOTE" | "MAKAUT_PYQ" | "LAB_MANUAL"
   content     String?  @db.Text
   verified    Boolean  @default(false)
+  isVerified  Boolean  @default(false)
+  authorName  String?
+  authorRole  String?
+  verifiedBy  String?
   
   uploaderId  String
   uploader    User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
@@ -68,11 +72,12 @@ model ForumPost {
   content   String       @db.Text
   tags      String?      // comma-separated tags or json
   category  String?      @default("Academic")
-  branch    String?      // optional branch targeting e.g. "CSE"
-  semester  Int?         // optional semester e.g. 3
-  upvotes   Int          @default(0)
+  branch     String?      // optional branch targeting e.g. "CSE"
+  semester   Int?         // optional semester e.g. 3
+  upvotes    Int          @default(0)
+  isResolved Boolean      @default(false)
   
-  authorId  String
+  authorId   String
   author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   
   replies   ForumReply[]
@@ -92,8 +97,10 @@ model ForumReply {
   post             ForumPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId         String
   author           User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  isOfficialAnswer Boolean      @default(false)
-  upvotes          Int          @default(0)
+  isOfficialAnswer  Boolean      @default(false)
+  isVerifiedFaculty Boolean      @default(false)
+  facultyName       String?
+  upvotes           Int          @default(0)
   parentId         String?
   parent           ForumReply?  @relation("NestedReplies", fields: [parentId], references: [id], onDelete: Cascade)
   children         ForumReply[] @relation("NestedReplies")
@@ -213,12 +220,14 @@ model NoteItem {
 }
 
 model Notice {
-  id           String   @id @default(cuid())
-  title        String
-  content      String   @db.Text
-  category     String   @default("ACADEMIC") // "EXAM" | "EVENT" | "ACADEMIC" | "URGENT"
-  targetBranch String   @default("ALL")      // "ALL" | "CSE" | "ECE" | "EE" | "ME" | "CE" | "IT"
-  isPinned     Boolean  @default(false)
+  id             String    @id @default(cuid())
+  title          String
+  content        String    @db.Text
+  category       String    @default("ACADEMIC") // "EXAM" | "EVENT" | "ACADEMIC" | "URGENT" | "LAB"
+  targetBranch   String    @default("ALL")      // "ALL" | "CSE" | "CSE-AIML" | "CSE-DS" | "ECE" | "EE" | "EEE" | "ME" | "CE"
+  targetSemester Int?
+  examDate       DateTime?
+  isPinned       Boolean   @default(false)
   authorId     String
   author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
@@ -335,4 +344,18 @@ model AttendanceRecord {
 
   @@unique([userId, subjectCode])
   @@index([userId, branch, semester])
+}
+
+model CustomVivaQuestion {
+  id                String   @id @default(cuid())
+  branch            String
+  semester          Int
+  subjectCode       String
+  question          String   @db.Text
+  expectedKeyPoints String   @db.Text
+  createdBy         String
+  createdAt         DateTime @default(now())
+
+  @@index([branch, semester])
+  @@index([subjectCode])
 }

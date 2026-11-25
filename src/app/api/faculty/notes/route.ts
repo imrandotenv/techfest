@@ -20,14 +20,31 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { title, subjectCode, subjectName, branch = 'CSE', semester = 3, unitModule, fileUrl } = body;
+    const {
+      title,
+      subjectCode,
+      subjectName,
+      branch = 'CSE',
+      semester = 3,
+      unitModule,
+      fileUrl,
+      category = 'LECTURE_NOTE',
+      content,
+    } = body;
 
-    if (!title || !subjectCode || !fileUrl) {
+    if (!title || !subjectCode || (!fileUrl?.trim() && !content?.trim())) {
       return NextResponse.json(
-        { error: 'Title, MAKAUT Subject Code, and PDF URL are required.' },
+        { error: 'Title, MAKAUT Subject Code, and either formatted content or a resource URL are required.' },
         { status: 400 }
       );
     }
+
+    const normalizedCategory = (() => {
+      const c = String(category || 'LECTURE_NOTE').toUpperCase().trim();
+      if (c === 'PYQ' || c === 'MAKAUT_PYQ') return 'MAKAUT_PYQ';
+      if (c === 'LAB' || c === 'LAB_MANUAL') return 'LAB_MANUAL';
+      return 'LECTURE_NOTE';
+    })();
 
     const dbUser = await prisma.user.upsert({
       where: { clerkId: caller.userId },
@@ -46,18 +63,26 @@ export async function POST(req: NextRequest) {
     });
 
     const formattedTitle = unitModule ? `[${unitModule.trim()}] ${title.trim()}` : title.trim();
+    const authorDisplayName = caller.fullName || dbUser.fullName || 'SETGOI Faculty';
+    const cleanCode = subjectCode.toUpperCase().trim();
 
     const note = await prisma.note.create({
       data: {
         title: formattedTitle,
-        subjectCode: subjectCode.toUpperCase().trim(),
+        subjectCode: cleanCode,
         subjectName: subjectName?.trim() || undefined,
         branch: branch.toUpperCase().trim(),
         semester: Math.min(8, Math.max(1, Number(semester) || 3)),
-        fileUrl: fileUrl.trim(),
-        fileKey: `faculty-url/${subjectCode.toLowerCase()}-${Date.now()}`,
-        fileSize: 0,
+        category: normalizedCategory,
+        content: content?.trim() || null,
+        fileUrl: fileUrl?.trim() || `/notes?branch=${encodeURIComponent(branch.toUpperCase().trim())}&semester=${Number(semester) || 3}`,
+        fileKey: `faculty-published/${cleanCode.toLowerCase()}-${Date.now()}`,
+        fileSize: content ? Buffer.byteLength(content.trim(), 'utf8') : 0,
         verified: true,
+        isVerified: true,
+        authorName: authorDisplayName,
+        authorRole: caller.role.toUpperCase(),
+        verifiedBy: authorDisplayName,
         uploaderId: dbUser.id,
       },
       include: {

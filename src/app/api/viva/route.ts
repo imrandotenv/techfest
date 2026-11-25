@@ -688,6 +688,34 @@ export async function POST(req: Request) {
     const rotatedAngle =
       SYLLABUS_ANGLES[previousQuestions.length % SYLLABUS_ANGLES.length];
 
+    // Fetch faculty-seeded CustomVivaQuestion items for this subject/branch
+    let facultyQuestionsBlock = '';
+    if (subjectCode || branch || dbUser?.branch) {
+      try {
+        const effectiveBranch = (branch || dbUser?.branch || '').toUpperCase().trim();
+        const customQs = await prisma.customVivaQuestion.findMany({
+          where: {
+            ...(subjectCode ? { subjectCode: subjectCode.toUpperCase().trim() } : {}),
+            ...(effectiveBranch ? { branch: effectiveBranch } : {}),
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 6,
+        });
+        const unaskedCustomQs = customQs.filter(
+          (q) => !previousQuestions.some((pq) => pq.toLowerCase().includes(q.question.toLowerCase().slice(0, 28)))
+        );
+        if (unaskedCustomQs.length > 0) {
+          facultyQuestionsBlock = `\n\nPRIORITY FACULTY-SEEDED VIVA QUESTIONS (SETGOI DEPARTMENT QUESTION BANK):
+Prefer asking one of these official faculty-curated questions (and evaluate the student against the expected key points) before inventing a generic one:
+${unaskedCustomQs
+  .map((q, idx) => `${idx + 1}. Question: "${q.question}" | Expected Key Points: "${q.expectedKeyPoints}"`)
+  .join('\n')}`;
+        }
+      } catch (qErr) {
+        console.warn('[Viva Buddy] Could not load CustomVivaQuestion:', qErr);
+      }
+    }
+
     const antiRepeatBlock =
       previousQuestions.length > 0
         ? `\n\nANTI-REPETITION & SYLLABUS ROTATION (CRITICAL):
@@ -695,7 +723,7 @@ export async function POST(req: Request) {
 - DO NOT REPEAT THESE PREVIOUSLY ASKED QUESTIONS: ${JSON.stringify(previousQuestions.slice(0, 15))}`
         : `\n\nSYLLABUS FOCUS ANGLE: "${rotatedAngle}". Ask a fresh, varied MAKAUT viva question from this angle.`;
 
-    const systemPrompt = getSystemPrompt(language) + antiRepeatBlock;
+    const systemPrompt = getSystemPrompt(language) + facultyQuestionsBlock + antiRepeatBlock;
 
     // Prepare conversational message list (last 8 turns)
     const recentHistory = (history || []).slice(-8);

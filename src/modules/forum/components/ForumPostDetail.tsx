@@ -126,10 +126,10 @@ export function ForumPostDetail({
             <span className="swiss-badge bg-zinc-100 text-zinc-800 border-zinc-200">
               {post.category}
             </span>
-            {post.hasOfficialAnswer && (
+            {(post.hasOfficialAnswer || post.isResolved) && (
               <span className="swiss-badge bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold">
                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                <span>Official Faculty Answer Verified</span>
+                <span>Verified Faculty Answer</span>
               </span>
             )}
           </div>

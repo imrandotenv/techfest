@@ -92,12 +92,12 @@ export function ForumPostCard({
 
         {/* Status Icon */}
         <div className="shrink-0">
-          {hasOfficial ? (
-            <div title="Faculty Verified Answer">
-              <Award className="w-4 h-4 text-purple-600" />
+          {hasOfficial || post.isResolved ? (
+            <div title="Verified Faculty Answer • Resolved">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
           ) : isSolved ? (
-            <div title="Solved / Has Community Replies">
+            <div title="Has Community Replies">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             </div>
           ) : (

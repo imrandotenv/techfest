@@ -61,7 +61,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { title, content, category = 'ACADEMIC', targetBranch = 'ALL', isPinned = false } = body;
+    const {
+      title,
+      content,
+      category = 'ACADEMIC',
+      targetBranch = 'ALL',
+      targetSemester,
+      examDate,
+      isPinned = false,
+    } = body;
 
     if (!title || !content) {
       return NextResponse.json(
@@ -87,12 +95,17 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const parsedExamDate = examDate ? new Date(examDate) : null;
+    const validExamDate = parsedExamDate && !Number.isNaN(parsedExamDate.getTime()) ? parsedExamDate : null;
+
     const notice = await prisma.notice.create({
       data: {
         title: title.trim(),
         content: content.trim(),
         category: category.toUpperCase().trim(),
         targetBranch: targetBranch.toUpperCase().trim(),
+        targetSemester: targetSemester ? Math.min(8, Math.max(1, Number(targetSemester))) : null,
+        examDate: validExamDate,
         isPinned: Boolean(isPinned),
         authorId: dbUser.id,
       },

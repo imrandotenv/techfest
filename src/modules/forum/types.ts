@@ -22,6 +22,7 @@ export interface ForumReply {
   authorRole: CustomUserRole;
   authorDepartment?: string;
   isOfficialAnswer: boolean;
+  isVerifiedFaculty?: boolean;
   verifiedBy?: string;
   verifiedAt?: string;
   upvotesCount: number;
@@ -41,6 +42,7 @@ export interface ForumPost {
   authorRole: CustomUserRole;
   authorDepartment?: string;
   isPinned: boolean;
+  isResolved?: boolean;
   upvotesCount: number;
   userUpvoted?: boolean;
   replies: ForumReply[];

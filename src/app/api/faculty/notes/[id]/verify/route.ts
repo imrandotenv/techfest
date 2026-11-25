@@ -33,7 +33,11 @@ export async function PATCH(
 
     const updated = await prisma.note.update({
       where: { id },
-      data: { verified },
+      data: {
+        verified,
+        isVerified: verified,
+        verifiedBy: verified ? caller.fullName || caller.email || 'SETGOI Faculty' : null,
+      },
       include: {
         uploader: { select: { fullName: true, email: true, branch: true } },
       },

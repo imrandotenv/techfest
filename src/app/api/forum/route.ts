@@ -58,27 +58,38 @@ export async function GET(req: NextRequest) {
     }
 
     const posts = records.map((p) => {
-      const mappedReplies = p.replies.map((r) => {
-        const rRole = (r.author?.role || 'STUDENT').toUpperCase();
-        const roleLower = rRole === 'ADMIN' ? 'admin' : rRole === 'FACULTY' ? 'college' : 'student';
-        return {
-          id: r.id,
-          postId: r.postId,
-          content: r.content,
-          authorId: r.author?.clerkId || r.authorId,
-          authorName: r.author?.fullName || 'SETGOI Member',
-          authorRole: roleLower,
-          authorDepartment: r.author?.branch ? `B.Tech ${r.author.branch}` : 'SETGOI Campus',
-          isOfficialAnswer: r.isOfficialAnswer || rRole === 'FACULTY' || rRole === 'ADMIN',
-          upvotesCount: r.upvotes,
-          userUpvoted: votedReplyIds.has(r.id),
-          parentId: r.parentId,
-          createdAt: r.createdAt.toISOString(),
-        };
-      });
+      const mappedReplies = p.replies
+        .map((r) => {
+          const rRole = (r.author?.role || 'STUDENT').toUpperCase();
+          const roleLower = rRole === 'ADMIN' ? 'admin' : rRole === 'FACULTY' ? 'college' : 'student';
+          const isVerified = r.isVerifiedFaculty || r.isOfficialAnswer || rRole === 'FACULTY' || rRole === 'ADMIN';
+          return {
+            id: r.id,
+            postId: r.postId,
+            content: r.content,
+            authorId: r.author?.clerkId || r.authorId,
+            authorName: r.facultyName || r.author?.fullName || 'SETGOI Member',
+            authorRole: roleLower,
+            authorDepartment: r.author?.branch ? `B.Tech ${r.author.branch}` : 'SETGOI Campus',
+            isOfficialAnswer: isVerified,
+            isVerifiedFaculty: r.isVerifiedFaculty || isVerified,
+            verifiedBy: r.facultyName || (isVerified ? r.author?.fullName || 'SETGOI Faculty' : undefined),
+            upvotesCount: r.upvotes,
+            userUpvoted: votedReplyIds.has(r.id),
+            parentId: r.parentId,
+            createdAt: r.createdAt.toISOString(),
+          };
+        })
+        .sort((a, b) => {
+          // Pin Verified Faculty Answers at the top
+          if (a.isOfficialAnswer && !b.isOfficialAnswer) return -1;
+          if (!a.isOfficialAnswer && b.isOfficialAnswer) return 1;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
 
       const pRole = (p.author?.role || 'STUDENT').toUpperCase();
       const pRoleLower = pRole === 'ADMIN' ? 'admin' : pRole === 'FACULTY' ? 'college' : 'student';
+      const hasOfficial = mappedReplies.some((r) => r.isOfficialAnswer);
 
       return {
         id: p.id,
@@ -91,10 +102,11 @@ export async function GET(req: NextRequest) {
         authorRole: pRoleLower,
         authorDepartment: p.author?.branch ? `B.Tech ${p.author.branch}` : 'SETGOI Campus',
         isPinned: false,
+        isResolved: p.isResolved || hasOfficial,
         upvotesCount: p.upvotes,
         userUpvoted: votedPostIds.has(p.id),
         viewsCount: 1,
-        hasOfficialAnswer: mappedReplies.some((r) => r.isOfficialAnswer),
+        hasOfficialAnswer: hasOfficial,
         createdAt: p.createdAt.toISOString(),
         replies: mappedReplies,
         repliesCount: mappedReplies.length,

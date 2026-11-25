@@ -106,10 +106,10 @@ export function ForumReplyItem({
           <div className="flex items-center gap-2 mb-3 px-3 py-1.5 rounded-md bg-emerald-100/80 border border-emerald-300 text-emerald-900 text-xs font-semibold">
             <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-bold">Official Faculty Answer</span>
+              <span className="font-bold">Verified Faculty Answer</span>
               {reply.verifiedBy && (
                 <span className="text-emerald-800 font-normal">
-                  • Verified by {reply.verifiedBy}
+                  • Pinned by {reply.verifiedBy}
                 </span>
               )}
             </div>

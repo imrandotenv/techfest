@@ -93,17 +93,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const reply = await prisma.forumReply.create({
-      data: {
-        postId,
-        content: content.trim(),
-        authorId: dbUser.id,
-        isOfficialAnswer: true,
-      },
-      include: {
-        author: { select: { fullName: true, role: true } },
-      },
-    });
+    const facultyDisplayName = caller.fullName || dbUser.fullName || 'SETGOI Faculty';
+
+    const [reply] = await prisma.$transaction([
+      prisma.forumReply.create({
+        data: {
+          postId,
+          content: content.trim(),
+          authorId: dbUser.id,
+          isOfficialAnswer: true,
+          isVerifiedFaculty: true,
+          facultyName: facultyDisplayName,
+        },
+        include: {
+          author: { select: { fullName: true, role: true } },
+        },
+      }),
+      prisma.forumPost.update({
+        where: { id: postId },
+        data: { isResolved: true },
+      }),
+    ]);
 
     await recordAuditLog({
       actorId: caller.userId,

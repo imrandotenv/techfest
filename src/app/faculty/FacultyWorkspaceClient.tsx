@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
-  LayoutDashboard,
   FileCheck2,
-  Bell,
   MessageSquare,
+  Bell,
   Sparkles,
   Upload,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
+  Eye,
   RefreshCw,
   Send,
   Trash2,
@@ -18,18 +18,16 @@ import {
   PinOff,
   Plus,
   BookOpen,
+  Calendar,
+  AlertTriangle,
+  BarChart3,
   ExternalLink,
-  Check,
-  HelpCircle,
-  PlayCircle,
+  X,
 } from 'lucide-react';
-import { CourseLectureManager } from '@/components/CourseLectureManager';
-import {
-  SYLLABUS_BRANCHES,
-} from '@/lib/makaut-syllabus';
+import { SYLLABUS_BRANCHES } from '@/lib/makaut-syllabus';
 import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 
-type FacultyTab = 'overview' | 'notes' | 'lectures' | 'notices' | 'doubts' | 'viva';
+type FacultyTab = 'content' | 'doubts' | 'notices' | 'viva';
 
 interface FacultyKPIs {
   uploadedNotes: number;
@@ -46,8 +44,13 @@ interface NoteRecord {
   subjectName?: string | null;
   branch: string;
   semester: number;
+  category?: string | null;
+  content?: string | null;
   fileUrl: string;
   verified: boolean;
+  isVerified?: boolean;
+  authorName?: string | null;
+  verifiedBy?: string | null;
   createdAt: string;
   uploader?: { fullName?: string | null; email?: string | null; branch?: string | null };
 }
@@ -58,6 +61,8 @@ interface NoticeRecord {
   content: string;
   category: string;
   targetBranch: string;
+  targetSemester?: number | null;
+  examDate?: string | null;
   isPinned: boolean;
   createdAt: string;
 }
@@ -69,6 +74,7 @@ interface DoubtRecord {
   category: string | null;
   branch: string | null;
   semester: number | null;
+  isResolved?: boolean;
   createdAt: string;
   hasOfficialAnswer: boolean;
   author?: { fullName?: string | null; email?: string | null; branch?: string | null; semester?: number | null };
@@ -80,29 +86,46 @@ interface DoubtRecord {
   }>;
 }
 
-interface VivaTopicRecord {
+interface CustomVivaQuestionRecord {
   id: string;
-  subjectCode: string;
-  subjectName: string;
   branch: string;
   semester: number;
-  topicTitle: string;
-  keyConcepts: string;
-  sampleVivaQ: string;
-  authorName: string;
+  subjectCode: string;
+  question: string;
+  expectedKeyPoints: string;
+  createdBy: string;
   createdAt: string;
 }
 
-export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: string; userName: string }) {
-  const [activeTab, setActiveTab] = useState<FacultyTab>('overview');
+interface VivaInsights {
+  totalSessions: number;
+  lowestScoringTopics: Array<{ topic: string; count: number; subjectCode: string }>;
+  subjectBreakdown: Array<{
+    subjectCode: string;
+    subjectName: string;
+    sessions: number;
+    accuracyPercent: number;
+  }>;
+}
+
+const SEMESTERS = [3, 4, 5, 6, 7, 8];
+
+export function FacultyWorkspaceClient({
+  userEmail,
+  userName,
+}: {
+  userEmail: string;
+  userName: string;
+}) {
+  const [activeTab, setActiveTab] = useState<FacultyTab>('content');
   const [toast, setToast] = useState<{ text: string; isError?: boolean } | null>(null);
 
   const showToast = useCallback((text: string, isError = false) => {
     setToast({ text, isError });
-    setTimeout(() => setToast(null), 4500);
+    setTimeout(() => setToast(null), 4000);
   }, []);
 
-  // Overview + Notes + Notices state
+  // Overview + Queue state
   const [kpis, setKpis] = useState<FacultyKPIs>({
     uploadedNotes: 0,
     totalNotes: 0,
@@ -112,209 +135,253 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
   });
   const [notesQueue, setNotesQueue] = useState<NoteRecord[]>([]);
   const [notices, setNotices] = useState<NoticeRecord[]>([]);
-  const [loadingOverview, setLoadingOverview] = useState(false);
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [queueFilter, setQueueFilter] = useState<'pending' | 'all'>('pending');
+  const [previewNote, setPreviewNote] = useState<NoteRecord | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
-  // Publish Note form state
-  const [pubTitle, setPubTitle] = useState('');
-  const [pubBranch, setPubBranch] = useState('CSE');
-  const [pubSemester, setPubSemester] = useState(3);
-  const pubAvailableSubjects = useSyllabusSubjects(pubBranch, pubSemester);
-  const [pubSubjectCode, setPubSubjectCode] = useState(pubAvailableSubjects[0]?.code || 'PCC-CS301');
-  const [pubSubjectName, setPubSubjectName] = useState(pubAvailableSubjects[0]?.name || 'Data Structure & Algorithms');
-  const [pubUnit, setPubUnit] = useState('');
-
-  useEffect(() => {
-    if (pubAvailableSubjects.length > 0 && !pubAvailableSubjects.some((s) => s.code === pubSubjectCode)) {
-      setPubSubjectCode(pubAvailableSubjects[0].code);
-      setPubSubjectName(pubAvailableSubjects[0].name);
-    }
-  }, [pubAvailableSubjects, pubSubjectCode]);
-  const [pubMode, setPubMode] = useState<'url' | 'file'>('url');
-  const [pubUrl, setPubUrl] = useState('');
-  const [pubFile, setPubFile] = useState<File | null>(null);
+  // Tab 1: Publish Official Faculty Material state
+  const [pubBranch, setPubBranch] = useState<string>('CSE');
+  const [pubSemester, setPubSemester] = useState<number>(3);
+  const pubSubjects = useSyllabusSubjects(pubBranch, pubSemester);
+  const [pubSubjectCode, setPubSubjectCode] = useState<string>('');
+  const [pubType, setPubType] = useState<'LECTURE_NOTE' | 'MAKAUT_PYQ' | 'LAB_MANUAL'>('LECTURE_NOTE');
+  const [pubUnit, setPubUnit] = useState<string>('');
+  const [pubTitle, setPubTitle] = useState<string>('');
+  const [pubContent, setPubContent] = useState<string>('');
+  const [pubFileUrl, setPubFileUrl] = useState<string>('');
   const [publishingNote, setPublishingNote] = useState(false);
 
-  // Notice form state
-  const [noticeTitle, setNoticeTitle] = useState('');
-  const [noticeDepartment, setNoticeDepartment] = useState('CSE');
-  const [noticeCategory, setNoticeCategory] = useState<'ACADEMIC' | 'EXAM' | 'URGENT' | 'EVENT'>('ACADEMIC');
-  const [noticeContent, setNoticeContent] = useState('');
-  const [noticePinned, setNoticePinned] = useState(false);
+  useEffect(() => {
+    if (pubSubjects.length > 0 && !pubSubjects.some((s) => s.code === pubSubjectCode)) {
+      setPubSubjectCode(pubSubjects[0].code);
+    }
+  }, [pubSubjects, pubSubjectCode]);
+
+  // Tab 2: Doubt Resolution state
+  const [doubts, setDoubts] = useState<DoubtRecord[]>([]);
+  const [loadingDoubts, setLoadingDoubts] = useState(false);
+  const [doubtBranch, setDoubtBranch] = useState<string>('ALL');
+  const [doubtFilter, setDoubtFilter] = useState<'unanswered' | 'all'>('unanswered');
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null);
+
+  // Tab 3: Academic Notices & CA/Viva Schedules state
+  const [noticeBranch, setNoticeBranch] = useState<string>('ALL');
+  const [noticeSemester, setNoticeSemester] = useState<string>('ALL');
+  const [noticeCategory, setNoticeCategory] = useState<'EXAM' | 'LAB' | 'ACADEMIC' | 'URGENT'>('EXAM');
+  const [noticeTitle, setNoticeTitle] = useState<string>('');
+  const [noticeContent, setNoticeContent] = useState<string>('');
+  const [noticeExamDate, setNoticeExamDate] = useState<string>('');
+  const [noticePinned, setNoticePinned] = useState<boolean>(true);
   const [publishingNotice, setPublishingNotice] = useState(false);
 
-  // Doubts state
-  const [doubts, setDoubts] = useState<DoubtRecord[]>([]);
-  const [doubtBranchFilter, setDoubtBranchFilter] = useState('ALL');
-  const [doubtShowAll, setDoubtShowAll] = useState(false);
-  const [loadingDoubts, setLoadingDoubts] = useState(false);
-  const [answeringDoubtId, setAnsweringDoubtId] = useState<string | null>(null);
-  const [answerText, setAnswerText] = useState('');
-  const [submittingAnswer, setSubmittingAnswer] = useState(false);
-
-  // Viva Curator state
-  const [vivaTopics, setVivaTopics] = useState<VivaTopicRecord[]>([]);
+  // Tab 4: AI Viva Question Bank & Subject Insights state
+  const [vivaBranch, setVivaBranch] = useState<string>('CSE');
+  const [vivaSemester, setVivaSemester] = useState<number>(3);
+  const vivaSubjects = useSyllabusSubjects(vivaBranch, vivaSemester);
+  const [vivaSubjectCode, setVivaSubjectCode] = useState<string>('');
+  const [vivaQuestion, setVivaQuestion] = useState<string>('');
+  const [vivaKeyPoints, setVivaKeyPoints] = useState<string>('');
+  const [customQuestions, setCustomQuestions] = useState<CustomVivaQuestionRecord[]>([]);
+  const [vivaInsights, setVivaInsights] = useState<VivaInsights>({
+    totalSessions: 0,
+    lowestScoringTopics: [],
+    subjectBreakdown: [],
+  });
   const [loadingViva, setLoadingViva] = useState(false);
-  const [vivaSubjectCode, setVivaSubjectCode] = useState('');
-  const [vivaSubjectName, setVivaSubjectName] = useState('');
-  const [vivaBranch, setVivaBranch] = useState('CSE');
-  const [vivaSemester, setVivaSemester] = useState(3);
-  const [vivaTopicTitle, setVivaTopicTitle] = useState('');
-  const [vivaKeyConcepts, setVivaKeyConcepts] = useState('');
-  const [vivaSampleQ, setVivaSampleQ] = useState('');
-  const [savingViva, setSavingViva] = useState(false);
+  const [savingVivaQ, setSavingVivaQ] = useState(false);
 
-  // Sync hash (#queue, #notices, #doubts, #viva)
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const hash = window.location.hash.replace('#', '');
-    if (hash === 'queue' || hash === 'notes') setActiveTab('notes');
-    if (hash === 'notices') setActiveTab('notices');
-    if (hash === 'doubts') setActiveTab('doubts');
-    if (hash === 'viva') setActiveTab('viva');
-  }, []);
+    if (vivaSubjects.length > 0 && !vivaSubjects.some((s) => s.code === vivaSubjectCode)) {
+      setVivaSubjectCode(vivaSubjects[0].code);
+    }
+  }, [vivaSubjects, vivaSubjectCode]);
 
-  const fetchOverview = useCallback(async () => {
+  const loadOverview = useCallback(async () => {
     setLoadingOverview(true);
     try {
       const res = await fetch('/api/faculty/overview');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.kpis) setKpis(data.kpis);
+      const data = await res.json();
+      if (data.success) {
+        setKpis(data.kpis);
         setNotesQueue(data.notesQueue || []);
         setNotices(data.notices || []);
       }
+    } catch {
+      showToast('Failed to load faculty overview.', true);
     } finally {
       setLoadingOverview(false);
     }
-  }, []);
+  }, [showToast]);
 
-  const fetchDoubts = useCallback(async () => {
+  const loadDoubts = useCallback(async () => {
     setLoadingDoubts(true);
     try {
-      const params = new URLSearchParams({
-        branch: doubtBranchFilter,
-        filter: doubtShowAll ? 'all' : 'unanswered',
-      });
-      const res = await fetch(`/api/faculty/doubts?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
+      const res = await fetch(
+        `/api/faculty/doubts?branch=${encodeURIComponent(doubtBranch)}&filter=${doubtFilter}`
+      );
+      const data = await res.json();
+      if (data.success) {
         setDoubts(data.doubts || []);
       }
+    } catch {
+      showToast('Failed to load student doubts.', true);
     } finally {
       setLoadingDoubts(false);
     }
-  }, [doubtBranchFilter, doubtShowAll]);
+  }, [doubtBranch, doubtFilter, showToast]);
 
-  const fetchVivaTopics = useCallback(async () => {
+  const loadVivaBank = useCallback(async () => {
     setLoadingViva(true);
     try {
-      const res = await fetch('/api/faculty/viva-topics');
-      if (res.ok) {
-        const data = await res.json();
-        setVivaTopics(data.topics || []);
+      const res = await fetch(`/api/faculty/viva-questions?branch=${encodeURIComponent(vivaBranch)}`);
+      const data = await res.json();
+      if (data.success) {
+        setCustomQuestions(data.questions || []);
+        if (data.insights) setVivaInsights(data.insights);
       }
+    } catch {
+      showToast('Failed to load AI Viva question bank.', true);
     } finally {
       setLoadingViva(false);
     }
-  }, []);
+  }, [vivaBranch, showToast]);
 
   useEffect(() => {
-    fetchOverview();
-  }, [fetchOverview]);
+    loadOverview();
+  }, [loadOverview]);
 
   useEffect(() => {
-    if (activeTab === 'doubts') fetchDoubts();
-    if (activeTab === 'viva') fetchVivaTopics();
-  }, [activeTab, fetchDoubts, fetchVivaTopics]);
+    if (activeTab === 'doubts') loadDoubts();
+    if (activeTab === 'viva') loadVivaBank();
+  }, [activeTab, loadDoubts, loadVivaBank]);
 
-  // Approve or Reject a student note
+  // Tab 1 Actions
+  const handlePublishMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const chosenSubject = pubSubjects.find((s) => s.code === pubSubjectCode);
+    if (!pubTitle.trim() || !pubSubjectCode || (!pubContent.trim() && !pubFileUrl.trim())) {
+      showToast('Provide a title, subject, and formatted content or resource URL.', true);
+      return;
+    }
+
+    setPublishingNote(true);
+    try {
+      const res = await fetch('/api/faculty/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: pubTitle.trim(),
+          subjectCode: pubSubjectCode,
+          subjectName: chosenSubject?.name || pubSubjectCode,
+          branch: pubBranch,
+          semester: pubSemester,
+          category: pubType,
+          unitModule: pubUnit.trim() || undefined,
+          content: pubContent.trim() || undefined,
+          fileUrl: pubFileUrl.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to publish official material.', true);
+        return;
+      }
+      showToast(`Published & verified "${data.note.title}" in /notes.`);
+      setPubTitle('');
+      setPubUnit('');
+      setPubContent('');
+      setPubFileUrl('');
+      loadOverview();
+    } catch {
+      showToast('Network error while publishing material.', true);
+    } finally {
+      setPublishingNote(false);
+    }
+  };
+
   const handleVerifyNote = async (id: string, verified: boolean) => {
+    setVerifyingId(id);
     try {
       const res = await fetch(`/api/faculty/notes/${id}/verify`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ verified }),
       });
-      if (res.ok) {
-        showToast(verified ? 'Note stamped as Faculty Verified!' : 'Verification removed.');
-        fetchOverview();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.error || 'Failed to update verification', true);
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to update note verification.', true);
+        return;
       }
-    } catch (e: any) {
-      showToast(e?.message || 'Network error', true);
+      showToast(verified ? 'Material approved & stamped as Faculty Verified.' : 'Verification revoked.');
+      loadOverview();
+    } catch {
+      showToast('Network error updating note.', true);
+    } finally {
+      setVerifyingId(null);
     }
   };
 
-  const handleRejectNote = async (id: string) => {
+  const handleDeleteNote = async (id: string) => {
+    setVerifyingId(id);
     try {
       const res = await fetch(`/api/faculty/notes/${id}/verify`, { method: 'DELETE' });
-      if (res.ok) {
-        showToast('Submission rejected and removed from queue.');
-        fetchOverview();
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to reject/remove note.', true);
+        return;
       }
-    } catch {}
-  };
-
-  // Publish official Faculty Verified note
-  const handlePublishMaterial = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pubTitle.trim() || !pubSubjectCode.trim()) return;
-    setPublishingNote(true);
-
-    try {
-      if (pubMode === 'file' && pubFile) {
-        const formData = new FormData();
-        formData.append('file', pubFile);
-        formData.append('title', pubUnit ? `[${pubUnit.trim()}] ${pubTitle.trim()}` : pubTitle.trim());
-        formData.append('subjectCode', pubSubjectCode.trim().toUpperCase());
-        formData.append('subjectName', pubSubjectName.trim());
-        formData.append('branch', pubBranch);
-        formData.append('semester', String(pubSemester));
-
-        const res = await fetch('/api/notes/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
-      } else {
-        const res = await fetch('/api/faculty/notes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: pubTitle,
-            subjectCode: pubSubjectCode,
-            subjectName: pubSubjectName,
-            branch: pubBranch,
-            semester: pubSemester,
-            unitModule: pubUnit,
-            fileUrl: pubUrl,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Publish failed');
-      }
-
-      showToast('Official Faculty Verified study material published to Notes Vault!');
-      setPubTitle('');
-      setPubSubjectCode('');
-      setPubSubjectName('');
-      setPubUnit('');
-      setPubUrl('');
-      setPubFile(null);
-      fetchOverview();
-    } catch (err: any) {
-      showToast(err?.message || 'Failed to publish study material', true);
+      showToast('Submission rejected and removed.');
+      if (previewNote?.id === id) setPreviewNote(null);
+      loadOverview();
+    } catch {
+      showToast('Network error removing note.', true);
     } finally {
-      setPublishingNote(false);
+      setVerifyingId(null);
     }
   };
 
-  // Publish Notice
+  // Tab 2 Actions
+  const handlePostOfficialAnswer = async (postId: string) => {
+    const content = (replyDrafts[postId] || '').trim();
+    if (!content) {
+      showToast('Write an official faculty explanation before posting.', true);
+      return;
+    }
+
+    setSubmittingReplyId(postId);
+    try {
+      const res = await fetch('/api/faculty/doubts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, content }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to post official answer.', true);
+        return;
+      }
+      showToast('Official Verified Answer pinned in /forum and thread marked Resolved.');
+      setReplyDrafts((prev) => ({ ...prev, [postId]: '' }));
+      loadDoubts();
+      loadOverview();
+    } catch {
+      showToast('Network error posting official answer.', true);
+    } finally {
+      setSubmittingReplyId(null);
+    }
+  };
+
+  // Tab 3 Actions
   const handlePublishNotice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!noticeTitle.trim() || !noticeContent.trim()) return;
-    setPublishingNotice(true);
+    if (!noticeTitle.trim() || !noticeContent.trim()) {
+      showToast('Notice title and details are required.', true);
+      return;
+    }
 
+    setPublishingNotice(true);
     try {
       const res = await fetch('/api/notices', {
         method: 'POST',
@@ -322,321 +389,263 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
         body: JSON.stringify({
           title: noticeTitle.trim(),
           content: noticeContent.trim(),
-          targetBranch: noticeDepartment,
           category: noticeCategory,
+          targetBranch: noticeBranch,
+          targetSemester: noticeSemester === 'ALL' ? null : Number(noticeSemester),
+          examDate: noticeExamDate || null,
           isPinned: noticePinned,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to publish notice');
-
-      showToast('Department notice published to all target students!');
+      if (!res.ok) {
+        showToast(data.error || 'Failed to publish notice.', true);
+        return;
+      }
+      showToast('Official notice published to /tools & /dashboard.');
       setNoticeTitle('');
       setNoticeContent('');
-      setNoticePinned(false);
-      fetchOverview();
-    } catch (err: any) {
-      showToast(err?.message || 'Failed to publish notice', true);
+      setNoticeExamDate('');
+      loadOverview();
+    } catch {
+      showToast('Network error publishing notice.', true);
     } finally {
       setPublishingNotice(false);
     }
   };
 
-  const handleTogglePin = async (n: NoticeRecord) => {
-    const res = await fetch(`/api/notices/${n.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isPinned: !n.isPinned }),
-    });
-    if (res.ok) fetchOverview();
+  const handleToggleNoticePin = async (notice: NoticeRecord) => {
+    try {
+      const res = await fetch(`/api/notices/${notice.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPinned: !notice.isPinned }),
+      });
+      if (res.ok) {
+        showToast(notice.isPinned ? 'Notice unpinned.' : 'Notice pinned as priority.');
+        loadOverview();
+      }
+    } catch {
+      showToast('Failed to update notice.', true);
+    }
   };
 
   const handleDeleteNotice = async (id: string) => {
-    const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('Notice removed.');
-      fetchOverview();
-    }
-  };
-
-  // Submit Official Faculty Answer
-  const handleSubmitDoubtAnswer = async (postId: string) => {
-    if (!answerText.trim()) return;
-    setSubmittingAnswer(true);
     try {
-      const res = await fetch('/api/faculty/doubts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, content: answerText.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit answer');
-
-      showToast('Official Faculty Answer posted and highlighted on Campus Forum!');
-      setAnsweringDoubtId(null);
-      setAnswerText('');
-      fetchDoubts();
-      fetchOverview();
-    } catch (err: any) {
-      showToast(err?.message || 'Failed to submit official answer', true);
-    } finally {
-      setSubmittingAnswer(false);
+      const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Notice deleted.');
+        loadOverview();
+      }
+    } catch {
+      showToast('Failed to delete notice.', true);
     }
   };
 
-  // Save Curated AI Viva Topic
-  const handleSaveVivaTopic = async (e: React.FormEvent) => {
+  // Tab 4 Actions
+  const handleAddCustomVivaQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vivaSubjectCode.trim() || !vivaTopicTitle.trim() || !vivaKeyConcepts.trim() || !vivaSampleQ.trim()) return;
-    setSavingViva(true);
+    if (!vivaSubjectCode || !vivaQuestion.trim() || !vivaKeyPoints.trim()) {
+      showToast('Select a subject and fill in both the question and expected key points.', true);
+      return;
+    }
+
+    setSavingVivaQ(true);
     try {
-      const res = await fetch('/api/faculty/viva-topics', {
+      const res = await fetch('/api/faculty/viva-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subjectCode: vivaSubjectCode,
-          subjectName: vivaSubjectName || vivaSubjectCode,
           branch: vivaBranch,
           semester: vivaSemester,
-          topicTitle: vivaTopicTitle,
-          keyConcepts: vivaKeyConcepts,
-          sampleVivaQ: vivaSampleQ,
+          subjectCode: vivaSubjectCode,
+          question: vivaQuestion.trim(),
+          expectedKeyPoints: vivaKeyPoints.trim(),
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save viva topic');
-
-      showToast('Curated AI Viva topic & questions saved to Neon DB!');
-      setVivaTopicTitle('');
-      setVivaKeyConcepts('');
-      setVivaSampleQ('');
-      fetchVivaTopics();
-    } catch (err: any) {
-      showToast(err?.message || 'Failed to save viva topic', true);
+      if (!res.ok) {
+        showToast(data.error || 'Failed to add custom viva question.', true);
+        return;
+      }
+      showToast('Custom viva question added — AI Viva Studio will prioritize it.');
+      setVivaQuestion('');
+      setVivaKeyPoints('');
+      loadVivaBank();
+    } catch {
+      showToast('Network error saving viva question.', true);
     } finally {
-      setSavingViva(false);
+      setSavingVivaQ(false);
     }
   };
 
-  const handleDeleteVivaTopic = async (id: string) => {
-    const res = await fetch(`/api/faculty/viva-topics?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('Viva topic removed.');
-      fetchVivaTopics();
+  const handleDeleteCustomVivaQuestion = async (id: string) => {
+    try {
+      const res = await fetch(`/api/faculty/viva-questions?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        showToast('Viva question removed.');
+        loadVivaBank();
+      }
+    } catch {
+      showToast('Failed to remove viva question.', true);
     }
   };
 
-  const tabs: Array<{
-    id: FacultyTab;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    badge?: number;
-  }> = [
-    { id: 'overview', label: 'Overview Desk', icon: LayoutDashboard },
-    { id: 'notes', label: 'Notes & Verification', icon: FileCheck2, badge: kpis.pendingSubmissions },
-    { id: 'lectures', label: 'Course Lectures (NPTEL)', icon: PlayCircle },
-    { id: 'notices', label: 'Notices & Assignments', icon: Bell },
-    { id: 'doubts', label: 'Official Doubt Solver', icon: MessageSquare, badge: kpis.unansweredDoubts },
-    { id: 'viva', label: 'AI Viva Curator', icon: Sparkles },
-  ];
+  const visibleNotesQueue =
+    queueFilter === 'pending' ? notesQueue.filter((n) => !n.verified) : notesQueue;
 
   return (
-    <div className="w-full space-y-6">
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#E4E4E7]">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold font-sans whitespace-nowrap transition-all inline-flex items-center gap-2 cursor-pointer ${
-                isActive
-                  ? 'bg-[#09090B] text-white shadow-2xs'
-                  : 'bg-white text-zinc-600 border border-[#E4E4E7] hover:bg-zinc-50 hover:text-[#09090B]'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{tab.label}</span>
-              {tab.badge !== undefined && tab.badge > 0 && (
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold tabular-nums ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
-                  }`}
-                >
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Toast */}
+    <div className="space-y-6">
+      {/* Toast Notification */}
       {toast && (
         <div
-          className={`p-3.5 rounded-xl border text-xs font-sans flex items-center justify-between ${
+          className={`fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 px-4 py-3 rounded-xl border shadow-lg text-xs font-medium flex items-center gap-2 ${
             toast.isError
-              ? 'bg-rose-50 border-rose-200 text-rose-900'
+              ? 'bg-red-50 border-red-200 text-red-800'
               : 'bg-emerald-50 border-emerald-200 text-emerald-900'
           }`}
         >
-          <div className="flex items-center gap-2">
-            {toast.isError ? (
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            )}
-            <span>{toast.text}</span>
-          </div>
-          <button onClick={() => setToast(null)} className="text-[11px] font-mono underline cursor-pointer">
-            Dismiss
-          </button>
+          {toast.isError ? (
+            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
+          <span>{toast.text}</span>
         </div>
       )}
 
-      {/* =========================================================================
-          TAB 1: FACULTY OVERVIEW DESK
-          ========================================================================= */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* 4 KPI Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Verified Vault Notes</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#09090B]">
-                {kpis.uploadedNotes}
-              </div>
-              <div className="text-[11px] font-mono text-emerald-700">
-                of {kpis.totalNotes} total submissions
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Pending Verification</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-amber-700">
-                {kpis.pendingSubmissions}
-              </div>
-              <div className="text-[11px] font-mono text-zinc-500">Awaiting Faculty Stamp</div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Unanswered Doubts</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#2563EB]">
-                {kpis.unansweredDoubts}
-              </div>
-              <div className="text-[11px] font-mono text-zinc-500">Need Official Reply</div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 shadow-xs space-y-1.5">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase">Active Notices</div>
-              <div className="text-2xl font-bold font-mono tabular-nums text-[#09090B]">
-                {kpis.activeNotices}
-              </div>
-              <div className="text-[11px] font-mono text-purple-700">Live Circulars</div>
-            </div>
-          </div>
-
-          {/* Quick Actions Launchpad */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <button
-              onClick={() => setActiveTab('notes')}
-              className="p-4 rounded-2xl bg-white border border-[#E4E4E7] hover:border-emerald-400 text-left space-y-1.5 shadow-xs transition-all cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                <Upload className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-[#09090B]">Publish Verified Notes</div>
-              <div className="text-[11px] text-zinc-500">Upload PDF or review student queue</div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('notices')}
-              className="p-4 rounded-2xl bg-white border border-[#E4E4E7] hover:border-blue-400 text-left space-y-1.5 shadow-xs transition-all cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
-                <Bell className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-[#09090B]">Broadcast Notice</div>
-              <div className="text-[11px] text-zinc-500">Lab schedules &amp; CA exam circulars</div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('doubts')}
-              className="p-4 rounded-2xl bg-white border border-[#E4E4E7] hover:border-purple-400 text-left space-y-1.5 shadow-xs transition-all cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
-                <HelpCircle className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-[#09090B]">Solve Forum Doubts</div>
-              <div className="text-[11px] text-zinc-500">Post Official Faculty Answers</div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('viva')}
-              className="p-4 rounded-2xl bg-white border border-[#E4E4E7] hover:border-amber-400 text-left space-y-1.5 shadow-xs transition-all cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div className="text-xs font-bold text-[#09090B]">Curate AI Viva Topics</div>
-              <div className="text-[11px] text-zinc-500">Add key concepts per subject code</div>
-            </button>
-          </div>
+      {/* Swiss KPI Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Verified Materials
+          </p>
+          <p className="text-2xl font-bold text-[#09090B] mt-1 font-mono">{kpis.uploadedNotes}</p>
+          <p className="text-[11px] text-emerald-700 mt-0.5">Live on /notes</p>
         </div>
-      )}
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Pending Review
+          </p>
+          <p className="text-2xl font-bold text-amber-600 mt-1 font-mono">
+            {kpis.pendingSubmissions}
+          </p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Student uploads awaiting stamp</p>
+        </div>
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Open Student Doubts
+          </p>
+          <p className="text-2xl font-bold text-blue-600 mt-1 font-mono">{kpis.unansweredDoubts}</p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Needs verified answer</p>
+        </div>
+        <div className="bg-white border border-[#E4E4E7] rounded-xl p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Active Notices
+          </p>
+          <p className="text-2xl font-bold text-[#09090B] mt-1 font-mono">{kpis.activeNotices}</p>
+          <p className="text-[11px] text-zinc-500 mt-0.5">Broadcast to campus</p>
+        </div>
+      </div>
 
-      {/* =========================================================================
-          TAB 2: NOTES & PYQ PUBLISHER + VERIFICATION QUEUE
-          ========================================================================= */}
-      {activeTab === 'notes' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Publisher Form */}
-          <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 h-fit">
-            <div className="pb-3 border-b border-zinc-100">
-              <h2 className="text-sm font-bold text-[#09090B]">Publish Official Faculty-Verified Material</h2>
-              <p className="text-xs text-zinc-500">Automatically stamped with the green Faculty Verified badge</p>
+      {/* 4-Tab Swiss Segmented Navigation */}
+      <div className="bg-white border border-[#E4E4E7] rounded-2xl p-1.5 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+        <button
+          type="button"
+          onClick={() => setActiveTab('content')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'content'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <FileCheck2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Content & Verification</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('doubts')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'doubts'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Doubt Resolution</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('notices')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'notices'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <Bell className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">Notices & CA/Viva</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('viva')}
+          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'viva'
+              ? 'bg-[#09090B] text-white shadow-xs'
+              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">AI Viva Bank</span>
+        </button>
+      </div>
+
+      {/* TAB 1: Content & Verification Queue */}
+      {activeTab === 'content' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Publish Official Faculty Material */}
+          <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Upload className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-base font-bold text-[#09090B]">
+                Publish Official Faculty Material
+              </h2>
             </div>
+            <p className="text-xs text-zinc-500 mb-4">
+              Auto-stamped with <span className="text-emerald-700 font-semibold">Faculty Verified</span> and published directly to /notes as {userName || userEmail}.
+            </p>
 
-            <form onSubmit={handlePublishMaterial} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Material Title</label>
-                <input
-                  type="text"
-                  value={pubTitle}
-                  onChange={(e) => setPubTitle(e.target.value)}
-                  placeholder="e.g. Trees & Graph Algorithms Complete Notes"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
+            <form onSubmit={handlePublishMaterial} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Branch</label>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">Branch</label>
                   <select
                     value={pubBranch}
                     onChange={(e) => setPubBranch(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                   >
                     {SYLLABUS_BRANCHES.map((b) => (
                       <option key={b.code} value={b.code}>
-                        {b.code}
+                        {b.code} — {b.name}
                       </option>
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Semester</label>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">Semester</label>
                   <select
                     value={pubSemester}
                     onChange={(e) => setPubSemester(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                   >
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                      <option key={s} value={s}>
-                        Sem {s}
+                    {SEMESTERS.map((sem) => (
+                      <option key={sem} value={sem}>
+                        Semester {sem}
                       </option>
                     ))}
                   </select>
@@ -644,177 +653,225 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">MAKAUT Syllabus Subject</label>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                  MAKAUT Syllabus Subject
+                </label>
                 <select
                   value={pubSubjectCode}
-                  onChange={(e) => {
-                    const code = e.target.value;
-                    setPubSubjectCode(code);
-                    const match = pubAvailableSubjects.find((s) => s.code === code);
-                    if (match) setPubSubjectName(match.name);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
+                  onChange={(e) => setPubSubjectCode(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                 >
-                  {pubAvailableSubjects.map((s) => (
-                    <option key={s.code} value={s.code}>
-                      {s.code} — {s.name}
+                  {pubSubjects.map((s) => (
+                    <option key={`${s.code}-${s.name}`} value={s.code}>
+                      {s.code} — {s.name} ({s.type})
                     </option>
                   ))}
                 </select>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Material Type
+                  </label>
+                  <select
+                    value={pubType}
+                    onChange={(e) => setPubType(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                  >
+                    <option value="LECTURE_NOTE">Theory Notes (NOTE)</option>
+                    <option value="MAKAUT_PYQ">Solved PYQ Bank (PYQ)</option>
+                    <option value="LAB_MANUAL">Lab Practical Manual (LAB)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Module / Unit (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={pubUnit}
+                    onChange={(e) => setPubUnit(e.target.value)}
+                    placeholder="e.g. Module 2"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Unit / Module</label>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">Title</label>
                 <input
                   type="text"
-                  value={pubUnit}
-                  onChange={(e) => setPubUnit(e.target.value)}
-                  placeholder="Module 3"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
+                  value={pubTitle}
+                  onChange={(e) => setPubTitle(e.target.value)}
+                  placeholder="e.g. AVL Trees, Rotations & Time Complexity"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
+                  required
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setPubMode('url')}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
-                    pubMode === 'url' ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-zinc-50 text-zinc-600 border-zinc-200'
-                  }`}
-                >
-                  PDF Link / URL
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPubMode('file')}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-mono border cursor-pointer ${
-                    pubMode === 'file' ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-zinc-50 text-zinc-600 border-zinc-200'
-                  }`}
-                >
-                  Upload File
-                </button>
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                  Formatted Study Content (Markdown / Exam Notes)
+                </label>
+                <textarea
+                  rows={6}
+                  value={pubContent}
+                  onChange={(e) => setPubContent(e.target.value)}
+                  placeholder="## Key Concepts&#10;- Write structured exam notes, derivations, or solved MAKAUT questions here..."
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-mono text-zinc-900"
+                />
               </div>
 
-              {pubMode === 'url' ? (
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Document URL</label>
-                  <input
-                    type="url"
-                    value={pubUrl}
-                    onChange={(e) => setPubUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                    required
-                  />
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">PDF / Image File</label>
-                  <input
-                    type="file"
-                    accept=".pdf,.png,.jpg,.jpeg,.webp"
-                    onChange={(e) => setPubFile(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-zinc-600"
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                  External PDF / Drive Link (Optional if content above is filled)
+                </label>
+                <input
+                  type="url"
+                  value={pubFileUrl}
+                  onChange={(e) => setPubFileUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
+                />
+              </div>
 
               <button
                 type="submit"
                 disabled={publishingNote}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5" />
-                <span>{publishingNote ? 'Publishing...' : 'Publish Faculty-Verified Material'}</span>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{publishingNote ? 'Publishing...' : 'Publish & Verify Material'}</span>
               </button>
             </form>
           </div>
 
-          {/* Student Submission Verification Queue */}
-          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+          {/* Pending Student Submissions Queue */}
+          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Student Submissions Queue ({notesQueue.length})</h2>
-                <p className="text-xs text-zinc-500">Approve to stamp &ldquo;Faculty Verified&rdquo; or reject low-quality uploads</p>
+                <h2 className="text-base font-bold text-[#09090B]">
+                  Student Upload Verification Queue
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  Preview student-submitted materials, stamp as Faculty Verified, or reject spam.
+                </p>
               </div>
-              <button onClick={fetchOverview} className="p-1.5 rounded-lg border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingOverview ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setQueueFilter('pending')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
+                    queueFilter === 'pending'
+                      ? 'bg-[#09090B] text-white border-[#09090B]'
+                      : 'bg-white text-zinc-600 border-[#E4E4E7]'
+                  }`}
+                >
+                  Pending ({notesQueue.filter((n) => !n.verified).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQueueFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
+                    queueFilter === 'all'
+                      ? 'bg-[#09090B] text-white border-[#09090B]'
+                      : 'bg-white text-zinc-600 border-[#E4E4E7]'
+                  }`}
+                >
+                  All ({notesQueue.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={loadOverview}
+                  className="p-1.5 rounded-lg border border-[#E4E4E7] text-zinc-600 hover:bg-zinc-100 cursor-pointer"
+                  title="Refresh queue"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingOverview ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             </div>
 
-            {notesQueue.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No student note submissions in Neon DB yet.
+            {visibleNotesQueue.length === 0 ? (
+              <div className="py-12 text-center border border-dashed border-[#E4E4E7] rounded-xl bg-[#FAFAFA]">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-zinc-800">Queue Clear</p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {queueFilter === 'pending'
+                    ? 'No pending student uploads waiting for review.'
+                    : 'No study materials found.'}
+                </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {notesQueue.map((item) => (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {visibleNotesQueue.map((note) => (
                   <div
-                    key={item.id}
-                    className={`p-4 rounded-xl border space-y-2.5 ${
-                      item.verified ? 'bg-emerald-50/30 border-emerald-200' : 'bg-zinc-50 border-zinc-200'
-                    }`}
+                    key={note.id}
+                    className="p-4 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded bg-blue-100 text-[#2563EB] font-mono text-[10px] font-bold">
-                            {item.subjectCode}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                        <span className="px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-mono text-[10px] font-semibold text-zinc-700">
+                          {note.branch} • Sem {note.semester}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 font-mono text-[10px] font-semibold text-blue-700">
+                          {note.subjectCode}
+                        </span>
+                        {note.verified ? (
+                          <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-[10px] font-semibold text-emerald-700">
+                            Verified
                           </span>
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            {item.branch} • Sem {item.semester}
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 font-mono text-[10px] font-semibold text-amber-700">
+                            Pending Review
                           </span>
-                          <span
-                            className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold ${
-                              item.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {item.verified ? 'Faculty Verified' : 'Pending Review'}
-                          </span>
-                        </div>
-                        <div className="text-xs font-bold text-[#09090B]">{item.title}</div>
-                        <div className="text-[11px] font-mono text-zinc-500">
-                          Submitted by {item.uploader?.fullName || item.uploader?.email || 'Student'}
-                        </div>
+                        )}
                       </div>
-
-                      {item.fileUrl && (
-                        <a
-                          href={item.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] font-mono text-[#2563EB] hover:underline inline-flex items-center gap-1 shrink-0"
-                        >
-                          <span>View</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
+                      <h3 className="text-sm font-semibold text-[#09090B] truncate">{note.title}</h3>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        By {note.authorName || note.uploader?.fullName || 'SETGOI Student'}
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {!item.verified ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewNote(note)}
+                        className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white hover:bg-zinc-100 text-xs font-medium text-zinc-700 inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Preview</span>
+                      </button>
+
+                      {!note.verified ? (
                         <button
-                          onClick={() => handleVerifyNote(item.id, true)}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                          type="button"
+                          disabled={verifyingId === note.id}
+                          onClick={() => handleVerifyNote(note.id, true)}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Approve &amp; Verify</span>
+                          <span>Approve</span>
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleVerifyNote(item.id, false)}
-                          className="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-semibold cursor-pointer"
+                          type="button"
+                          disabled={verifyingId === note.id}
+                          onClick={() => handleVerifyNote(note.id, false)}
+                          className="px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium cursor-pointer"
                         >
-                          Revoke Badge
+                          Unverify
                         </button>
                       )}
+
                       <button
-                        onClick={() => handleRejectNote(item.id)}
-                        className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                        type="button"
+                        disabled={verifyingId === note.id}
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="p-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 cursor-pointer"
+                        title="Reject & Delete"
                       >
                         <XCircle className="w-3.5 h-3.5" />
-                        <span>Reject</span>
                       </button>
                     </div>
                   </div>
@@ -825,76 +882,252 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
         </div>
       )}
 
-      {/* =========================================================================
-          TAB 2B: SWAYAM / NPTEL COURSE LECTURES MANAGER
-          ========================================================================= */}
-      {activeTab === 'lectures' && <CourseLectureManager />}
-
-      {/* =========================================================================
-          TAB 3: ACADEMIC NOTICE & ASSIGNMENT BOARD
-          ========================================================================= */}
-      {activeTab === 'notices' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 h-fit">
-            <div className="pb-3 border-b border-zinc-100">
-              <h2 className="text-sm font-bold text-[#09090B]">Broadcast Department Notice</h2>
-              <p className="text-xs text-zinc-500">Appears immediately on Student Cockpits &amp; /notices</p>
+      {/* TAB 2: Doubt Resolution (/forum integration) */}
+      {activeTab === 'doubts' && (
+        <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-[#09090B]">
+                Student Doubt Resolution Desk
+              </h2>
+              <p className="text-xs text-zinc-500">
+                Answers posted here are pinned at the top of{' '}
+                <Link href="/forum" className="text-blue-600 hover:underline font-medium">
+                  /forum
+                </Link>{' '}
+                with a green <span className="text-emerald-700 font-semibold">Verified Faculty Answer</span> badge and mark the thread Resolved.
+              </p>
             </div>
 
-            <form onSubmit={handlePublishNotice} className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={doubtBranch}
+                onChange={(e) => setDoubtBranch(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-800"
+              >
+                <option value="ALL">All Branches</option>
+                {SYLLABUS_BRANCHES.map((b) => (
+                  <option key={b.code} value={b.code}>
+                    {b.code}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setDoubtFilter('unanswered')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
+                  doubtFilter === 'unanswered'
+                    ? 'bg-[#09090B] text-white border-[#09090B]'
+                    : 'bg-white text-zinc-600 border-[#E4E4E7]'
+                }`}
+              >
+                Unresolved
+              </button>
+              <button
+                type="button"
+                onClick={() => setDoubtFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer ${
+                  doubtFilter === 'all'
+                    ? 'bg-[#09090B] text-white border-[#09090B]'
+                    : 'bg-white text-zinc-600 border-[#E4E4E7]'
+                }`}
+              >
+                All Threads
+              </button>
+            </div>
+          </div>
+
+          {loadingDoubts ? (
+            <div className="py-12 text-center text-xs text-zinc-500">Loading student doubts...</div>
+          ) : doubts.length === 0 ? (
+            <div className="py-12 text-center border border-dashed border-[#E4E4E7] rounded-xl bg-[#FAFAFA]">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-zinc-800">No Unresolved Doubts</p>
+              <p className="text-xs text-zinc-500 mt-1">
+                All student questions for this filter already have a verified faculty answer.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {doubts.map((doubt) => (
+                <div
+                  key={doubt.id}
+                  className="p-4 sm:p-5 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {doubt.branch && (
+                        <span className="px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-mono text-[10px] font-semibold text-zinc-700">
+                          {doubt.branch} {doubt.semester ? `• Sem ${doubt.semester}` : ''}
+                        </span>
+                      )}
+                      {doubt.category && (
+                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 font-mono text-[10px] font-semibold text-blue-700">
+                          {doubt.category}
+                        </span>
+                      )}
+                      {doubt.hasOfficialAnswer || doubt.isResolved ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-[10px] font-semibold text-emerald-700">
+                          Resolved • Verified Answer Posted
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 font-mono text-[10px] font-semibold text-amber-700">
+                          Needs Faculty Answer
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-mono text-zinc-500">
+                      Asked by {doubt.author?.fullName || 'SETGOI Student'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-[#09090B]">{doubt.title}</h3>
+                    <p className="text-xs text-zinc-600 mt-1 whitespace-pre-wrap leading-relaxed">
+                      {doubt.content}
+                    </p>
+                  </div>
+
+                  {/* Inline Official Answer Composer */}
+                  <div className="pt-2 border-t border-[#E4E4E7] space-y-2">
+                    <textarea
+                      rows={3}
+                      value={replyDrafts[doubt.id] || ''}
+                      onChange={(e) =>
+                        setReplyDrafts((prev) => ({ ...prev, [doubt.id]: e.target.value }))
+                      }
+                      placeholder="Write a clear, syllabus-aligned Official Faculty Answer (supports Markdown)..."
+                      className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-white text-xs text-zinc-900"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={submittingReplyId === doubt.id}
+                        onClick={() => handlePostOfficialAnswer(doubt.id)}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>
+                          {submittingReplyId === doubt.id
+                            ? 'Posting...'
+                            : 'Post Official Verified Answer'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: Academic Notices & CA/Viva Schedules */}
+      {activeTab === 'notices' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Bell className="w-4 h-4 text-blue-600" />
+              <h2 className="text-base font-bold text-[#09090B]">
+                Publish Notice / CA & Viva Schedule
+              </h2>
+            </div>
+            <p className="text-xs text-zinc-500 mb-4">
+              Targeted notices appear immediately on /tools (Exam Countdown & Notices) and /dashboard.
+            </p>
+
+            <form onSubmit={handlePublishNotice} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Target Branch
+                  </label>
+                  <select
+                    value={noticeBranch}
+                    onChange={(e) => setNoticeBranch(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                  >
+                    <option value="ALL">All Branches</option>
+                    {SYLLABUS_BRANCHES.map((b) => (
+                      <option key={b.code} value={b.code}>
+                        {b.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Target Semester
+                  </label>
+                  <select
+                    value={noticeSemester}
+                    onChange={(e) => setNoticeSemester(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                  >
+                    <option value="ALL">All Semesters</option>
+                    {SEMESTERS.map((sem) => (
+                      <option key={sem} value={String(sem)}>
+                        Semester {sem}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">Category</label>
+                  <select
+                    value={noticeCategory}
+                    onChange={(e) => setNoticeCategory(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                  >
+                    <option value="EXAM">Examination</option>
+                    <option value="LAB">Laboratories</option>
+                    <option value="ACADEMIC">Academic</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Exam / Viva Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={noticeExamDate}
+                    onChange={(e) => setNoticeExamDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Notice Title</label>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                  Notice Title
+                </label>
                 <input
                   type="text"
                   value={noticeTitle}
                   onChange={(e) => setNoticeTitle(e.target.value)}
-                  placeholder="e.g. CA2 Internal Lab Viva Schedule (CSE Sem 5)"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
+                  placeholder="e.g. CA-3 & Practical Viva Schedule (Sem 3 CSE)"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Target Department</label>
-                  <select
-                    value={noticeDepartment}
-                    onChange={(e) => setNoticeDepartment(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                  >
-                    <option value="ALL">ALL B.Tech</option>
-                    <option value="CSE">CSE</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EE">EE</option>
-                    <option value="ME">ME</option>
-                    <option value="CE">CE</option>
-                    <option value="IT">IT</option>
-                    <option value="AIML">AIML</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Category</label>
-                  <select
-                    value={noticeCategory}
-                    onChange={(e) => setNoticeCategory(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                  >
-                    <option value="ACADEMIC">Academic</option>
-                    <option value="EXAM">Exam / CA</option>
-                    <option value="URGENT">Urgent</option>
-                    <option value="EVENT">Lab / Event</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Circular Details</label>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                  Announcement Details
+                </label>
                 <textarea
                   rows={4}
                   value={noticeContent}
                   onChange={(e) => setNoticeContent(e.target.value)}
-                  placeholder="Include dates, lab room numbers, or submission instructions..."
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
+                  placeholder="Include lab room numbers, reporting times, and syllabus scope..."
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
                   required
                 />
               </div>
@@ -904,376 +1137,378 @@ export function FacultyWorkspaceClient({ userEmail, userName }: { userEmail: str
                   type="checkbox"
                   checked={noticePinned}
                   onChange={(e) => setNoticePinned(e.target.checked)}
+                  className="rounded border-zinc-300"
                 />
-                <span>Pin to top of Student Dashboard</span>
+                <span>Pin as Priority Notice</span>
               </label>
 
               <button
                 type="submit"
                 disabled={publishingNotice}
-                className="w-full py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl bg-[#09090B] hover:bg-zinc-800 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>{publishingNotice ? 'Publishing...' : 'Publish Official Notice'}</span>
+                <span>{publishingNotice ? 'Broadcasting...' : 'Publish Official Notice'}</span>
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Active Notices ({notices.length})</h2>
-                <p className="text-xs text-zinc-500">Live departmental circulars</p>
-              </div>
-              <button onClick={fetchOverview} className="p-1.5 rounded-lg border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingOverview ? 'animate-spin' : ''}`} />
-              </button>
+          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-[#09090B]">Published Campus Notices</h2>
+              <span className="text-xs font-mono text-zinc-500">{notices.length} active</span>
             </div>
 
             {notices.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No active notices. Publish a circular using the form on the left.
+              <div className="py-12 text-center border border-dashed border-[#E4E4E7] rounded-xl bg-[#FAFAFA] text-xs text-zinc-500">
+                No active notices published yet.
               </div>
             ) : (
-              <div className="space-y-3">
-                {notices.map((n) => (
+              <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
+                {notices.map((notice) => (
                   <div
-                    key={n.id}
-                    className={`p-4 rounded-xl border space-y-2 ${
-                      n.isPinned ? 'bg-amber-50/40 border-amber-200' : 'bg-zinc-50 border-zinc-200'
-                    }`}
+                    key={notice.id}
+                    className="p-4 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex items-start justify-between gap-3"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded bg-zinc-200/80 text-zinc-800 font-mono text-[10px] font-bold">
-                            {n.category}
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {notice.isPinned && (
+                          <span className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 font-mono text-[10px] font-semibold text-amber-700">
+                            Pinned
                           </span>
-                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-mono text-[10px]">
-                            {n.targetBranch}
-                          </span>
-                        </div>
-                        <div className="text-xs font-bold text-[#09090B]">{n.title}</div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleTogglePin(n)}
-                          className="p-1.5 rounded-lg hover:bg-white text-zinc-600 cursor-pointer"
-                          title={n.isPinned ? 'Unpin' : 'Pin'}
-                        >
-                          {n.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteNotice(n.id)}
-                          className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 cursor-pointer"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-zinc-600 leading-relaxed">{n.content}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 4: Q&A FORUM OFFICIAL DOUBT SOLVER
-          ========================================================================= */}
-      {activeTab === 'doubts' && (
-        <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100">
-            <div>
-              <h2 className="text-base font-bold text-[#09090B]">Student Doubts &amp; Official Faculty Answers</h2>
-              <p className="text-xs text-zinc-500">
-                Answers posted here are highlighted with the <span className="text-emerald-700 font-semibold">Official Faculty Answer</span> badge on /forum.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={doubtBranchFilter}
-                onChange={(e) => setDoubtBranchFilter(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-              >
-                <option value="ALL">ALL Branches</option>
-                <option value="CSE">CSE</option>
-                <option value="ECE">ECE</option>
-                <option value="EE">EE</option>
-                <option value="ME">ME</option>
-                <option value="CE">CE</option>
-              </select>
-              <button
-                onClick={() => setDoubtShowAll((prev) => !prev)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-mono border cursor-pointer ${
-                  doubtShowAll ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-zinc-50 text-zinc-600 border-zinc-200'
-                }`}
-              >
-                {doubtShowAll ? 'Showing All' : 'Unanswered Only'}
-              </button>
-              <button onClick={fetchDoubts} className="p-2 rounded-xl border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingDoubts ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
-
-          {doubts.length === 0 ? (
-            <div className="p-8 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-              {loadingDoubts ? 'Loading student doubts...' : 'All student questions have been answered!'}
-            </div>
-          ) : (
-            <div className="space-y-3.5">
-              {doubts.map((doubt) => (
-                <div key={doubt.id} className="p-4 rounded-xl bg-zinc-50/70 border border-[#E4E4E7] space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200 font-mono text-[10px] font-bold">
-                          {doubt.branch || doubt.category || 'Academic'}
+                        )}
+                        <span className="px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-mono text-[10px] font-semibold text-zinc-700">
+                          {notice.targetBranch}
+                          {notice.targetSemester ? ` • Sem ${notice.targetSemester}` : ''}
                         </span>
-                        {doubt.hasOfficialAnswer ? (
-                          <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold">
-                            Official Answer Posted
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-mono text-[10px] font-bold">
-                            Awaiting Faculty Reply
+                        <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 font-mono text-[10px] font-semibold text-blue-700">
+                          {notice.category}
+                        </span>
+                        {notice.examDate && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-[10px] font-semibold text-emerald-700">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(notice.examDate).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
                           </span>
                         )}
                       </div>
-                      <h3 className="text-sm font-bold text-[#09090B]">{doubt.title}</h3>
-                      <p className="text-xs text-zinc-600 leading-relaxed">{doubt.content}</p>
-                      <div className="text-[11px] font-mono text-zinc-400">
-                        Asked by {doubt.author?.fullName || 'Student'} • {doubt.replies.length} replies
-                      </div>
+                      <h3 className="text-sm font-semibold text-[#09090B]">{notice.title}</h3>
+                      <p className="text-xs text-zinc-600 whitespace-pre-wrap">{notice.content}</p>
                     </div>
-                  </div>
 
-                  {/* Existing Official Replies */}
-                  {doubt.replies.filter((r) => r.isOfficialAnswer).map((r) => (
-                    <div key={r.id} className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
-                      <div className="font-mono text-[10px] font-bold text-emerald-800">
-                        ✓ OFFICIAL FACULTY ANSWER • {r.author?.fullName || userName}
-                      </div>
-                      <p className="text-emerald-950">{r.content}</p>
-                    </div>
-                  ))}
-
-                  {answeringDoubtId === doubt.id ? (
-                    <div className="space-y-2 pt-1">
-                      <textarea
-                        rows={3}
-                        value={answerText}
-                        onChange={(e) => setAnswerText(e.target.value)}
-                        placeholder="Write your authoritative explanation or MAKAUT exam tip..."
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-[#E4E4E7] text-xs"
-                      />
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleSubmitDoubtAnswer(doubt.id)}
-                          disabled={submittingAnswer}
-                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>{submittingAnswer ? 'Posting...' : 'Post Official Answer'}</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setAnsweringDoubtId(null);
-                            setAnswerText('');
-                          }}
-                          className="px-3 py-1.5 rounded-xl border border-zinc-200 text-xs text-zinc-600 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setAnsweringDoubtId(doubt.id);
-                        setAnswerText('');
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-white border border-zinc-200 hover:border-[#2563EB] text-xs font-semibold text-[#09090B] inline-flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-[#2563EB]" />
-                      <span>Write Official Faculty Answer</span>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* =========================================================================
-          TAB 5: AI VIVA TOPIC & QUESTION CURATOR
-          ========================================================================= */}
-      {activeTab === 'viva' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 h-fit">
-            <div className="pb-3 border-b border-zinc-100">
-              <h2 className="text-sm font-bold text-[#09090B]">Curate AI Viva Questions &amp; Concepts</h2>
-              <p className="text-xs text-zinc-500">Enrich student AI Viva practice with MAKAUT examiner questions</p>
-            </div>
-
-            <form onSubmit={handleSaveVivaTopic} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Subject Code</label>
-                  <input
-                    type="text"
-                    value={vivaSubjectCode}
-                    onChange={(e) => setVivaSubjectCode(e.target.value)}
-                    placeholder="PCC-CS301"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono uppercase"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Subject Name</label>
-                  <input
-                    type="text"
-                    value={vivaSubjectName}
-                    onChange={(e) => setVivaSubjectName(e.target.value)}
-                    placeholder="DSA"
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Branch</label>
-                  <select
-                    value={vivaBranch}
-                    onChange={(e) => setVivaBranch(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                  >
-                    <option value="CSE">CSE</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EE">EE</option>
-                    <option value="ME">ME</option>
-                    <option value="CE">CE</option>
-                    <option value="IT">IT</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono text-zinc-500 mb-1">Semester</label>
-                  <select
-                    value={vivaSemester}
-                    onChange={(e) => setVivaSemester(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs font-mono"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                      <option key={s} value={s}>
-                        Sem {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Topic Title</label>
-                <input
-                  type="text"
-                  value={vivaTopicTitle}
-                  onChange={(e) => setVivaTopicTitle(e.target.value)}
-                  placeholder="e.g. AVL Tree Rotations & Time Complexity"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Key Concepts Expected</label>
-                <textarea
-                  rows={2}
-                  value={vivaKeyConcepts}
-                  onChange={(e) => setVivaKeyConcepts(e.target.value)}
-                  placeholder="Balance factor (-1, 0, +1), LL/RR/LR/RL rotations, O(log n) search..."
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono text-zinc-500 mb-1">Curated Viva Questions</label>
-                <textarea
-                  rows={3}
-                  value={vivaSampleQ}
-                  onChange={(e) => setVivaSampleQ(e.target.value)}
-                  placeholder="1. Why does BST degrade to O(n)? 2. When is an LR double rotation required?"
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-50 border border-[#E4E4E7] text-xs"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={savingViva}
-                className="w-full py-2.5 rounded-xl bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-semibold inline-flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{savingViva ? 'Saving...' : 'Add Curated Viva Topic'}</span>
-              </button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
-              <div>
-                <h2 className="text-sm font-bold text-[#09090B]">Curated Viva Bank ({vivaTopics.length})</h2>
-                <p className="text-xs text-zinc-500">Persisted in Neon PostgreSQL</p>
-              </div>
-              <button onClick={fetchVivaTopics} className="p-1.5 rounded-lg border border-zinc-200 cursor-pointer">
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingViva ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
-            {vivaTopics.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                No curated viva topics yet. Add your first subject topic on the left.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {vivaTopics.map((vt) => (
-                  <div key={vt.id} className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-mono text-[10px] font-bold">
-                            {vt.subjectCode}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-500">
-                            {vt.subjectName} • {vt.branch} Sem {vt.semester}
-                          </span>
-                        </div>
-                        <h3 className="text-xs font-bold text-[#09090B] mt-1">{vt.topicTitle}</h3>
-                      </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
-                        onClick={() => handleDeleteVivaTopic(vt.id)}
-                        className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-600 cursor-pointer"
+                        type="button"
+                        onClick={() => handleToggleNoticePin(notice)}
+                        className="p-1.5 rounded-lg border border-[#E4E4E7] bg-white hover:bg-zinc-100 text-zinc-600 cursor-pointer"
+                        title={notice.isPinned ? 'Unpin' : 'Pin'}
+                      >
+                        {notice.isPinned ? (
+                          <PinOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Pin className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNotice(notice.id)}
+                        className="p-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 cursor-pointer"
+                        title="Delete notice"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="text-[11px] text-zinc-600">
-                      <span className="font-semibold text-zinc-800">Concepts:</span> {vt.keyConcepts}
-                    </div>
-                    <div className="text-[11px] font-mono text-zinc-700 bg-white p-2.5 rounded-lg border border-zinc-200/80">
-                      {vt.sampleVivaQ}
-                    </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: AI Viva Question Bank & Subject Insights */}
+      {activeTab === 'viva' && (
+        <div className="space-y-6">
+          {/* Live Branch Viva Insights */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase text-zinc-500">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+                <span>Viva Sessions Practiced ({vivaBranch})</span>
+              </div>
+              <p className="text-3xl font-bold text-[#09090B] font-mono mt-2">
+                {vivaInsights.totalSessions}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1">
+                Recorded student practice sessions in Neon DB
+              </p>
+            </div>
+
+            <div className="md:col-span-2 bg-white border border-[#E4E4E7] rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-[#09090B]">
+                  Lowest-Scoring Topics in {vivaBranch}
+                </h3>
+                <span className="text-[11px] font-mono text-zinc-500">
+                  From student VivaSession weakTopics
+                </span>
+              </div>
+              {vivaInsights.lowestScoringTopics.length === 0 ? (
+                <p className="text-xs text-zinc-500">
+                  No weak-topic flags recorded yet for {vivaBranch}.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {vivaInsights.lowestScoringTopics.map((item, idx) => (
+                    <span
+                      key={`${item.subjectCode}-${item.topic}-${idx}`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900"
+                    >
+                      <span className="font-mono font-semibold text-[10px] text-amber-700">
+                        {item.subjectCode}
+                      </span>
+                      <span>{item.topic}</span>
+                      <span className="font-mono text-[10px] text-amber-700">({item.count})</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Seed Custom MAKAUT Viva Question */}
+            <div className="lg:col-span-5 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <h2 className="text-base font-bold text-[#09090B]">
+                  Seed Custom MAKAUT Viva Question
+                </h2>
+              </div>
+              <p className="text-xs text-zinc-500 mb-4">
+                AI Viva Studio prioritizes these faculty questions when examining students in the selected subject.
+              </p>
+
+              <form onSubmit={handleAddCustomVivaQuestion} className="space-y-3.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-mono text-zinc-600 mb-1">Branch</label>
+                    <select
+                      value={vivaBranch}
+                      onChange={(e) => setVivaBranch(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                    >
+                      {SYLLABUS_BRANCHES.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.code}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                      Semester
+                    </label>
+                    <select
+                      value={vivaSemester}
+                      onChange={(e) => setVivaSemester(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                    >
+                      {SEMESTERS.map((sem) => (
+                        <option key={sem} value={sem}>
+                          Semester {sem}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    MAKAUT Subject
+                  </label>
+                  <select
+                    value={vivaSubjectCode}
+                    onChange={(e) => setVivaSubjectCode(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
+                  >
+                    {vivaSubjects.map((s) => (
+                      <option key={`${s.code}-${s.name}`} value={s.code}>
+                        {s.code} — {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Viva Question
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={vivaQuestion}
+                    onChange={(e) => setVivaQuestion(e.target.value)}
+                    placeholder="e.g. Why is a circular queue preferred over a linear array queue, and how do we detect full vs empty?"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Expected Key Points (for AI Examiner rubric)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={vivaKeyPoints}
+                    onChange={(e) => setVivaKeyPoints(e.target.value)}
+                    placeholder="e.g. Avoids false overflow; uses (rear + 1) % N == front for full; reuses freed slots in O(1)."
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-900"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={savingVivaQ}
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{savingVivaQ ? 'Saving...' : 'Add to AI Viva Bank'}</span>
+                </button>
+              </form>
+            </div>
+
+            {/* Existing Custom Viva Questions */}
+            <div className="lg:col-span-7 bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold text-[#09090B]">
+                  Faculty Viva Question Bank ({vivaBranch})
+                </h2>
+                <button
+                  type="button"
+                  onClick={loadVivaBank}
+                  className="p-1.5 rounded-lg border border-[#E4E4E7] text-zinc-600 hover:bg-zinc-100 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingViva ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {customQuestions.length === 0 ? (
+                <div className="py-12 text-center border border-dashed border-[#E4E4E7] rounded-xl bg-[#FAFAFA] text-xs text-zinc-500">
+                  No custom viva questions seeded for {vivaBranch} yet.
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                  {customQuestions.map((q) => (
+                    <div
+                      key={q.id}
+                      className="p-4 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex items-start justify-between gap-3"
+                    >
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-mono text-[10px] font-semibold text-zinc-700">
+                            {q.branch} • Sem {q.semester}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 font-mono text-[10px] font-semibold text-blue-700">
+                            {q.subjectCode}
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold text-[#09090B]">{q.question}</p>
+                        <p className="text-xs text-zinc-600">
+                          <span className="font-semibold text-emerald-700">Expected Key Points:</span>{' '}
+                          {q.expectedKeyPoints}
+                        </p>
+                        <p className="text-[11px] font-mono text-zinc-400">Added by {q.createdBy}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomVivaQuestion(q.id)}
+                        className="p-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 shrink-0 cursor-pointer"
+                        title="Delete question"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Preview Modal for Student Submissions */}
+      {previewNote && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-xl">
+            <div className="p-5 border-b border-[#E4E4E7] flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 font-mono text-[10px] font-semibold text-blue-700">
+                    {previewNote.subjectCode}
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">
+                    {previewNote.branch} • Sem {previewNote.semester}
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-[#09090B]">{previewNote.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewNote(null)}
+                className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+              {previewNote.content ? (
+                <pre className="whitespace-pre-wrap font-sans text-xs text-zinc-800 leading-relaxed bg-[#FAFAFA] p-4 rounded-xl border border-[#E4E4E7]">
+                  {previewNote.content}
+                </pre>
+              ) : (
+                <div className="p-4 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs text-zinc-600 flex items-center justify-between gap-3">
+                  <span className="truncate">External resource: {previewNote.fileUrl}</span>
+                  <a
+                    href={previewNote.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-600 font-semibold shrink-0 hover:underline"
+                  >
+                    <span>Open</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[#E4E4E7] flex items-center justify-end gap-2 bg-[#FAFAFA] rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => handleDeleteNote(previewNote.id)}
+                className="px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer"
+              >
+                Reject & Delete
+              </button>
+              {!previewNote.verified && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleVerifyNote(previewNote.id, true);
+                    setPreviewNote(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+                >
+                  Approve & Stamp Verified
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
