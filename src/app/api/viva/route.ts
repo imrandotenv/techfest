@@ -32,16 +32,50 @@ export interface VivaRequest {
 }
 
 export interface VivaResponse {
+  interactionType?: 'EVALUATION' | 'GUIDANCE';
   emotion: 'idle' | 'happy' | 'shocked' | 'thinking';
   reaction: string;
+  spokenFeedback?: string;
   explanation: string;
+  conceptSummary?: string[];
   nextQuestion: string;
   spokenText: string; // Strictly 2-3 short, punchy, conversational sentences for voice synthesis
+  difficulty?: 'Foundation' | 'Intermediate' | 'MAKAUT / GATE';
   provider: 'groq' | 'gemini' | 'simulation';
   isCorrect: boolean | null; // null for follow-up hints, examples, or questions
   topicTag: string;
   sessionId?: string | null;
   guestRemaining?: number;
+}
+
+function cleanConceptBullets(rawSummary: unknown, fallbackText: string): string[] {
+  const cleanLine = (line: string) =>
+    line
+      .replace(/^[-*•\d.)\s]+/, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/[┌┐└┘├┤┬┴┼─│╔╗╚╝═║]/g, '')
+      .trim();
+
+  if (Array.isArray(rawSummary) && rawSummary.length > 0) {
+    const cleaned = rawSummary
+      .map((item) => cleanLine(String(item || '')))
+      .filter((s) => s.length > 3)
+      .slice(0, 3);
+    if (cleaned.length > 0) return cleaned;
+  }
+
+  if (fallbackText) {
+    const lines = fallbackText
+      .split(/\n+/)
+      .map(cleanLine)
+      .filter((s) => s.length > 3)
+      .slice(0, 3);
+    if (lines.length > 0) return lines;
+  }
+
+  return [];
 }
 
 const SYLLABUS_ANGLES = [
@@ -168,17 +202,22 @@ MULTI-TURN CONVERSATION & INTENT HANDLING:
 TOPIC TAG:
 - Always supply a clean, specific 2-4 word topic tag in "topicTag" (e.g. "Stack via Queues", "QuickSort Worst Case", "Coffman Deadlock", "ACID Isolation", "Barkhausen Criterion", "Cache Locality", etc.).
 
-OUTPUT FORMAT:
-Return valid JSON only with keys:
+OUTPUT FORMAT (STRICT JSON ONLY):
+Return valid JSON with these exact keys:
 {
+  "interactionType": "EVALUATION" | "GUIDANCE",
   "emotion": "happy" | "shocked" | "thinking" | "idle",
-  "reaction": "<1 short witty Hinglish line>",
-  "explanation": "<exact technical answer first, then structured visual concept note>",
+  "spokenFeedback": "<1-2 crisp natural Hinglish sentences, plain text only, ZERO markdown>",
+  "conceptSummary": ["<clean bullet 1 without ** asterisks or ASCII trees>", "<clean bullet 2>"],
   "spokenText": "<2-3 short, punchy sentences specifically for speech voice, max 40 words>",
   "nextQuestion": "<crisp next question>",
+  "difficulty": "Foundation" | "Intermediate" | "MAKAUT / GATE",
   "isCorrect": true | false | null,
   "topicTag": "<concise topic tag>"
-}`;
+}
+CRITICAL RULES:
+- NEVER include raw "**" markdown asterisks or ASCII art trees in any field. If illustrating a tree/stack/circuit, describe the step-by-step trace cleanly in prose.
+- When the student clicks Hint, Example, or Harder (GUIDANCE), set "interactionType": "GUIDANCE", "isCorrect": null, and respond like a helpful professor ("Chalo step-by-step samajhte hain...")—NEVER say "Spot on!" or grade them.`;
   }
 
   return `You are "Viva Buddy", a witty, sharp, and encouraging B.Tech engineering senior and viva examiner at SETGOI (Sanaka Educational Trust's Group of Institutions, Durgapur, affiliated with MAKAUT).
@@ -228,17 +267,22 @@ MULTI-TURN CONVERSATION & INTENT HANDLING:
 TOPIC TAG:
 - Always supply a clean, specific 2-4 word topic tag in "topicTag" (e.g. "Stack via Queues", "QuickSort Worst Case", "Coffman Deadlock", "ACID Isolation", "Barkhausen Criterion", "Cache Locality", etc.).
 
-OUTPUT FORMAT:
-Return valid JSON only with keys:
+OUTPUT FORMAT (STRICT JSON ONLY):
+Return valid JSON with these exact keys:
 {
+  "interactionType": "EVALUATION" | "GUIDANCE",
   "emotion": "happy" | "shocked" | "thinking" | "idle",
-  "reaction": "<1 short witty line>",
-  "explanation": "<exact technical answer first, then structured visual concept sentence>",
+  "spokenFeedback": "<1-2 crisp natural sentences, plain text only, ZERO markdown>",
+  "conceptSummary": ["<clean bullet 1 without ** asterisks or ASCII trees>", "<clean bullet 2>"],
   "spokenText": "<2-3 short, punchy sentences specifically for speech voice, max 40 words>",
   "nextQuestion": "<crisp next question>",
+  "difficulty": "Foundation" | "Intermediate" | "MAKAUT / GATE",
   "isCorrect": true | false | null,
   "topicTag": "<concise topic tag>"
-}`;
+}
+CRITICAL RULES:
+- NEVER include raw "**" markdown asterisks or ASCII art trees in any field. If illustrating a tree/stack/circuit, describe the step-by-step trace cleanly in prose.
+- When the student asks for a Hint, Example, or Harder question (GUIDANCE), set "interactionType": "GUIDANCE", "isCorrect": null, and respond naturally as a helpful professor ("Sure, let us trace this step by step...")—NEVER say "Spot on!" or grade them.`;
 }
 
 // Grounded intelligent simulation engine with exact technical answers
@@ -609,11 +653,18 @@ export async function POST(req: Request) {
       difficulty = 'Quick Viva',
       language = 'en',
       history = [],
-      intent = 'answer',
+      intent: rawIntent = 'answer',
       branch,
       semester,
       sessionId,
     } = body;
+    const intent = (String(rawIntent).toLowerCase() || 'answer') as
+      | 'answer'
+      | 'hint'
+      | 'example'
+      | 'skip'
+      | 'harder'
+      | 'opening';
 
     if (intent !== 'opening' && (!question || !answer)) {
       return NextResponse.json(
@@ -813,24 +864,62 @@ Remember:
             const content = data.choices?.[0]?.message?.content;
             if (content) {
               const parsed = JSON.parse(content);
+              const isGuidance = intent === 'hint' || intent === 'example' || intent === 'harder' || intent === 'opening';
               const emotion = ['idle', 'happy', 'shocked', 'thinking'].includes(parsed.emotion)
                 ? parsed.emotion
+                : isGuidance
+                ? 'thinking'
                 : parsed.isCorrect === true
                 ? 'happy'
                 : 'shocked';
 
-              const reaction = parsed.reaction || (language === 'hi' ? 'Suno, chal aage badhte hain!' : 'Interesting answer! Let us proceed.');
-              const nextQuestion = parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: Array aur Linked list mein kya fark hai?' : 'Next question: Explain the difference between an array and a linked list.');
-              const spokenText = parsed.spokenText || `${reaction} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
+              const spokenFeedback = (
+                parsed.spokenFeedback ||
+                parsed.reaction ||
+                (language === 'hi' ? 'Chalo aage badhte hain!' : 'Let us continue!')
+              )
+                .replace(/\*\*/g, '')
+                .trim();
+              const conceptSummary = cleanConceptBullets(
+                parsed.conceptSummary,
+                parsed.explanation || ''
+              );
+              const nextQuestion = (
+                parsed.nextQuestion ||
+                (language === 'hi'
+                  ? 'Agla sawal: Array aur Linked list mein kya fark hai?'
+                  : 'Next question: Explain the difference between an array and a linked list.')
+              )
+                .replace(/\*\*/g, '')
+                .trim();
+              const spokenText =
+                parsed.spokenText ||
+                `${spokenFeedback} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
+              const difficultyLevel: VivaResponse['difficulty'] =
+                parsed.difficulty === 'Foundation' ||
+                parsed.difficulty === 'Intermediate' ||
+                parsed.difficulty === 'MAKAUT / GATE'
+                  ? parsed.difficulty
+                  : intent === 'harder'
+                  ? 'MAKAUT / GATE'
+                  : 'Intermediate';
 
               return finalizeResponse({
+                interactionType: isGuidance ? 'GUIDANCE' : 'EVALUATION',
                 emotion: intent === 'opening' ? 'idle' : emotion,
-                reaction,
-                explanation: parsed.explanation || '',
+                reaction: spokenFeedback,
+                spokenFeedback,
+                explanation: conceptSummary.join('\n') || (parsed.explanation || '').replace(/\*\*/g, ''),
+                conceptSummary,
                 nextQuestion,
                 spokenText,
+                difficulty: difficultyLevel,
                 provider: 'groq',
-                isCorrect: intent === 'opening' ? null : (parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy')),
+                isCorrect: isGuidance
+                  ? null
+                  : parsed.isCorrect !== undefined
+                  ? parsed.isCorrect
+                  : emotion === 'happy',
                 topicTag: parsed.topicTag || `${subject} Core`,
               });
             }
@@ -874,24 +963,62 @@ Remember:
           const geminiText = geminiResult.text;
           if (geminiText) {
             const parsed = JSON.parse(geminiText);
+            const isGuidance = intent === 'hint' || intent === 'example' || intent === 'harder' || intent === 'opening';
             const emotion = ['idle', 'happy', 'shocked', 'thinking'].includes(parsed.emotion)
               ? parsed.emotion
+              : isGuidance
+              ? 'thinking'
               : parsed.isCorrect === true
               ? 'happy'
               : 'shocked';
 
-            const reaction = parsed.reaction || (language === 'hi' ? 'Suno bhai, answer check kiya!' : 'Evaluated by Examiner.');
-            const nextQuestion = parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: QuickSort ka worst case kya hai?' : 'What is the worst-case time complexity of QuickSort?');
-            const spokenText = parsed.spokenText || `${reaction} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
+            const spokenFeedback = (
+              parsed.spokenFeedback ||
+              parsed.reaction ||
+              (language === 'hi' ? 'Chalo aage badhte hain!' : 'Let us continue.')
+            )
+              .replace(/\*\*/g, '')
+              .trim();
+            const conceptSummary = cleanConceptBullets(
+              parsed.conceptSummary,
+              parsed.explanation || ''
+            );
+            const nextQuestion = (
+              parsed.nextQuestion ||
+              (language === 'hi'
+                ? 'Agla sawal: QuickSort ka worst case kya hai?'
+                : 'What is the worst-case time complexity of QuickSort?')
+            )
+              .replace(/\*\*/g, '')
+              .trim();
+            const spokenText =
+              parsed.spokenText ||
+              `${spokenFeedback} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
+            const difficultyLevel: VivaResponse['difficulty'] =
+              parsed.difficulty === 'Foundation' ||
+              parsed.difficulty === 'Intermediate' ||
+              parsed.difficulty === 'MAKAUT / GATE'
+                ? parsed.difficulty
+                : intent === 'harder'
+                ? 'MAKAUT / GATE'
+                : 'Intermediate';
 
             return finalizeResponse({
+              interactionType: isGuidance ? 'GUIDANCE' : 'EVALUATION',
               emotion: intent === 'opening' ? 'idle' : emotion,
-              reaction,
-              explanation: parsed.explanation || '',
+              reaction: spokenFeedback,
+              spokenFeedback,
+              explanation: conceptSummary.join('\n') || (parsed.explanation || '').replace(/\*\*/g, ''),
+              conceptSummary,
               nextQuestion,
               spokenText,
+              difficulty: difficultyLevel,
               provider: 'gemini',
-              isCorrect: intent === 'opening' ? null : (parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy')),
+              isCorrect: isGuidance
+                ? null
+                : parsed.isCorrect !== undefined
+                ? parsed.isCorrect
+                : emotion === 'happy',
               topicTag: parsed.topicTag || `${subject} Core`,
             });
           }

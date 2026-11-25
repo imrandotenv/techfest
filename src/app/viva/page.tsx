@@ -40,6 +40,43 @@ import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
 import { useAcademicProfile } from '@/hooks/useAcademicProfile';
 import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
 import { buildSpokenSummary, sanitizeForSpeech } from '@/lib/tts-sanitizer';
+import {
+  SYLLABUS_BRANCHES,
+  SyllabusBranch,
+  normalizeSyllabusBranch,
+} from '@/lib/makaut-syllabus';
+
+/**
+ * Renders inline code (`...` or O(...)) as crisp mono pills and strips stray ** markdown.
+ */
+function renderFormattedInline(text: string): React.ReactNode {
+  const cleaned = text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/__([^_]+)__/g, '$1');
+  const parts = cleaned.split(/(`[^`]+`|O\([^)]+\))/g);
+  return parts.map((part, idx) => {
+    if (!part) return null;
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code
+          key={idx}
+          className="px-1.5 py-0.5 mx-0.5 rounded bg-zinc-100 border border-zinc-200/80 text-[#09090B] font-mono text-[11px]"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (/^O\([^)]+\)$/.test(part)) {
+      return (
+        <code
+          key={idx}
+          className="px-1.5 py-0.5 mx-0.5 rounded bg-blue-50 border border-blue-200/60 text-[#2563EB] font-mono text-[11px] font-semibold"
+        >
+          {part}
+        </code>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+}
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
@@ -168,10 +205,14 @@ export interface MessageItem {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  interactionType?: 'EVALUATION' | 'GUIDANCE';
   reaction?: string;
   explanation?: string;
+  conceptSummary?: string[];
   nextQuestion?: string;
   spokenText?: string;
+  difficulty?: 'Foundation' | 'Intermediate' | 'MAKAUT / GATE';
+  questionNumber?: number;
   audioUrl?: string; // 0ms instantaneous replay blob URL
   isCorrect?: boolean | null;
   topicTag?: string;
@@ -210,7 +251,11 @@ export interface PastVivaSession {
 export default function VivaStudioPage() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { profile } = useAcademicProfile();
-  const liveSyllabusSubjects = useSyllabusSubjects(profile.branch, profile.semester);
+  const [selectedBranch, setSelectedBranch] = useState<SyllabusBranch>('CSE');
+  const [selectedSemester, setSelectedSemester] = useState<number>(3);
+  const liveSyllabusSubjects = useSyllabusSubjects(selectedBranch, selectedSemester);
+  const [selectedSubjectCode, setSelectedSubjectCode] = useState<string>('PCC-CS301');
+  const [selectedSubjectName, setSelectedSubjectName] = useState<string>('Data Structure & Algorithms');
 
   // Control bar state
   const [subject, setSubject] = useState<VivaSubject>('DSA');
@@ -278,8 +323,21 @@ export default function VivaStudioPage() {
     streak: 0,
   });
 
-  // Weak topics recorded when student answers incorrectly
+  // Strong & weak topics recorded during evaluated turns
   const [weakTopics, setWeakTopics] = useState<Array<{ topic: string; subject: string; question: string }>>([]);
+  const [strongTopics, setStrongTopics] = useState<Array<{ topic: string; subject: string }>>([]);
+
+  useEffect(() => {
+    if (profile?.branch) setSelectedBranch(normalizeSyllabusBranch(profile.branch));
+    if (profile?.semester) setSelectedSemester(profile.semester);
+  }, [profile?.branch, profile?.semester]);
+
+  useEffect(() => {
+    if (liveSyllabusSubjects.length > 0 && !liveSyllabusSubjects.some((s) => s.code === selectedSubjectCode)) {
+      setSelectedSubjectCode(liveSyllabusSubjects[0].code);
+      setSelectedSubjectName(liveSyllabusSubjects[0].name);
+    }
+  }, [liveSyllabusSubjects, selectedSubjectCode]);
 
   // Fetch server-side guest limit status (refresh-proof) & past sessions for signed-in users
   const fetchPastSessions = useCallback(async () => {
@@ -774,37 +832,53 @@ export default function VivaStudioPage() {
           }
         }
 
-        // Update scorecard if answer was scored
-        if (data.isCorrect !== null) {
+        // Only update Accuracy % when student submitted an evaluated answer/skip (never on Hint/Example/Harder)
+        const isEvaluatedTurn =
+          (forcedIntent === 'answer' || forcedIntent === 'skip') &&
+          data.interactionType !== 'GUIDANCE' &&
+          data.isCorrect !== null;
+
+        if (isEvaluatedTurn) {
           setScorecard((prev) => ({
             attempts: prev.attempts + 1,
             correct: prev.correct + (data.isCorrect ? 1 : 0),
             streak: data.isCorrect ? prev.streak + 1 : 0,
           }));
 
-          if (!data.isCorrect) {
+          if (data.isCorrect) {
+            setStrongTopics((prev) => [
+              ...prev,
+              { topic: data.topicTag || `${selectedSubjectCode} Core`, subject: selectedSubjectName },
+            ]);
+          } else {
             setWeakTopics((prev) => [
               ...prev,
               {
-                topic: data.topicTag || `${subject} Core`,
-                subject,
+                topic: data.topicTag || `${selectedSubjectCode} Core`,
+                subject: selectedSubjectName,
                 question: currentQuestion,
               },
             ]);
           }
         }
 
+        const qNum = Math.min(5, scorecard.attempts + (isEvaluatedTurn ? 1 : 0) + 1);
+
         // Add examiner response to chat
         const assistantMsgId = 'ast-' + Date.now();
         const assistantMsg: MessageItem = {
           id: assistantMsgId,
           role: 'assistant',
+          interactionType: data.interactionType || (isEvaluatedTurn ? 'EVALUATION' : 'GUIDANCE'),
           content: data.explanation,
-          reaction: data.reaction,
+          reaction: data.spokenFeedback || data.reaction,
           explanation: data.explanation,
+          conceptSummary: data.conceptSummary,
           nextQuestion: data.nextQuestion,
           spokenText: data.spokenText,
-          isCorrect: data.isCorrect,
+          difficulty: data.difficulty || (forcedIntent === 'harder' ? 'MAKAUT / GATE' : 'Intermediate'),
+          questionNumber: qNum,
+          isCorrect: isEvaluatedTurn ? data.isCorrect : null,
           topicTag: data.topicTag,
           provider: data.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1135,47 +1209,68 @@ export default function VivaStudioPage() {
             )}
           </div>
 
+          {/* Branch • Sem Pill Selector + Dynamic MAKAUT Syllabus Pills */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {(Object.keys(SUBJECT_CATALOG) as VivaSubject[]).map((subj) => {
-              const isSelected = subject === subj;
+            <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-100 border border-zinc-200 text-[11px] font-mono">
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value as SyllabusBranch)}
+                className="bg-transparent font-bold text-[#09090B] focus:outline-none cursor-pointer"
+                aria-label="Select Branch"
+              >
+                {SYLLABUS_BRANCHES.map((b) => (
+                  <option key={b.code} value={b.code}>
+                    {b.code}
+                  </option>
+                ))}
+              </select>
+              <span className="text-zinc-400">•</span>
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(Number(e.target.value))}
+                className="bg-transparent font-semibold text-[#2563EB] focus:outline-none cursor-pointer"
+                aria-label="Select Semester"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                  <option key={s} value={s}>
+                    Sem {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {liveSyllabusSubjects.map((sub) => {
+              const isSelected = selectedSubjectCode === sub.code;
               return (
                 <button
-                  key={subj}
-                  onClick={() => setSubject(subj)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all shrink-0 cursor-pointer ${
+                  key={sub.code}
+                  onClick={() => {
+                    setSelectedSubjectCode(sub.code);
+                    setSelectedSubjectName(sub.name);
+                    setActiveTopicTag(sub.name);
+                    const upper = sub.code.toUpperCase();
+                    if (upper === 'PCC-CS301') setSubject('DSA');
+                    else if (upper === 'PCC-CS302') setSubject('COA');
+                    else if (upper === 'ESC 301' || upper === 'ESC301') setSubject('Digital Electronics');
+                    else if (upper === 'PCC-CS502') setSubject('OS');
+                    else if (upper === 'PCC-CS601') setSubject('DBMS');
+                    else {
+                      setCurrentQuestion(
+                        `Let us begin your MAKAUT viva for ${sub.name} (${sub.code}). Explain its core foundational principle.`
+                      );
+                    }
+                  }}
+                  title={`${sub.code} — ${sub.name} [${sub.type}]`}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all shrink-0 cursor-pointer inline-flex items-center gap-1 ${
                     isSelected
                       ? 'bg-[#2563EB] text-white shadow-xs font-semibold'
                       : 'bg-zinc-100/80 text-zinc-600 hover:bg-zinc-200/70 hover:text-zinc-950 border border-transparent'
                   }`}
                 >
-                  {subj}
+                  <span>{sub.code}</span>
                 </button>
               );
             })}
-            {profile.onboardingCompleted &&
-              liveSyllabusSubjects
-                .slice(0, 3)
-                .map((sub) => (
-                  <button
-                    key={sub.code}
-                    onClick={() => {
-                      const upper = sub.code.toUpperCase();
-                      if (upper === 'PCC-CS301') setSubject('DSA');
-                      else if (upper === 'PCC-CS302') setSubject('COA');
-                      else if (upper === 'ESC301') setSubject('Digital Electronics');
-                      else if (upper === 'PCC-CS502') setSubject('OS');
-                      else if (upper === 'PCC-CS601') setSubject('DBMS');
-                      else setCurrentQuestion(`Let us begin your MAKAUT viva for ${sub.name} (${sub.code}). Explain its core foundational principle.`);
-                    }}
-                    title={`${sub.code} — ${sub.name} [${sub.type}]`}
-                    className="hidden xl:inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-mono bg-blue-50 text-[#2563EB] border border-blue-200/70 hover:bg-blue-100 transition-colors shrink-0 cursor-pointer"
-                  >
-                    <span>{sub.code}</span>
-                    <span className="text-[9px] px-1 rounded bg-white/80 text-zinc-600">
-                      {sub.type === 'LAB' ? 'Lab' : sub.type === 'ELECTIVE' ? 'Elec' : 'Th'}
-                    </span>
-                  </button>
-                ))}
           </div>
         </div>
 
@@ -1343,12 +1438,27 @@ export default function VivaStudioPage() {
           2. MAIN STUDIO GRID (Internal Scrolling Only)
           ========================================================================= */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 overflow-hidden">
-        {/* Left Column: Examiner Desk (Desktop Viewport Sidebar) */}
-        <div className="hidden md:flex md:col-span-4 lg:col-span-4 h-full flex-col justify-between bg-white border border-[#E4E4E7] rounded-2xl p-4 shadow-xs overflow-y-auto">
-          {/* Expressive Character & Status */}
+        {/* Left Column: Examiner Desk (Desktop >= 1024px Viewport Sidebar) */}
+        <div className="hidden lg:flex lg:col-span-4 h-full flex-col justify-between bg-white border border-[#E4E4E7] rounded-2xl p-4 shadow-xs overflow-y-auto">
+          {/* Expressive Character & Live Audio Waveform */}
           <div className="flex flex-col items-center text-center space-y-3">
-            <div className="relative py-1">
+            <div className="relative py-1 flex flex-col items-center">
               <VivaBuddyCharacter emotion={emotion} size={120} />
+              {/* Live Audio Equalizer Bars Synced to <audio> playback */}
+              <div className="h-5 flex items-end justify-center gap-1 mt-1" aria-hidden="true">
+                {[10, 16, 20, 14, 10].map((h, i) => (
+                  <span
+                    key={i}
+                    className={`w-1 rounded-full transition-all duration-150 ${
+                      isSpeaking ? 'bg-[#2563EB] animate-pulse' : 'bg-zinc-200'
+                    }`}
+                    style={{
+                      height: isSpeaking ? `${h}px` : '4px',
+                      animationDelay: `${i * 90}ms`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Live Status Badge */}
@@ -1487,19 +1597,60 @@ export default function VivaStudioPage() {
         </div>
 
         {/* Right Column: Conversational Chat Feed & Sticky Input Dock */}
-        <div className="col-span-12 md:col-span-8 lg:col-span-8 h-full flex flex-col overflow-hidden bg-white border border-[#E4E4E7] rounded-2xl p-3 sm:p-4 shadow-xs">
-          {/* Mobile Examiner Header Strip (only visible on mobile screens) */}
-          <div className="md:hidden flex items-center justify-between pb-2 mb-2 border-b border-zinc-100 shrink-0">
-            <div className="flex items-center gap-2">
-              <VivaBuddyCharacter emotion={emotion} size={42} />
-              <div>
-                <div className="text-xs font-bold text-zinc-900">{SUBJECT_CATALOG[subject].code}</div>
-                <div className="text-[10px] font-mono text-zinc-500">{activeTopicTag}</div>
+        <div className="col-span-12 lg:col-span-8 h-full flex flex-col overflow-hidden bg-white border border-[#E4E4E7] rounded-2xl p-3 sm:p-4 shadow-xs">
+          {/* Mobile & Tablet Sticky Top Mini Examiner Bar (< 1024px, 56px height) */}
+          <div className="lg:hidden h-14 flex items-center justify-between px-2.5 mb-2 rounded-xl bg-slate-50 border border-[#E4E4E7] shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative shrink-0">
+                <VivaBuddyCharacter emotion={emotion} size={36} />
+                {isSpeaking && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#2563EB] ring-2 ring-white animate-ping" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-mono font-bold text-[#09090B] truncate">
+                    {selectedSubjectCode}
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full border ${
+                      isSpeaking
+                        ? 'bg-blue-50 text-[#2563EB] border-blue-200'
+                        : isRecording
+                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                        : 'bg-white text-zinc-600 border-zinc-200'
+                    }`}
+                  >
+                    {isSpeaking ? 'Speaking...' : isRecording ? 'Listening...' : 'Ready'}
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono text-zinc-500 truncate">{activeTopicTag}</div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs font-mono font-bold text-[#2563EB]">{scorecard.correct}/{scorecard.attempts} Marks</div>
-              <div className="text-[10px] font-mono text-zinc-400">{accuracyPct}% accuracy</div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="text-right">
+                <div className="text-xs font-mono font-bold text-[#2563EB] tabular-nums">
+                  {accuracyPct}%
+                </div>
+                <div className="text-[9px] font-mono text-zinc-400">
+                  {scorecard.correct}/{scorecard.attempts}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (isVoiceEnabled) stopVoice();
+                  setIsVoiceEnabled(!isVoiceEnabled);
+                }}
+                className={`p-2 rounded-lg border cursor-pointer ${
+                  isVoiceEnabled
+                    ? 'bg-blue-50 border-blue-200 text-[#2563EB]'
+                    : 'bg-white border-zinc-200 text-zinc-400'
+                }`}
+                aria-label="Toggle Mute"
+              >
+                {isVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
 
@@ -1586,9 +1737,27 @@ export default function VivaStudioPage() {
                   </div>
 
                   <div className="bg-[#F8FAFC] border border-[#E4E4E7] rounded-2xl rounded-tl-xs p-4 sm:p-5 text-xs sm:text-sm font-sans max-w-[95%] sm:max-w-[92%] shadow-2xs space-y-3.5">
-                    {/* Header Chips Row */}
+                    {/* Header Chips Row: Topic, Difficulty, Q Counter & Status */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#E4E4E7]">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {msg.questionNumber && (
+                          <span className="px-2 py-0.5 rounded bg-zinc-100 text-[#09090B] font-mono text-[10px] font-bold border border-zinc-200">
+                            Q{msg.questionNumber} / 5
+                          </span>
+                        )}
+                        {msg.difficulty && (
+                          <span
+                            className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold border ${
+                              msg.difficulty === 'Foundation'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : msg.difficulty === 'MAKAUT / GATE'
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                : 'bg-blue-50 text-[#2563EB] border-blue-200/60'
+                            }`}
+                          >
+                            {msg.difficulty}
+                          </span>
+                        )}
                         {msg.topicTag && (
                           <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] font-mono text-[10px] font-bold border border-blue-200/60">
                             #{msg.topicTag}
@@ -1688,16 +1857,25 @@ export default function VivaStudioPage() {
                       </div>
                     )}
 
-                    {/* Exact Technical Answer / Concept Box */}
-                    {msg.explanation && (
-                      <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-[#E4E4E7] space-y-2">
+                    {/* Exact Technical Answer / Concept Box (Clean Formatted Bullets, Zero Raw **) */}
+                    {(msg.conceptSummary?.length || msg.explanation) && (
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-[#E4E4E7] space-y-2.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#2563EB]">
                             <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                            <span>EXACT TECHNICAL ANSWER &amp; CONCEPT</span>
+                            <span>
+                              {msg.interactionType === 'GUIDANCE'
+                                ? 'GUIDED STEP-BY-STEP BREAKDOWN'
+                                : 'EXACT TECHNICAL ANSWER & CONCEPT'}
+                            </span>
                           </div>
                           <button
-                            onClick={() => handleCopyConcept(msg.explanation || '', msg.id)}
+                            onClick={() =>
+                              handleCopyConcept(
+                                msg.conceptSummary?.join('\n') || msg.explanation || '',
+                                msg.id
+                              )
+                            }
                             className="inline-flex items-center gap-1 text-[11px] font-mono text-[#52525B] hover:text-[#09090B] transition-colors cursor-pointer"
                             title="Copy concept"
                           >
@@ -1714,9 +1892,21 @@ export default function VivaStudioPage() {
                             )}
                           </button>
                         </div>
-                        <p className="text-xs sm:text-sm text-[#09090B] font-sans leading-relaxed">
-                          {msg.explanation}
-                        </p>
+                        <ul className="space-y-2">
+                          {(
+                            msg.conceptSummary && msg.conceptSummary.length > 0
+                              ? msg.conceptSummary
+                              : (msg.explanation || '').split(/\n+/).filter(Boolean)
+                          ).map((bullet, bIdx) => (
+                            <li
+                              key={bIdx}
+                              className="flex items-start gap-2 text-xs sm:text-sm text-[#09090B] font-sans leading-relaxed"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] mt-2 shrink-0" />
+                              <span>{renderFormattedInline(bullet)}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
 
@@ -1745,42 +1935,42 @@ export default function VivaStudioPage() {
             )}
           </div>
 
-          {/* Quick-Action Chips Row */}
+          {/* Quick-Action Chips Row (44px touch targets on mobile) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={handleAskHint}
               disabled={isEvaluating || isGuestLocked}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] lg:min-h-0 px-3 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <Lightbulb className="w-3 h-3 text-amber-500" />
-              <span>💡 Give a hint</span>
+              <span>Give a hint</span>
             </button>
 
             <button
               onClick={handleAskExample}
               disabled={isEvaluating || isGuestLocked}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] lg:min-h-0 px-3 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <BookOpen className="w-3 h-3 text-blue-500" />
-              <span>📝 Explain with example</span>
+              <span>Explain with example</span>
             </button>
 
             <button
               onClick={handleAskHarder}
               disabled={isEvaluating || isGuestLocked}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] lg:min-h-0 px-3 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <Zap className="w-3 h-3 text-orange-500" />
-              <span>🔥 Ask harder</span>
+              <span>Ask harder</span>
             </button>
 
             <button
               onClick={handleSkipQuestion}
               disabled={isEvaluating || isGuestLocked}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-zinc-300 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] lg:min-h-0 px-3 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-zinc-300 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <HelpCircle className="w-3 h-3 text-zinc-400" />
-              <span>⏭️ Next question</span>
+              <span>Next question</span>
             </button>
           </div>
 
@@ -2023,47 +2213,53 @@ export default function VivaStudioPage() {
               </div>
             </div>
 
-            {/* Weak Topics to Revise Section */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-mono font-bold text-[#09090B]">
-                <span className="flex items-center gap-1.5 text-rose-600">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>WEAK TOPICS TO REVISE IN NOTES</span>
-                </span>
-                <span className="text-[11px] text-[#52525B] font-normal">
-                  {weakTopics.length} topic{weakTopics.length !== 1 ? 's' : ''} detected
-                </span>
+            {/* Strong Concepts & Weak Topics Breakdown */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-mono font-bold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>STRONG CONCEPTS ({strongTopics.length})</span>
+                </div>
+                {strongTopics.length > 0 ? (
+                  <div className="max-h-28 overflow-y-auto space-y-1">
+                    {strongTopics.slice(0, 5).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/70 text-[11px] font-mono text-emerald-900 truncate"
+                      >
+                        {item.topic}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-zinc-50 border border-[#E4E4E7] text-[11px] text-zinc-500">
+                    Answer questions to log strong topics.
+                  </div>
+                )}
               </div>
 
-              {weakTopics.length > 0 ? (
-                <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
-                  {weakTopics.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-xl bg-white border border-[#E4E4E7] flex items-center justify-between gap-2 text-xs"
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
-                        <span className="font-semibold text-[#09090B] font-mono truncate">
-                          {item.topic}
-                        </span>
-                      </div>
-                      <Link
-                        href="/notes"
-                        className="text-[#2563EB] hover:text-blue-700 font-mono text-[11px] flex items-center gap-0.5 shrink-0 underline"
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-mono font-bold text-rose-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>WEAK AREAS ({weakTopics.length})</span>
+                </div>
+                {weakTopics.length > 0 ? (
+                  <div className="max-h-28 overflow-y-auto space-y-1">
+                    {weakTopics.slice(0, 5).map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-2 rounded-lg bg-rose-50/60 border border-rose-200/70 text-[11px] font-mono text-rose-900 truncate"
                       >
-                        <span>Revise</span>
-                        <ChevronRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-medium flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Flawless session! No incorrect answers were recorded.</span>
-                </div>
-              )}
+                        {item.topic}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200/70 text-[11px] text-emerald-900">
+                    No weak areas detected yet.
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Navigation & Action Buttons */}
@@ -2073,7 +2269,7 @@ export default function VivaStudioPage() {
                 className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white font-sans text-xs font-semibold transition-all inline-flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Revise in Notes Vault →</span>
+                <span>Open Revision Notes →</span>
               </Link>
               <button
                 onClick={() => {
