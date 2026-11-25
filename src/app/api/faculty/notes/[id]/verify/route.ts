@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser, canFacultyAccessScope } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
@@ -29,6 +29,16 @@ export async function PATCH(
     const note = await prisma.note.findUnique({ where: { id } });
     if (!note) {
       return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
+    }
+
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      if (!canFacultyAccessScope(syncedUser, note.branch, note.semester)) {
+        return NextResponse.json(
+          { error: `Forbidden: ${note.branch} Sem ${note.semester} is outside your assigned scope.` },
+          { status: 403 }
+        );
+      }
     }
 
     const updated = await prisma.note.update({
@@ -80,6 +90,16 @@ export async function DELETE(
     const note = await prisma.note.findUnique({ where: { id } });
     if (!note) {
       return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
+    }
+
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      if (!canFacultyAccessScope(syncedUser, note.branch, note.semester)) {
+        return NextResponse.json(
+          { error: `Forbidden: ${note.branch} Sem ${note.semester} is outside your assigned scope.` },
+          { status: 403 }
+        );
+      }
     }
 
     await prisma.note.delete({

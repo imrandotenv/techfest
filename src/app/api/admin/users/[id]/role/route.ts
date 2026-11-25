@@ -5,6 +5,8 @@ import {
   normalizeUserRole,
   UserRole,
   assertNotMasterAdminTarget,
+  MASTER_ADMIN_EMAIL,
+  FacultyScope,
   RBACError,
 } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
@@ -34,13 +36,17 @@ export async function PATCH(
     const body = await req.json().catch(() => ({}));
     const rawRole = body.role || body.newRole;
     const rawDepartment = body.department;
+    const rawAssignedScopes = body.assignedScopes;
 
-    if (!id || (!rawRole && !rawDepartment)) {
+    if (!id || (!rawRole && !rawDepartment && rawAssignedScopes === undefined)) {
       return NextResponse.json(
-        { error: 'User id and either role or department are required.' },
+        { error: 'User id and role, department, or assignedScopes are required.' },
         { status: 400 }
       );
     }
+
+    const callerIsMasterAdmin =
+      (caller.email || '').trim().toLowerCase() === MASTER_ADMIN_EMAIL;
 
     const targetRoleLower: UserRole | null = rawRole ? normalizeUserRole(rawRole) : null;
     const targetRoleUpper = targetRoleLower ? targetRoleLower.toUpperCase() : null;
@@ -48,6 +54,24 @@ export async function PATCH(
       typeof rawDepartment === 'string' && rawDepartment.trim()
         ? rawDepartment.toUpperCase().trim()
         : undefined;
+
+    const sanitizedScopes: FacultyScope[] | undefined = Array.isArray(rawAssignedScopes)
+      ? rawAssignedScopes
+          .filter(
+            (s: any) =>
+              s && typeof s.branch === 'string' && Array.isArray(s.semesters) && s.semesters.length > 0
+          )
+          .map((s: any) => ({
+            branch: String(s.branch).toUpperCase().trim(),
+            semesters: Array.from<number>(
+              new Set(
+                s.semesters
+                  .map((n: any) => Number(n))
+                  .filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 8)
+              )
+            ).sort((a, b) => a - b),
+          }))
+      : undefined;
 
     // Self-demotion safety check
     if (id === caller.userId && targetRoleLower && targetRoleLower !== 'admin') {
@@ -68,11 +92,24 @@ export async function PATCH(
 
       if (existingUser) {
         assertNotMasterAdminTarget(existingUser.email);
+
+        // Only Master Admin may promote to ADMIN or demote an existing ADMIN
+        const involvesAdminRole =
+          targetRoleUpper === 'ADMIN' ||
+          (existingUser.role.toUpperCase() === 'ADMIN' && targetRoleUpper && targetRoleUpper !== 'ADMIN');
+        if (involvesAdminRole && !callerIsMasterAdmin) {
+          return NextResponse.json(
+            { error: 'Only the Master Admin can promote or demote ADMIN accounts.' },
+            { status: 403 }
+          );
+        }
+
         updatedDbUser = await prisma.user.update({
           where: { id: existingUser.id },
           data: {
-            ...(targetRoleUpper ? { role: targetRoleUpper } : {}),
+            ...(targetRoleUpper ? { role: targetRoleUpper, approvalStatus: 'APPROVED', requestedRole: null } : {}),
             ...(cleanDept ? { department: cleanDept, branch: existingUser.branch || cleanDept } : {}),
+            ...(sanitizedScopes !== undefined ? { assignedScopes: sanitizedScopes as any } : {}),
             ...(targetRoleLower
               ? {
                   onboardingCompleted:

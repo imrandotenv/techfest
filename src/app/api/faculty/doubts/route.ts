@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser, canFacultyAccessScope } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -37,10 +37,17 @@ export async function GET(req: NextRequest) {
       take: 40,
     });
 
-    const enriched = posts.map((p) => ({
-      ...p,
-      hasOfficialAnswer: p.replies.some((r) => r.isOfficialAnswer),
-    }));
+    const syncedUser = caller.role === 'faculty' ? await syncAndGetCurrentUser() : null;
+
+    const enriched = posts
+      .filter((p) => {
+        if (caller.role !== 'faculty') return true;
+        return canFacultyAccessScope(syncedUser, p.branch || 'CSE', p.semester || 3);
+      })
+      .map((p) => ({
+        ...p,
+        hasOfficialAnswer: p.replies.some((r) => r.isOfficialAnswer),
+      }));
 
     const result =
       filter === 'unanswered'
@@ -75,6 +82,16 @@ export async function POST(req: NextRequest) {
     const post = await prisma.forumPost.findUnique({ where: { id: postId } });
     if (!post) {
       return NextResponse.json({ error: 'Forum thread not found.' }, { status: 404 });
+    }
+
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      if (!canFacultyAccessScope(syncedUser, post.branch || 'CSE', post.semester || 3)) {
+        return NextResponse.json(
+          { error: 'Forbidden: This student doubt is outside your assigned branch/semester scope.' },
+          { status: 403 }
+        );
+      }
     }
 
     const dbUser = await prisma.user.upsert({

@@ -12,6 +12,7 @@ interface AdminViewRouterProps {
   currentAdminId: string;
   adminName: string;
   adminEmail: string;
+  isMasterAdmin?: boolean;
   studentPreviewProps: StudentCockpitProps;
 }
 
@@ -19,6 +20,7 @@ export function AdminViewRouter({
   currentAdminId,
   adminName,
   adminEmail,
+  isMasterAdmin = false,
   studentPreviewProps,
 }: AdminViewRouterProps) {
   const { previewRole, setPreviewRole } = useRolePreview();
@@ -103,7 +105,11 @@ export function AdminViewRouter({
           </div>
         </div>
 
-        <FacultyWorkspaceClient userEmail={adminEmail} userName={adminName} />
+        <FacultyWorkspaceClient
+          userEmail={adminEmail}
+          userName={adminName}
+          isAdminUnrestricted={true}
+        />
       </div>
     );
   }
@@ -149,7 +155,7 @@ export function AdminViewRouter({
       </div>
 
       {/* Real DB-Backed Admin Console */}
-      <AdminConsoleClient currentAdminId={currentAdminId} />
+      <AdminConsoleClient currentAdminId={currentAdminId} isMasterAdmin={isMasterAdmin} />
     </div>
   );
 }

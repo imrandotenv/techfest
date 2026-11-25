@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { getCurrentAuthUser, normalizeUserRole, UserRole } from '@/lib/rbac';
+import {
+  getCurrentAuthUser,
+  normalizeUserRole,
+  UserRole,
+  MASTER_ADMIN_EMAIL,
+  assertNotMasterAdminTarget,
+  RBACError,
+} from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -54,6 +61,14 @@ export async function GET(req: NextRequest) {
       branch?: string | null;
       semester?: number | null;
       studentId: string;
+      isMasterAdmin?: boolean;
+      requestedRole?: string | null;
+      approvalStatus?: string;
+      employeeId?: string | null;
+      designation?: string | null;
+      requestedScopes?: any;
+      assignedScopes?: any;
+      onboardingNote?: string | null;
       imageUrl?: string;
       createdAt: string;
       onboardingCompleted: boolean;
@@ -64,6 +79,9 @@ export async function GET(req: NextRequest) {
       seenClerkIds.add(du.clerkId);
       const cu = clerkMap.get(du.clerkId);
       const effectiveRole = normalizeUserRole(du.role);
+      const isMaster =
+        Boolean(du.isMasterAdmin) ||
+        du.email.trim().toLowerCase() === MASTER_ADMIN_EMAIL;
       combined.push({
         id: du.clerkId || du.id,
         clerkId: du.clerkId,
@@ -72,11 +90,19 @@ export async function GET(req: NextRequest) {
           (cu ? [cu.firstName, cu.lastName].filter(Boolean).join(' ') : '') ||
           'SETGOI Member',
         email: du.email,
-        role: effectiveRole,
+        role: isMaster ? 'admin' : effectiveRole,
         department: du.department || du.branch || 'CSE',
         branch: du.branch,
         semester: du.semester,
         studentId: du.universityRoll || '',
+        isMasterAdmin: isMaster,
+        requestedRole: du.requestedRole,
+        approvalStatus: du.approvalStatus || 'APPROVED',
+        employeeId: du.employeeId,
+        designation: du.designation,
+        requestedScopes: du.requestedScopes,
+        assignedScopes: du.assignedScopes,
+        onboardingNote: du.onboardingNote,
         imageUrl: cu?.imageUrl,
         createdAt: du.createdAt.toISOString(),
         onboardingCompleted: du.onboardingCompleted,
@@ -136,6 +162,7 @@ export async function GET(req: NextRequest) {
     const paginated = filtered.slice((safePage - 1) * limit, safePage * limit);
 
     return NextResponse.json({
+      success: true,
       users: paginated,
       total: totalFiltered,
       page: safePage,

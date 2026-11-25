@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser, canFacultyAccessScope } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
@@ -18,21 +18,20 @@ export async function GET() {
       );
     }
 
+    const syncedUser = await syncAndGetCurrentUser();
+    const isFacultyOnly = caller.role === 'faculty';
+
     const [
-      totalNotes,
-      verifiedNotes,
-      pendingNotesList,
+      rawNotesList,
       forumPosts,
-      activeNotices,
+      rawNotices,
     ] = await Promise.all([
-      prisma.note.count(),
-      prisma.note.count({ where: { verified: true } }),
       prisma.note.findMany({
         orderBy: [{ verified: 'asc' }, { createdAt: 'desc' }],
         include: {
           uploader: { select: { fullName: true, email: true, branch: true } },
         },
-        take: 30,
+        take: 80,
       }),
       prisma.forumPost.findMany({
         orderBy: { createdAt: 'desc' },
@@ -42,21 +41,40 @@ export async function GET() {
             select: { id: true, isOfficialAnswer: true },
           },
         },
-        take: 30,
+        take: 60,
       }),
       prisma.notice.findMany({
         orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-        take: 15,
+        take: 30,
       }),
     ]);
 
+    const pendingNotesList = isFacultyOnly
+      ? rawNotesList.filter((n) => canFacultyAccessScope(syncedUser, n.branch, n.semester))
+      : rawNotesList;
+    const scopedPosts = isFacultyOnly
+      ? forumPosts.filter((p) =>
+          canFacultyAccessScope(syncedUser, p.branch || 'CSE', p.semester || 3)
+        )
+      : forumPosts;
+    const activeNotices = isFacultyOnly
+      ? rawNotices.filter(
+          (n) =>
+            n.targetBranch === 'ALL' ||
+            canFacultyAccessScope(syncedUser, n.targetBranch, n.targetSemester || 3)
+        )
+      : rawNotices;
+
+    const totalNotes = pendingNotesList.length;
+    const verifiedNotes = pendingNotesList.filter((n) => n.verified).length;
     const pendingCount = pendingNotesList.filter((n) => !n.verified).length;
-    const unansweredDoubtsCount = forumPosts.filter(
+    const unansweredDoubtsCount = scopedPosts.filter(
       (p) => !p.replies.some((r) => r.isOfficialAnswer)
     ).length;
 
     return NextResponse.json({
       success: true,
+      assignedScopes: Array.isArray(syncedUser?.assignedScopes) ? syncedUser.assignedScopes : [],
       kpis: {
         uploadedNotes: verifiedNotes,
         totalNotes,
@@ -64,8 +82,8 @@ export async function GET() {
         unansweredDoubts: unansweredDoubtsCount,
         activeNotices: activeNotices.length,
       },
-      notesQueue: pendingNotesList,
-      notices: activeNotices,
+      notesQueue: pendingNotesList.slice(0, 40),
+      notices: activeNotices.slice(0, 20),
     });
   } catch (err: any) {
     console.error('[Faculty Overview GET] Error:', err);

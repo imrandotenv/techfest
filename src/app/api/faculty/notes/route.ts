@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser, canFacultyAccessScope } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -37,6 +37,18 @@ export async function POST(req: NextRequest) {
         { error: 'Title, MAKAUT Subject Code, and either formatted content or a resource URL are required.' },
         { status: 400 }
       );
+    }
+
+    const targetBranch = String(branch).toUpperCase().trim();
+    const targetSemester = Math.min(8, Math.max(1, Number(semester) || 3));
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      if (!canFacultyAccessScope(syncedUser, targetBranch, targetSemester)) {
+        return NextResponse.json(
+          { error: `Forbidden: You are not assigned to ${targetBranch} Semester ${targetSemester}.` },
+          { status: 403 }
+        );
+      }
     }
 
     const normalizedCategory = (() => {

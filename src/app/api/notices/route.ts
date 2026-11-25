@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser, canFacultyAccessScope } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -76,6 +76,20 @@ export async function POST(req: NextRequest) {
         { error: 'Title and content are required to publish a notice.' },
         { status: 400 }
       );
+    }
+
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      const normBranch = String(targetBranch).toUpperCase().trim();
+      const normSem = Number(targetSemester) || 3;
+      if (normBranch === 'ALL' || !canFacultyAccessScope(syncedUser, normBranch, normSem)) {
+        return NextResponse.json(
+          {
+            error: `Forbidden: Faculty can only publish notices to their assigned branches & semesters (requested: ${normBranch} Sem ${normSem}).`,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Ensure User exists in Neon DB

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser, canFacultyAccessScope } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const branch = (searchParams.get('branch') || 'ALL').toUpperCase();
 
-    const [questions, sessions] = await Promise.all([
+    const syncedUser = caller.role === 'faculty' ? await syncAndGetCurrentUser() : null;
+
+    const [rawQuestions, rawSessions] = await Promise.all([
       prisma.customVivaQuestion.findMany({
         where: branch !== 'ALL' ? { branch } : undefined,
         orderBy: { createdAt: 'desc' },
@@ -46,6 +48,17 @@ export async function GET(req: NextRequest) {
         take: 300,
       }),
     ]);
+
+    const questions =
+      caller.role === 'faculty'
+        ? rawQuestions.filter((q) => canFacultyAccessScope(syncedUser, q.branch, q.semester))
+        : rawQuestions;
+    const sessions =
+      caller.role === 'faculty'
+        ? rawSessions.filter((s) =>
+            canFacultyAccessScope(syncedUser, s.branch || 'CSE', s.semester || 3)
+          )
+        : rawSessions;
 
     // Aggregate weak topics & average accuracy per subject
     const weakTopicCounts = new Map<string, { topic: string; count: number; subjectCode: string }>();
@@ -144,6 +157,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const targetBranch = String(branch).toUpperCase().trim();
+    const targetSemester = Math.min(8, Math.max(1, Number(semester) || 3));
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      if (!canFacultyAccessScope(syncedUser, targetBranch, targetSemester)) {
+        return NextResponse.json(
+          { error: `Forbidden: ${targetBranch} Sem ${targetSemester} is outside your assigned scope.` },
+          { status: 403 }
+        );
+      }
+    }
+
     const createdBy = caller.fullName || caller.email || 'SETGOI Faculty';
 
     const record = await prisma.customVivaQuestion.create({
@@ -193,6 +218,20 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) {
       return NextResponse.json({ error: 'Question id is required.' }, { status: 400 });
+    }
+
+    const existing = await prisma.customVivaQuestion.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Question not found.' }, { status: 404 });
+    }
+    if (caller.role === 'faculty') {
+      const syncedUser = await syncAndGetCurrentUser();
+      if (!canFacultyAccessScope(syncedUser, existing.branch, existing.semester)) {
+        return NextResponse.json(
+          { error: 'Forbidden: This question is outside your assigned scope.' },
+          { status: 403 }
+        );
+      }
     }
 
     await prisma.customVivaQuestion.delete({ where: { id } });

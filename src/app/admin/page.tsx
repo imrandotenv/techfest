@@ -92,6 +92,10 @@ export default async function AdminPage() {
         currentAdminId={user.userId || ''}
         adminName={adminName}
         adminEmail={adminEmail}
+        isMasterAdmin={
+          Boolean(syncedUser?.isMasterAdmin) ||
+          adminEmail.trim().toLowerCase() === 'mdimransps955@gmail.com'
+        }
         studentPreviewProps={{
           studentName: adminName,
           branch,

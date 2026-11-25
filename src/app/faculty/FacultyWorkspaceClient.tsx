@@ -113,10 +113,34 @@ const SEMESTERS = [3, 4, 5, 6, 7, 8];
 export function FacultyWorkspaceClient({
   userEmail,
   userName,
+  assignedScopes = [],
+  isAdminUnrestricted = false,
 }: {
   userEmail: string;
   userName: string;
+  assignedScopes?: Array<{ branch: string; semesters: number[] }>;
+  isAdminUnrestricted?: boolean;
 }) {
+  const allowedBranches = isAdminUnrestricted
+    ? SYLLABUS_BRANCHES
+    : SYLLABUS_BRANCHES.filter((b) =>
+        assignedScopes.some((s) => s.branch.toUpperCase() === b.code.toUpperCase())
+      );
+
+  const getAllowedSemesters = useCallback(
+    (branchCode: string): number[] => {
+      if (isAdminUnrestricted) return SEMESTERS;
+      const match = assignedScopes.find(
+        (s) => s.branch.toUpperCase() === branchCode.toUpperCase()
+      );
+      return match && Array.isArray(match.semesters) ? match.semesters : [];
+    },
+    [assignedScopes, isAdminUnrestricted]
+  );
+
+  const defaultBranch = allowedBranches[0]?.code || 'CSE';
+  const defaultSem = getAllowedSemesters(defaultBranch)[0] || 3;
+
   const [activeTab, setActiveTab] = useState<FacultyTab>('content');
   const [toast, setToast] = useState<{ text: string; isError?: boolean } | null>(null);
 
@@ -141,8 +165,8 @@ export function FacultyWorkspaceClient({
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   // Tab 1: Publish Official Faculty Material state
-  const [pubBranch, setPubBranch] = useState<string>('CSE');
-  const [pubSemester, setPubSemester] = useState<number>(3);
+  const [pubBranch, setPubBranch] = useState<string>(defaultBranch);
+  const [pubSemester, setPubSemester] = useState<number>(defaultSem);
   const pubSubjects = useSyllabusSubjects(pubBranch, pubSemester);
   const [pubSubjectCode, setPubSubjectCode] = useState<string>('');
   const [pubType, setPubType] = useState<'LECTURE_NOTE' | 'MAKAUT_PYQ' | 'LAB_MANUAL'>('LECTURE_NOTE');
@@ -161,14 +185,20 @@ export function FacultyWorkspaceClient({
   // Tab 2: Doubt Resolution state
   const [doubts, setDoubts] = useState<DoubtRecord[]>([]);
   const [loadingDoubts, setLoadingDoubts] = useState(false);
-  const [doubtBranch, setDoubtBranch] = useState<string>('ALL');
+  const [doubtBranch, setDoubtBranch] = useState<string>(
+    isAdminUnrestricted ? 'ALL' : defaultBranch
+  );
   const [doubtFilter, setDoubtFilter] = useState<'unanswered' | 'all'>('unanswered');
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null);
 
   // Tab 3: Academic Notices & CA/Viva Schedules state
-  const [noticeBranch, setNoticeBranch] = useState<string>('ALL');
-  const [noticeSemester, setNoticeSemester] = useState<string>('ALL');
+  const [noticeBranch, setNoticeBranch] = useState<string>(
+    isAdminUnrestricted ? 'ALL' : defaultBranch
+  );
+  const [noticeSemester, setNoticeSemester] = useState<string>(
+    isAdminUnrestricted ? 'ALL' : String(defaultSem)
+  );
   const [noticeCategory, setNoticeCategory] = useState<'EXAM' | 'LAB' | 'ACADEMIC' | 'URGENT'>('EXAM');
   const [noticeTitle, setNoticeTitle] = useState<string>('');
   const [noticeContent, setNoticeContent] = useState<string>('');
@@ -177,8 +207,8 @@ export function FacultyWorkspaceClient({
   const [publishingNotice, setPublishingNotice] = useState(false);
 
   // Tab 4: AI Viva Question Bank & Subject Insights state
-  const [vivaBranch, setVivaBranch] = useState<string>('CSE');
-  const [vivaSemester, setVivaSemester] = useState<number>(3);
+  const [vivaBranch, setVivaBranch] = useState<string>(defaultBranch);
+  const [vivaSemester, setVivaSemester] = useState<number>(defaultSem);
   const vivaSubjects = useSyllabusSubjects(vivaBranch, vivaSemester);
   const [vivaSubjectCode, setVivaSubjectCode] = useState<string>('');
   const [vivaQuestion, setVivaQuestion] = useState<string>('');
@@ -495,8 +525,35 @@ export function FacultyWorkspaceClient({
   const visibleNotesQueue =
     queueFilter === 'pending' ? notesQueue.filter((n) => !n.verified) : notesQueue;
 
+  if (!isAdminUnrestricted && assignedScopes.length === 0) {
+    return (
+      <div className="bg-white border border-[#E4E4E7] rounded-2xl p-8 text-center space-y-3">
+        <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-5 h-5 text-amber-700" />
+        </div>
+        <h2 className="text-base font-bold text-[#09090B]">No Branch / Semester Assigned Yet</h2>
+        <p className="text-xs sm:text-sm text-zinc-600 max-w-md mx-auto">
+          Your account is approved, but no Branch/Semester has been assigned yet. Contact Admin to assign your teaching scope.
+        </p>
+      </div>
+    );
+  }
+
+  const scopeSummaryLabel = isAdminUnrestricted
+    ? 'Admin Preview • Unrestricted Scope'
+    : `Designated Scope: ${assignedScopes
+        .map((s) => `${s.branch} (${s.semesters.map((n) => `Sem ${n}`).join(', ')})`)
+        .join(' • ')} • Assigned by Admin`;
+
   return (
     <div className="space-y-6">
+      {/* Prominent Designated Scope Pill */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-[#E4E4E7] rounded-2xl px-4 py-3">
+        <span className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          {scopeSummaryLabel}
+        </span>
+      </div>
       {/* Toast Notification */}
       {toast && (
         <div
@@ -625,10 +682,17 @@ export function FacultyWorkspaceClient({
                   <label className="block text-[11px] font-mono text-zinc-600 mb-1">Branch</label>
                   <select
                     value={pubBranch}
-                    onChange={(e) => setPubBranch(e.target.value)}
+                    onChange={(e) => {
+                      const nextBranch = e.target.value;
+                      setPubBranch(nextBranch);
+                      const allowed = getAllowedSemesters(nextBranch);
+                      if (allowed.length > 0 && !allowed.includes(pubSemester)) {
+                        setPubSemester(allowed[0]);
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                   >
-                    {SYLLABUS_BRANCHES.map((b) => (
+                    {allowedBranches.map((b) => (
                       <option key={b.code} value={b.code}>
                         {b.code} — {b.name}
                       </option>
@@ -643,7 +707,7 @@ export function FacultyWorkspaceClient({
                     onChange={(e) => setPubSemester(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                   >
-                    {SEMESTERS.map((sem) => (
+                    {getAllowedSemesters(pubBranch).map((sem) => (
                       <option key={sem} value={sem}>
                         Semester {sem}
                       </option>
@@ -905,8 +969,8 @@ export function FacultyWorkspaceClient({
                 onChange={(e) => setDoubtBranch(e.target.value)}
                 className="px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-800"
               >
-                <option value="ALL">All Branches</option>
-                {SYLLABUS_BRANCHES.map((b) => (
+                {isAdminUnrestricted && <option value="ALL">All Branches</option>}
+                {allowedBranches.map((b) => (
                   <option key={b.code} value={b.code}>
                     {b.code}
                   </option>
@@ -1045,11 +1109,20 @@ export function FacultyWorkspaceClient({
                   </label>
                   <select
                     value={noticeBranch}
-                    onChange={(e) => setNoticeBranch(e.target.value)}
+                    onChange={(e) => {
+                      const nextBranch = e.target.value;
+                      setNoticeBranch(nextBranch);
+                      if (nextBranch !== 'ALL') {
+                        const allowed = getAllowedSemesters(nextBranch);
+                        if (allowed.length > 0 && !allowed.includes(Number(noticeSemester))) {
+                          setNoticeSemester(String(allowed[0]));
+                        }
+                      }
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                   >
-                    <option value="ALL">All Branches</option>
-                    {SYLLABUS_BRANCHES.map((b) => (
+                    {isAdminUnrestricted && <option value="ALL">All Branches</option>}
+                    {allowedBranches.map((b) => (
                       <option key={b.code} value={b.code}>
                         {b.code}
                       </option>
@@ -1066,12 +1139,14 @@ export function FacultyWorkspaceClient({
                     onChange={(e) => setNoticeSemester(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                   >
-                    <option value="ALL">All Semesters</option>
-                    {SEMESTERS.map((sem) => (
-                      <option key={sem} value={String(sem)}>
-                        Semester {sem}
-                      </option>
-                    ))}
+                    {isAdminUnrestricted && <option value="ALL">All Semesters</option>}
+                    {(noticeBranch === 'ALL' ? SEMESTERS : getAllowedSemesters(noticeBranch)).map(
+                      (sem) => (
+                        <option key={sem} value={String(sem)}>
+                          Semester {sem}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
               </div>
@@ -1298,10 +1373,17 @@ export function FacultyWorkspaceClient({
                     <label className="block text-[11px] font-mono text-zinc-600 mb-1">Branch</label>
                     <select
                       value={vivaBranch}
-                      onChange={(e) => setVivaBranch(e.target.value)}
+                      onChange={(e) => {
+                        const nextBranch = e.target.value;
+                        setVivaBranch(nextBranch);
+                        const allowed = getAllowedSemesters(nextBranch);
+                        if (allowed.length > 0 && !allowed.includes(vivaSemester)) {
+                          setVivaSemester(allowed[0]);
+                        }
+                      }}
                       className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                     >
-                      {SYLLABUS_BRANCHES.map((b) => (
+                      {allowedBranches.map((b) => (
                         <option key={b.code} value={b.code}>
                           {b.code}
                         </option>
@@ -1317,7 +1399,7 @@ export function FacultyWorkspaceClient({
                       onChange={(e) => setVivaSemester(Number(e.target.value))}
                       className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium text-zinc-900"
                     >
-                      {SEMESTERS.map((sem) => (
+                      {getAllowedSemesters(vivaBranch).map((sem) => (
                         <option key={sem} value={sem}>
                           Semester {sem}
                         </option>

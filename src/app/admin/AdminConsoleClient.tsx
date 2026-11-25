@@ -20,12 +20,20 @@ import {
   Sparkles,
   Save,
   Star,
+  X,
+  Building2,
+  Sliders,
 } from 'lucide-react';
 import { UserRole } from '@/lib/rbac';
 import { SYLLABUS_BRANCHES } from '@/lib/makaut-syllabus';
 import { AdminSyllabusManager } from '@/components/AdminSyllabusManager';
 
 type AdminTab = 'users' | 'syllabus' | 'schedule' | 'governance';
+
+interface FacultyScopeItem {
+  branch: string;
+  semesters: number[];
+}
 
 interface ManagedUser {
   id: string;
@@ -37,6 +45,29 @@ interface ManagedUser {
   branch?: string | null;
   semester?: number | null;
   studentId?: string;
+  isMasterAdmin?: boolean;
+  requestedRole?: string | null;
+  approvalStatus?: string;
+  employeeId?: string | null;
+  designation?: string | null;
+  requestedScopes?: FacultyScopeItem[] | null;
+  assignedScopes?: FacultyScopeItem[] | null;
+}
+
+interface AccessRequestItem {
+  id: string;
+  clerkId: string;
+  email: string;
+  fullName: string | null;
+  role: string;
+  requestedRole: string | null;
+  approvalStatus: string;
+  employeeId: string | null;
+  designation: string | null;
+  department: string | null;
+  requestedScopes: FacultyScopeItem[] | null;
+  assignedScopes: FacultyScopeItem[] | null;
+  onboardingNote: string | null;
 }
 
 interface OverviewKPIs {
@@ -98,7 +129,13 @@ interface ModerationForumPost {
   _count?: { replies: number };
 }
 
-export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string }) {
+export function AdminConsoleClient({
+  currentAdminId,
+  isMasterAdmin = false,
+}: {
+  currentAdminId: string;
+  isMasterAdmin?: boolean;
+}) {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [toast, setToast] = useState<{ text: string; isError?: boolean } | null>(null);
 
@@ -118,13 +155,23 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
     totalNotices: 0,
   });
 
-  // Tab 1: Users & Department Roles
+  // Tab 1: Users & Department Roles + Access Requests & Scope Assigner
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'STUDENT' | 'FACULTY' | 'ADMIN'>('ALL');
   const [userEdits, setUserEdits] = useState<Record<string, { role: UserRole; department: string }>>({});
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [accessRequests, setAccessRequests] = useState<AccessRequestItem[]>([]);
+  const [processingReqId, setProcessingReqId] = useState<string | null>(null);
+  const [scopeModal, setScopeModal] = useState<{
+    mode: 'approve_request' | 'edit_faculty';
+    userId: string;
+    fullName: string;
+    email: string;
+    scopes: Record<string, number[]>;
+  } | null>(null);
+  const [savingScope, setSavingScope] = useState(false);
 
   // Tab 3: Notices, Exam Countdown & Campus Events
   const [notices, setNotices] = useState<NoticeItem[]>([]);
@@ -161,6 +208,16 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
     } catch {}
   }, []);
 
+  const loadAccessRequests = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/access-requests');
+      const data = await res.json();
+      if (data.success) {
+        setAccessRequests(data.requests || []);
+      }
+    } catch {}
+  }, []);
+
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true);
     try {
@@ -170,8 +227,8 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
       params.set('limit', '50');
       const res = await fetch(`/api/admin/users?${params.toString()}`);
       const data = await res.json();
-      if (data.success) {
-        const list: ManagedUser[] = data.users || [];
+      if (Array.isArray(data.users)) {
+        const list: ManagedUser[] = data.users;
         setUsers(list);
         const initialEdits: Record<string, { role: UserRole; department: string }> = {};
         for (const u of list) {
@@ -229,7 +286,8 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
   useEffect(() => {
     loadOverview();
     loadUsers();
-  }, [loadOverview, loadUsers]);
+    loadAccessRequests();
+  }, [loadOverview, loadUsers, loadAccessRequests]);
 
   useEffect(() => {
     if (activeTab === 'schedule') loadScheduleAndEvents();
@@ -254,10 +312,124 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
       showToast(data.message || 'User role & department updated.');
       loadUsers();
       loadOverview();
+      loadAccessRequests();
     } catch {
       showToast('Network error updating user governance.', true);
     } finally {
       setSavingUserId(null);
+    }
+  };
+
+  const openScopeModal = (
+    mode: 'approve_request' | 'edit_faculty',
+    target: {
+      userId: string;
+      fullName: string;
+      email: string;
+      initialScopes?: FacultyScopeItem[] | null;
+    }
+  ) => {
+    const map: Record<string, number[]> = {};
+    if (Array.isArray(target.initialScopes)) {
+      for (const item of target.initialScopes) {
+        if (item?.branch && Array.isArray(item.semesters)) {
+          map[item.branch.toUpperCase()] = item.semesters.map(Number);
+        }
+      }
+    }
+    setScopeModal({
+      mode,
+      userId: target.userId,
+      fullName: target.fullName,
+      email: target.email,
+      scopes: map,
+    });
+  };
+
+  const toggleScopeModalSem = (branchCode: string, sem: number) => {
+    setScopeModal((prev) => {
+      if (!prev) return null;
+      const current = prev.scopes[branchCode] || [];
+      const next = current.includes(sem)
+        ? current.filter((s) => s !== sem)
+        : [...current, sem].sort((a, b) => a - b);
+      const updated = { ...prev.scopes };
+      if (next.length === 0) delete updated[branchCode];
+      else updated[branchCode] = next;
+      return { ...prev, scopes: updated };
+    });
+  };
+
+  const handleConfirmScopeModal = async () => {
+    if (!scopeModal) return;
+    const assignedScopes: FacultyScopeItem[] = Object.entries(scopeModal.scopes)
+      .filter(([, sems]) => sems.length > 0)
+      .map(([branch, semesters]) => ({ branch, semesters }));
+
+    if (assignedScopes.length === 0) {
+      showToast('Select at least one Branch & Semester scope.', true);
+      return;
+    }
+
+    setSavingScope(true);
+    try {
+      const res =
+        scopeModal.mode === 'approve_request'
+          ? await fetch('/api/admin/access-requests', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: scopeModal.userId,
+                action: 'APPROVE',
+                assignedScopes,
+              }),
+            })
+          : await fetch(`/api/admin/users/${encodeURIComponent(scopeModal.userId)}/role`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ assignedScopes }),
+            });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to save faculty scope.', true);
+        return;
+      }
+      showToast(data.message || 'Faculty scope assigned and audited.');
+      setScopeModal(null);
+      loadAccessRequests();
+      loadUsers();
+      loadOverview();
+    } catch {
+      showToast('Network error saving scope.', true);
+    } finally {
+      setSavingScope(false);
+    }
+  };
+
+  const handleProcessAccessRequest = async (
+    userId: string,
+    action: 'APPROVE' | 'REJECT'
+  ) => {
+    setProcessingReqId(userId);
+    try {
+      const res = await fetch('/api/admin/access-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Failed to process request.', true);
+        return;
+      }
+      showToast(data.message || 'Access request updated.');
+      loadAccessRequests();
+      loadUsers();
+      loadOverview();
+    } catch {
+      showToast('Network error processing request.', true);
+    } finally {
+      setProcessingReqId(null);
     }
   };
 
@@ -472,6 +644,11 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
         >
           <Users className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">Users & Dept Roles</span>
+          {accessRequests.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-mono text-[10px] leading-none">
+              {accessRequests.length}
+            </span>
+          )}
         </button>
 
         <button
@@ -514,9 +691,139 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
         </button>
       </div>
 
-      {/* TAB 1: Users & Department Roles */}
+      {/* TAB 1: Users & Department Roles + Access Requests & Faculty Scopes */}
       {activeTab === 'users' && (
-        <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-4">
+        <div className="space-y-6">
+          {/* Pending Access Requests Panel */}
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-base font-bold text-[#09090B]">
+                  Access Requests &amp; Faculty Scopes
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-mono text-[11px] font-semibold">
+                  {accessRequests.length} Pending
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={loadAccessRequests}
+                className="p-1.5 rounded-lg border border-[#E4E4E7] text-zinc-600 hover:bg-zinc-100 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {accessRequests.length === 0 ? (
+              <p className="text-xs text-zinc-500 py-3">
+                No pending Faculty or Admin onboarding requests right now.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {accessRequests.map((reqItem) => {
+                  const isReqAdmin = (reqItem.requestedRole || '').toUpperCase() === 'ADMIN';
+                  return (
+                    <div
+                      key={reqItem.id}
+                      className="p-4 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-bold text-[#09090B]">
+                            {reqItem.fullName || 'SETGOI Applicant'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-200 font-mono text-[10px] font-bold text-amber-900">
+                            Requested: {reqItem.requestedRole || 'FACULTY'}
+                          </span>
+                          {reqItem.employeeId && (
+                            <span className="px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-mono text-[10px] text-zinc-700">
+                              ID: {reqItem.employeeId}
+                            </span>
+                          )}
+                          {reqItem.designation && (
+                            <span className="text-[11px] text-zinc-600 font-medium">
+                              • {reqItem.designation}
+                            </span>
+                          )}
+                          {reqItem.department && (
+                            <span className="text-[11px] font-mono text-zinc-500">
+                              ({reqItem.department})
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-mono text-zinc-500">{reqItem.email}</p>
+                        {Array.isArray(reqItem.requestedScopes) &&
+                          reqItem.requestedScopes.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {reqItem.requestedScopes.map((s) => (
+                                <span
+                                  key={s.branch}
+                                  className="px-2 py-0.5 rounded bg-white border border-[#E4E4E7] font-mono text-[10px] text-zinc-800"
+                                >
+                                  Requested: {s.branch} (Sem {s.semesters.join(', ')})
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        {reqItem.onboardingNote && (
+                          <p className="text-xs text-zinc-600 italic">
+                            &ldquo;{reqItem.onboardingNote}&rdquo;
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {isReqAdmin ? (
+                          <button
+                            type="button"
+                            disabled={!isMasterAdmin || processingReqId === reqItem.id}
+                            onClick={() => handleProcessAccessRequest(reqItem.id, 'APPROVE')}
+                            title={
+                              isMasterAdmin
+                                ? 'Approve Admin access'
+                                : 'Only Master Admin can approve ADMIN requests'
+                            }
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
+                          >
+                            {isMasterAdmin ? 'Approve Admin' : 'Master Admin Only'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openScopeModal('approve_request', {
+                                userId: reqItem.id,
+                                fullName: reqItem.fullName || reqItem.email,
+                                email: reqItem.email,
+                                initialScopes: reqItem.requestedScopes,
+                              })
+                            }
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Sliders className="w-3.5 h-3.5" />
+                            <span>Approve &amp; Assign Scope</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={
+                            (isReqAdmin && !isMasterAdmin) || processingReqId === reqItem.id
+                          }
+                          onClick={() => handleProcessAccessRequest(reqItem.id, 'REJECT')}
+                          className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-40 text-red-700 text-xs font-semibold cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl p-5 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-[#09090B]">
@@ -571,46 +878,78 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
                 {users.map((u) => {
                   const edit = userEdits[u.id] || { role: u.role, department: 'CSE' };
                   const isSelf = u.clerkId === currentAdminId || u.id === currentAdminId;
+                  const isTargetMaster =
+                    Boolean(u.isMasterAdmin) ||
+                    u.email.trim().toLowerCase() === 'mdimransps955@gmail.com';
+                  const adminEditBlocked =
+                    !isMasterAdmin && (u.role === 'admin' || edit.role === 'admin');
+
                   return (
                     <tr key={u.id} className="hover:bg-[#FAFAFA]">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-[#09090B]">
-                          {u.fullName}{' '}
+                        <div className="flex flex-wrap items-center gap-1.5 font-semibold text-[#09090B]">
+                          <span>{u.fullName}</span>
+                          {isTargetMaster && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                              MASTER ADMIN
+                            </span>
+                          )}
                           {isSelf && (
-                            <span className="ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                               You
                             </span>
                           )}
                         </div>
                         <div className="text-[11px] font-mono text-zinc-500">{u.email}</div>
+                        {u.role === 'faculty' && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Array.isArray(u.assignedScopes) && u.assignedScopes.length > 0 ? (
+                              u.assignedScopes.map((s) => (
+                                <span
+                                  key={s.branch}
+                                  className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-[10px] text-emerald-800"
+                                >
+                                  {s.branch}: S{s.semesters.join(',S')}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] font-mono text-amber-700">
+                                No teaching scope assigned
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <select
                           value={edit.role}
-                          disabled={isSelf}
+                          disabled={isSelf || isTargetMaster || (!isMasterAdmin && u.role === 'admin')}
                           onChange={(e) =>
                             setUserEdits((prev) => ({
                               ...prev,
                               [u.id]: { ...edit, role: e.target.value as UserRole },
                             }))
                           }
-                          className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-zinc-900 disabled:opacity-60"
+                          className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-zinc-900 disabled:opacity-50"
                         >
                           <option value="student">STUDENT</option>
                           <option value="faculty">FACULTY</option>
-                          <option value="admin">ADMIN</option>
+                          {(isMasterAdmin || u.role === 'admin') && (
+                            <option value="admin">ADMIN</option>
+                          )}
                         </select>
                       </td>
                       <td className="py-3 px-4">
                         <select
                           value={edit.department}
+                          disabled={isTargetMaster}
                           onChange={(e) =>
                             setUserEdits((prev) => ({
                               ...prev,
                               [u.id]: { ...edit, department: e.target.value },
                             }))
                           }
-                          className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-zinc-900"
+                          className="px-2.5 py-1.5 rounded-lg border border-[#E4E4E7] bg-white text-xs font-medium text-zinc-900 disabled:opacity-50"
                         >
                           {SYLLABUS_BRANCHES.map((b) => (
                             <option key={b.code} value={b.code}>
@@ -620,15 +959,36 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
                         </select>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          type="button"
-                          disabled={savingUserId === u.id}
-                          onClick={() => handleSaveUserGovernance(u.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#09090B] hover:bg-zinc-800 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                          <span>{savingUserId === u.id ? 'Saving...' : 'Save'}</span>
-                        </button>
+                        <div className="inline-flex items-center gap-1.5">
+                          {u.role === 'faculty' && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openScopeModal('edit_faculty', {
+                                  userId: u.id,
+                                  fullName: u.fullName,
+                                  email: u.email,
+                                  initialScopes: u.assignedScopes,
+                                })
+                              }
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold cursor-pointer"
+                            >
+                              <Sliders className="w-3 h-3" />
+                              <span>Edit Scope</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={
+                              isTargetMaster || adminEditBlocked || savingUserId === u.id
+                            }
+                            onClick={() => handleSaveUserGovernance(u.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#09090B] hover:bg-zinc-800 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                            <span>{savingUserId === u.id ? 'Saving...' : 'Save'}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -642,6 +1002,7 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
                 )}
               </tbody>
             </table>
+          </div>
           </div>
         </div>
       )}
@@ -1035,6 +1396,94 @@ export function AdminConsoleClient({ currentAdminId }: { currentAdminId: string 
               {auditLogs.length === 0 && (
                 <p className="text-xs text-zinc-500 text-center py-8">No audit logs recorded.</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Scope Assignment Modal */}
+      {scopeModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-xl">
+            <div className="p-5 border-b border-[#E4E4E7] flex items-start justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 font-semibold">
+                  {scopeModal.mode === 'approve_request'
+                    ? 'Approve Faculty & Assign Scopes'
+                    : 'Edit Faculty Teaching Scope'}
+                </span>
+                <h3 className="text-base font-bold text-[#09090B]">{scopeModal.fullName}</h3>
+                <p className="text-xs font-mono text-zinc-500">{scopeModal.email}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScopeModal(null)}
+                className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-2.5 flex-1">
+              <p className="text-xs text-zinc-600 mb-2">
+                Select the exact SETGOI Branches &amp; Semesters (3–8) this faculty member is authorized to manage.
+              </p>
+              {SYLLABUS_BRANCHES.map((b) => {
+                const selectedSems = scopeModal.scopes[b.code] || [];
+                return (
+                  <div
+                    key={b.code}
+                    className="p-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span className="font-mono text-xs font-bold text-[#09090B]">{b.code}</span>
+                      <span className="text-[11px] text-zinc-500 truncate">{b.name}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 shrink-0">
+                      {[3, 4, 5, 6, 7, 8].map((sem) => {
+                        const active = selectedSems.includes(sem);
+                        return (
+                          <button
+                            key={sem}
+                            type="button"
+                            onClick={() => toggleScopeModalSem(b.code, sem)}
+                            className={`px-2 py-1 rounded-lg border font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                              active
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'bg-white text-zinc-600 border-[#E4E4E7] hover:border-zinc-400'
+                            }`}
+                          >
+                            S{sem}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="p-4 border-t border-[#E4E4E7] bg-[#FAFAFA] rounded-b-2xl flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setScopeModal(null)}
+                className="px-3.5 py-2 rounded-xl border border-[#E4E4E7] bg-white hover:bg-zinc-100 text-xs font-semibold text-zinc-700 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={savingScope}
+                onClick={handleConfirmScopeModal}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+              >
+                {savingScope
+                  ? 'Saving...'
+                  : scopeModal.mode === 'approve_request'
+                  ? 'Approve & Assign Scope'
+                  : 'Save Designated Scope'}
+              </button>
             </div>
           </div>
         </div>

@@ -34,6 +34,11 @@ export default async function FacultyWorkspacePage() {
     redirectTo: '/sign-in?redirect_url=/faculty',
   });
 
+  const assignedScopes = Array.isArray(syncedUser?.assignedScopes)
+    ? (syncedUser.assignedScopes as Array<{ branch: string; semesters: number[] }>)
+    : [];
+  const isAdminUnrestricted = user.role === 'admin';
+
   return (
     <WorkspaceShell
       breadcrumbs={[
@@ -82,7 +87,12 @@ export default async function FacultyWorkspacePage() {
       </div>
 
       {/* Interactive Faculty Client Desk */}
-      <FacultyWorkspaceClient userEmail={user.email || ''} userName={user.fullName || 'Faculty Member'} />
+      <FacultyWorkspaceClient
+        userEmail={user.email || ''}
+        userName={user.fullName || 'Faculty Member'}
+        assignedScopes={assignedScopes}
+        isAdminUnrestricted={isAdminUnrestricted}
+      />
     </WorkspaceShell>
   );
 }
