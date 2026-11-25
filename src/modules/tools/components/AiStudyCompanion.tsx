@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { useUser } from '@clerk/nextjs';
 import { 
   Bot, 
   Send, 
@@ -9,13 +11,16 @@ import {
   Check, 
   Sparkles, 
   User, 
-  AlertCircle,
-  HelpCircle,
+  Lock,
   ArrowRight
 } from 'lucide-react';
 import { CompanionMessage } from '../types';
 
+const GUEST_COMPANION_LIMIT = 2;
+
 export function AiStudyCompanion() {
+  const { isLoaded, isSignedIn } = useUser();
+  const [guestCount, setGuestCount] = useState<number>(0);
   const [messages, setMessages] = useState<CompanionMessage[]>([
     {
       id: 'welcome-msg',
@@ -40,6 +45,19 @@ What would you like to check today?`,
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!isLoaded || isSignedIn) return;
+    fetch('/api/ai/guest-status')
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d?.count === 'number') setGuestCount(d.count);
+      })
+      .catch(() => {});
+  }, [isLoaded, isSignedIn]);
+
+  const isGuestLocked = !isSignedIn && guestCount >= GUEST_COMPANION_LIMIT;
+  const remainingGuest = Math.max(0, GUEST_COMPANION_LIMIT - guestCount);
+
   const quickPrompts = [
     'When are CA1 & Theory exams scheduled?',
     'Raniganj to SETGOI bus timings',
@@ -59,6 +77,7 @@ What would you like to check today?`,
 
   // Handle Send Message
   const handleSendMessage = async (promptText?: string) => {
+    if (isGuestLocked) return;
     const textToSend = (promptText || inputPrompt).trim();
     if (!textToSend || isStreaming) return;
 
@@ -94,8 +113,26 @@ What would you like to check today?`,
         }),
       });
 
+      if (response.status === 401) {
+        const errData = await response.json().catch(() => ({}));
+        if (errData?.error === 'GUEST_LIMIT_REACHED') {
+          setGuestCount(GUEST_COMPANION_LIMIT);
+          setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId));
+          return;
+        }
+      }
+
       if (!response.ok || !response.body) {
         throw new Error(`Server returned error ${response.status}`);
+      }
+
+      if (!isSignedIn) {
+        const headerRem = response.headers.get('X-Guest-Remaining');
+        if (headerRem !== null) {
+          setGuestCount(Math.max(0, GUEST_COMPANION_LIMIT - parseInt(headerRem, 10)));
+        } else {
+          setGuestCount((c) => c + 1);
+        }
       }
 
       const reader = response.body.getReader();
@@ -173,13 +210,26 @@ What would you like to check today?`,
           </p>
         </div>
 
-        <button
-          onClick={handleClearChat}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 shadow-sm transition-colors self-start sm:self-auto"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
-          Clear Conversation
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {!isSignedIn && (
+            <span
+              className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold border ${
+                remainingGuest > 0
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
+              }`}
+            >
+              Free Guest Preview: {remainingGuest}/2 responses left
+            </span>
+          )}
+          <button
+            onClick={handleClearChat}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 shadow-sm transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+            Clear Conversation
+          </button>
+        </div>
       </div>
 
       {/* Suggested Quick Question Chips */}
@@ -269,33 +319,58 @@ What would you like to check today?`,
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Bar */}
+        {/* Input Bar or Guest Sign-In Gate Card */}
         <div className="p-3 bg-white border-t border-zinc-200">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage();
-            }}
-            className="flex items-center gap-2"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Ask about MAKAUT syllabus, CA exam dates, bus timings, or campus rules..."
-              value={inputPrompt}
-              onChange={(e) => setInputPrompt(e.target.value)}
-              disabled={isStreaming}
-              className="flex-1 px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs placeholder:text-zinc-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-all disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={isStreaming || !inputPrompt.trim()}
-              className="px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-200 text-white disabled:text-zinc-400 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
+          {isGuestLocked ? (
+            <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#2563EB] shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#09090B]">
+                    Free Guest Preview Limit Reached (2/2)
+                  </div>
+                  <div className="text-[11px] text-zinc-600">
+                    Sign in with your SETGOI / Google account to continue using AI Study Companion.
+                  </div>
+                </div>
+              </div>
+              <Link
+                href="/sign-in?redirect_url=/tools"
+                className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 shadow-xs shrink-0"
+              >
+                <span>Continue with Google</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              className="flex items-center gap-2"
             >
-              <span>Ask</span>
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Ask about MAKAUT syllabus, CA exam dates, bus timings, or campus rules..."
+                value={inputPrompt}
+                onChange={(e) => setInputPrompt(e.target.value)}
+                disabled={isStreaming}
+                className="flex-1 px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs placeholder:text-zinc-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-all disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={isStreaming || !inputPrompt.trim()}
+                className="px-4 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-200 text-white disabled:text-zinc-400 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm shrink-0"
+              >
+                <span>Ask</span>
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

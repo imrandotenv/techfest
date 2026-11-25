@@ -1,5 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 import { auth } from '@clerk/nextjs/server';
+import {
+  getGuestAiStatus,
+  recordGuestAiUsage,
+  guestLimitExceededResponse,
+} from '@/lib/guestAiLimit';
 
 const CAMPUS_SYSTEM_INSTRUCTION = `
 You are the SETTech AI Study & Campus Companion for Sanaka Educational Trust's Group of Institutions (SETGOI), Durgapur, affiliated with Maulana Abul Kalam Azad University of Technology (MAKAUT).
@@ -147,8 +152,19 @@ export async function POST(req: Request) {
       const authObj = await auth();
       userId = authObj?.userId || null;
     } catch {
-      // In testing environments or unconfigured Clerk keys, proceed gracefully
-      userId = 'student-guest';
+      userId = null;
+    }
+
+    const guestStatus = getGuestAiStatus(req, userId);
+    if (!guestStatus.allowed) {
+      return guestLimitExceededResponse();
+    }
+
+    const guestHeaders: Record<string, string> = {};
+    if (guestStatus.isGuest) {
+      const usage = recordGuestAiUsage(req, guestStatus.count);
+      guestHeaders['Set-Cookie'] = usage.setCookieHeader;
+      guestHeaders['X-Guest-Remaining'] = String(usage.remaining);
     }
 
     const body = await req.json().catch(() => ({}));
@@ -200,6 +216,7 @@ export async function POST(req: Request) {
             'Content-Type': 'text/plain; charset=utf-8',
             'Transfer-Encoding': 'chunked',
             'Cache-Control': 'no-cache, no-transform',
+            ...guestHeaders,
           },
         });
       } catch (geminiError: any) {
@@ -232,6 +249,7 @@ export async function POST(req: Request) {
         'Content-Type': 'text/plain; charset=utf-8',
         'Transfer-Encoding': 'chunked',
         'Cache-Control': 'no-cache, no-transform',
+        ...guestHeaders,
       },
     });
   } catch (error: any) {

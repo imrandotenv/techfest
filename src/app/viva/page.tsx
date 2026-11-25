@@ -31,6 +31,9 @@ import {
   Wrench,
   Zap,
   Loader2,
+  History,
+  Plus,
+  MessageSquare,
 } from 'lucide-react';
 import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter';
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
@@ -176,6 +179,33 @@ export interface MessageItem {
   timestamp: string;
 }
 
+export interface PastVivaSession {
+  id: string;
+  subject: string;
+  subjectCode?: string | null;
+  subjectName?: string | null;
+  title?: string | null;
+  language: string;
+  score?: number | null;
+  totalQuestions?: number | null;
+  createdAt: string;
+  updatedAt: string;
+  messages?: Array<{
+    id: string;
+    role: string;
+    content: string;
+    reaction?: string | null;
+    explanation?: string | null;
+    nextQuestion?: string | null;
+    spokenText?: string | null;
+    emotion?: string | null;
+    isCorrect?: boolean | null;
+    topicTag?: string | null;
+    provider?: string | null;
+    createdAt: string;
+  }>;
+}
+
 export default function VivaStudioPage() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { profile } = useAcademicProfile();
@@ -198,9 +228,12 @@ export default function VivaStudioPage() {
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
-  // Chat stream messages
+  // Chat stream messages & Past Sessions
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [dbSessionId, setDbSessionId] = useState<string | null>(null);
+  const [pastSessions, setPastSessions] = useState<PastVivaSession[]>([]);
+  const [showPastSessions, setShowPastSessions] = useState<boolean>(false);
+  const [isLoadingSessions, setIsLoadingSessions] = useState<boolean>(false);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Free attempts for guest users
@@ -236,15 +269,40 @@ export default function VivaStudioPage() {
   // Weak topics recorded when student answers incorrectly
   const [weakTopics, setWeakTopics] = useState<Array<{ topic: string; subject: string; question: string }>>([]);
 
-  // Load free guest count from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('settech_viva_free_count') || localStorage.getItem('sanakahub_viva_free_count');
-      if (stored) {
-        setFreeCount(parseInt(stored, 10) || 0);
+  // Fetch server-side guest limit status (refresh-proof) & past sessions for signed-in users
+  const fetchPastSessions = useCallback(async () => {
+    if (!isSignedIn) return;
+    setIsLoadingSessions(true);
+    try {
+      const res = await fetch('/api/viva/sessions');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.sessions)) {
+          setPastSessions(data.sessions);
+        }
       }
+    } catch (err) {
+      console.warn('[Viva Sessions] Failed to load history:', err);
+    } finally {
+      setIsLoadingSessions(false);
     }
-  }, []);
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      fetch('/api/ai/guest-status')
+        .then((r) => r.json())
+        .then((data) => {
+          if (typeof data?.count === 'number') {
+            setFreeCount(data.count);
+          }
+        })
+        .catch(() => {});
+    } else {
+      fetchPastSessions();
+    }
+  }, [isLoaded, isSignedIn, fetchPastSessions]);
 
   const isGuestLocked = !isSignedIn && freeCount >= FREE_GUEST_LIMIT;
   const remainingFree = Math.max(0, FREE_GUEST_LIMIT - freeCount);
@@ -453,28 +511,33 @@ export default function VivaStudioPage() {
     [playbackSpeed, stopVoice, speakVoice, language]
   );
 
-  // Pick Initial Question and reset chat for subject/language
+  // Pick Initial Question (anti-repeat LLM for signed-in users, randomized starter for guests)
   const initializeSubject = useCallback(
-    (targetSubject: VivaSubject, targetLang: VivaLanguage) => {
+    async (targetSubject: VivaSubject, targetLang: VivaLanguage) => {
       stopVoice();
-      const list = SUBJECT_CATALOG[targetSubject]?.starterQuestions[targetLang] || SUBJECT_CATALOG.DSA.starterQuestions.en;
-      const initialQ = list[Math.floor(Math.random() * list.length)];
-      setCurrentQuestion(initialQ);
+      setDbSessionId(null);
+      setScorecard({ attempts: 0, correct: 0, streak: 0 });
+      setWeakTopics([]);
       setStudentAnswer('');
       setEmotion('idle');
       setActiveTopicTag(`${targetSubject} Core`);
 
-      const spoken = targetLang === 'hi'
-        ? `Namaste! ${SUBJECT_CATALOG[targetSubject].name} ka viva shuru karte hain. Pehla sawal: ${initialQ}`
-        : `Welcome to ${SUBJECT_CATALOG[targetSubject].name} viva. Your first question: ${initialQ}`;
+      const list = SUBJECT_CATALOG[targetSubject]?.starterQuestions[targetLang] || SUBJECT_CATALOG.DSA.starterQuestions.en;
+      const fallbackQ = list[Math.floor(Math.random() * list.length)];
+      setCurrentQuestion(fallbackQ);
 
+      const spoken = targetLang === 'hi'
+        ? `Namaste! ${SUBJECT_CATALOG[targetSubject].name} ka viva shuru karte hain. Pehla sawal: ${fallbackQ}`
+        : `Welcome to ${SUBJECT_CATALOG[targetSubject].name} viva. Your first question: ${fallbackQ}`;
+
+      const msgId = 'initial-' + Date.now();
       const welcomeMsg: MessageItem = {
-        id: 'initial-' + Date.now(),
+        id: msgId,
         role: 'assistant',
         content: targetLang === 'hi'
           ? `Namaste! Main hu Viva Buddy. ${SUBJECT_CATALOG[targetSubject].name} (${SUBJECT_CATALOG[targetSubject].code}) ka viva shuru karte hain. Pehla sawal ye raha:`
           : `Welcome to SETGOI Viva Voce for ${SUBJECT_CATALOG[targetSubject].name} (${SUBJECT_CATALOG[targetSubject].code}). Let us begin with your first question:`,
-        nextQuestion: initialQ,
+        nextQuestion: fallbackQ,
         spokenText: spoken,
         topicTag: `${targetSubject} Intro`,
         isCorrect: null,
@@ -482,13 +545,109 @@ export default function VivaStudioPage() {
       };
 
       setMessages([welcomeMsg]);
+
+      // For signed-in students, dynamically generate a fresh non-repeated opening question from Neon DB history
+      if (isSignedIn) {
+        try {
+          const res = await fetch('/api/viva', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              question: '',
+              answer: '',
+              subject: targetSubject,
+              subjectCode: SUBJECT_CATALOG[targetSubject].code,
+              subjectName: SUBJECT_CATALOG[targetSubject].name,
+              language: targetLang,
+              intent: 'opening',
+              branch: profile?.branch,
+              semester: profile?.semester,
+            }),
+          });
+          if (res.ok) {
+            const data: VivaResponse = await res.json();
+            if (data?.nextQuestion) {
+              setCurrentQuestion(data.nextQuestion);
+              setActiveTopicTag(data.topicTag || `${targetSubject} Core`);
+              setMessages([
+                {
+                  ...welcomeMsg,
+                  content: data.reaction || welcomeMsg.content,
+                  nextQuestion: data.nextQuestion,
+                  spokenText: data.spokenText || welcomeMsg.spokenText,
+                  topicTag: data.topicTag || welcomeMsg.topicTag,
+                  provider: data.provider,
+                },
+              ]);
+            }
+          }
+        } catch {
+          // Keep randomized fallback question gracefully
+        }
+      }
+    },
+    [stopVoice, isSignedIn, profile?.branch, profile?.semester]
+  );
+
+  // Load a saved Past Session from Neon PostgreSQL
+  const handleLoadSession = useCallback(
+    async (sessionIdToLoad: string) => {
+      stopVoice();
+      try {
+        const res = await fetch(`/api/viva/sessions/${sessionIdToLoad}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const sess: PastVivaSession | undefined = data?.session;
+        if (!sess) return;
+
+        setDbSessionId(sess.id);
+        if (sess.subject && (sess.subject as VivaSubject) in SUBJECT_CATALOG) {
+          setSubject(sess.subject as VivaSubject);
+        }
+        if (sess.language === 'hi' || sess.language === 'en') {
+          setLanguage(sess.language);
+        }
+
+        const loadedMessages: MessageItem[] = (sess.messages || []).map((m) => ({
+          id: m.id,
+          role: m.role === 'user' ? 'user' : 'assistant',
+          content: m.content,
+          reaction: m.reaction || undefined,
+          explanation: m.explanation || undefined,
+          nextQuestion: m.nextQuestion || undefined,
+          spokenText: m.spokenText || undefined,
+          isCorrect: m.isCorrect ?? null,
+          topicTag: m.topicTag || undefined,
+          provider: (m.provider as 'groq' | 'gemini' | 'simulation') || undefined,
+          timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }));
+
+        setMessages(loadedMessages);
+        setScorecard({
+          attempts: sess.totalQuestions || 0,
+          correct: sess.score || 0,
+          streak: 0,
+        });
+
+        const lastAssistant = [...loadedMessages].reverse().find((m) => m.role === 'assistant' && m.nextQuestion);
+        if (lastAssistant?.nextQuestion) {
+          setCurrentQuestion(lastAssistant.nextQuestion);
+        }
+        if (lastAssistant?.topicTag) {
+          setActiveTopicTag(lastAssistant.topicTag);
+        }
+        setShowPastSessions(false);
+      } catch (err) {
+        console.warn('[Viva Load Session] Error:', err);
+      }
     },
     [stopVoice]
   );
 
   useEffect(() => {
+    if (!isLoaded) return;
     initializeSubject(subject, language);
-  }, [subject, language, initializeSubject]);
+  }, [isLoaded, subject, language, initializeSubject]);
 
   // Submit Turn (Answer, Hint, Example, Skip, Harder)
   const handleSendTurn = useCallback(
@@ -541,13 +700,27 @@ export default function VivaStudioPage() {
             question: currentQuestion,
             answer: textToSend,
             subject,
+            subjectCode: SUBJECT_CATALOG[subject].code,
+            subjectName: SUBJECT_CATALOG[subject].name,
             language,
             history: historyPayload,
             intent: forcedIntent,
             branch: profile?.branch,
             semester: profile?.semester,
+            sessionId: dbSessionId,
           }),
         });
+
+        if (res.status === 401) {
+          const errData = await res.json().catch(() => ({}));
+          if (errData?.error === 'GUEST_LIMIT_REACHED') {
+            setFreeCount(FREE_GUEST_LIMIT);
+            setShowSignInModal(true);
+            setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+            setEmotion('idle');
+            return;
+          }
+        }
 
         const data: VivaResponse = await res.json();
 
@@ -555,15 +728,15 @@ export default function VivaStudioPage() {
         setActiveProvider(data.provider);
         if (data.topicTag) setActiveTopicTag(data.topicTag);
 
-        // Track guest count only on real evaluated answers (not hints or examples)
-        if (!isSignedIn && data.isCorrect !== null) {
-          const nextCount = freeCount + 1;
+        // Track strict 2-response guest limit from server-authoritative remaining count
+        if (!isSignedIn) {
+          const nextCount =
+            typeof data.guestRemaining === 'number'
+              ? Math.max(0, FREE_GUEST_LIMIT - data.guestRemaining)
+              : freeCount + 1;
           setFreeCount(nextCount);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('settech_viva_free_count', nextCount.toString());
-          }
           if (nextCount >= FREE_GUEST_LIMIT) {
-            setTimeout(() => setShowSignInModal(true), 3500);
+            setTimeout(() => setShowSignInModal(true), 2500);
           }
         }
 
@@ -605,28 +778,12 @@ export default function VivaStudioPage() {
 
         setMessages((prev) => [...prev, assistantMsg]);
 
-        // Asynchronously persist turn to Neon PostgreSQL if student is signed in
-        if (isSignedIn) {
-          fetch('/api/viva/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: dbSessionId || undefined,
-              subject,
-              language,
-              score: scorecard.correct + (data.isCorrect ? 1 : 0),
-              totalQuestions: scorecard.attempts + (data.isCorrect !== null ? 1 : 0),
-              weakTopics: data.isCorrect === false ? (data.topicTag || subject) : undefined,
-              messages: [userMsg, assistantMsg],
-            }),
-          })
-            .then((r) => r.json())
-            .then((sData) => {
-              if (sData?.sessionId && !dbSessionId) {
-                setDbSessionId(sData.sessionId);
-              }
-            })
-            .catch((sErr) => console.warn('[Viva Sessions Sync] Note:', sErr));
+        // Sync sessionId returned by /api/viva & refresh Past Sessions list
+        if (isSignedIn && data.sessionId) {
+          if (!dbSessionId) {
+            setDbSessionId(data.sessionId);
+          }
+          fetchPastSessions();
         }
 
         // Update active question for next turn
@@ -1075,20 +1232,51 @@ export default function VivaStudioPage() {
             {playbackSpeed}x
           </button>
 
-          {/* Guest 2-Free Questions Counter Pill */}
+          {/* Guest 2-Free Responses Counter Badge */}
           {!isSignedIn && (
             <button
               onClick={() => setShowSignInModal(true)}
-              className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+              className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                 remainingFree > 0
                   ? 'bg-amber-50 border border-amber-200 text-amber-800'
-                  : 'bg-red-50 border border-red-200 text-red-700 animate-pulse'
+                  : 'bg-rose-50 border border-rose-200 text-rose-700'
               }`}
-              title="Click to sign in with SETGOI account"
+              title="Click to sign in with SETGOI / Google account"
             >
               <Lock className="w-3 h-3" />
-              <span>{remainingFree > 0 ? `${remainingFree} Free` : 'Sign In'}</span>
+              <span>Free Guest Preview: {remainingFree}/2 responses left</span>
             </button>
+          )}
+
+          {/* Past Sessions + New Viva Session Buttons for Signed-In Students */}
+          {isSignedIn && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowPastSessions((v) => !v)}
+                className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  showPastSessions
+                    ? 'bg-blue-50 border-blue-200 text-[#2563EB]'
+                    : 'bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100'
+                }`}
+                title="View saved viva sessions"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Past Sessions</span>
+                {pastSessions.length > 0 && (
+                  <span className="px-1 rounded bg-zinc-200/80 text-zinc-800 text-[10px]">
+                    {pastSessions.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => initializeSubject(subject, language)}
+                className="px-2.5 py-1 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-mono font-medium text-zinc-800 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                title="Start a fresh viva session"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#2563EB]" />
+                <span className="hidden lg:inline">New Viva Session</span>
+              </button>
+            </div>
           )}
 
           {/* Live Score Pill */}
@@ -1211,9 +1399,55 @@ export default function VivaStudioPage() {
               onClick={() => initializeSubject(subject, language)}
               className="w-full py-1.5 px-3 rounded-xl border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Session</span>
+              <Plus className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>+ New Viva Session</span>
             </button>
+
+            {/* Saved Past Sessions List (Signed-In Users) */}
+            {isSignedIn && (
+              <div className="pt-2 border-t border-[#E4E4E7] space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-[#52525B]">
+                  <span className="flex items-center gap-1">
+                    <History className="w-3 h-3 text-[#2563EB]" />
+                    <span>Past Sessions</span>
+                  </span>
+                  {isLoadingSessions && <Loader2 className="w-3 h-3 animate-spin text-zinc-400" />}
+                </div>
+                {pastSessions.length === 0 ? (
+                  <p className="text-[11px] text-zinc-400 font-sans">
+                    Your completed viva turns are saved here automatically.
+                  </p>
+                ) : (
+                  <div className="max-h-36 overflow-y-auto space-y-1 pr-0.5">
+                    {pastSessions.slice(0, 8).map((sess) => {
+                      const isActive = dbSessionId === sess.id;
+                      return (
+                        <button
+                          key={sess.id}
+                          onClick={() => handleLoadSession(sess.id)}
+                          className={`w-full text-left p-2 rounded-lg border text-[11px] transition-colors cursor-pointer flex items-center justify-between gap-2 ${
+                            isActive
+                              ? 'bg-blue-50 border-blue-200 text-[#09090B]'
+                              : 'bg-zinc-50/70 border-[#E4E4E7] hover:bg-zinc-100 text-zinc-700'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="font-mono font-semibold truncate">
+                              {sess.title || `${sess.subjectCode || sess.subject}`}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 font-mono">
+                              Score {sess.score ?? 0}/{sess.totalQuestions ?? 0} •{' '}
+                              {new Date(sess.updatedAt || sess.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <MessageSquare className="w-3 h-3 text-zinc-400 shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1233,6 +1467,49 @@ export default function VivaStudioPage() {
               <div className="text-[10px] font-mono text-zinc-400">{accuracyPct}% accuracy</div>
             </div>
           </div>
+
+          {/* Past Sessions Drawer (Toggleable from Header on Mobile or Desktop) */}
+          {isSignedIn && showPastSessions && (
+            <div className="mb-3 p-3 rounded-xl bg-slate-50 border border-[#E4E4E7] space-y-2 shrink-0">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-[#09090B] flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Saved Viva Sessions ({pastSessions.length})</span>
+                </span>
+                <button
+                  onClick={() => setShowPastSessions(false)}
+                  className="p-1 rounded hover:bg-zinc-200 text-zinc-500 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {pastSessions.length === 0 ? (
+                <p className="text-xs text-zinc-500">No saved sessions yet. Answer a question to save automatically.</p>
+              ) : (
+                <div className="max-h-44 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {pastSessions.map((sess) => (
+                    <button
+                      key={sess.id}
+                      onClick={() => handleLoadSession(sess.id)}
+                      className={`text-left p-2.5 rounded-xl border text-xs transition-colors cursor-pointer ${
+                        dbSessionId === sess.id
+                          ? 'bg-blue-50 border-blue-200 text-[#09090B]'
+                          : 'bg-white border-[#E4E4E7] hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="font-mono font-bold truncate">
+                        {sess.title || sess.subject}
+                      </div>
+                      <div className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                        Score: {sess.score ?? 0}/{sess.totalQuestions ?? 0} •{' '}
+                        {new Date(sess.updatedAt || sess.createdAt).toLocaleDateString()}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Internal Scrollable Chat Feed */}
           <div
@@ -1437,8 +1714,8 @@ export default function VivaStudioPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={handleAskHint}
-              disabled={isEvaluating}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+              disabled={isEvaluating || isGuestLocked}
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <Lightbulb className="w-3 h-3 text-amber-500" />
               <span>💡 Give a hint</span>
@@ -1446,8 +1723,8 @@ export default function VivaStudioPage() {
 
             <button
               onClick={handleAskExample}
-              disabled={isEvaluating}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+              disabled={isEvaluating || isGuestLocked}
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <BookOpen className="w-3 h-3 text-blue-500" />
               <span>📝 Explain with example</span>
@@ -1455,8 +1732,8 @@ export default function VivaStudioPage() {
 
             <button
               onClick={handleAskHarder}
-              disabled={isEvaluating}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+              disabled={isEvaluating || isGuestLocked}
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-blue-300 text-xs font-mono text-[#09090B] hover:text-[#2563EB] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <Zap className="w-3 h-3 text-orange-500" />
               <span>🔥 Ask harder</span>
@@ -1464,8 +1741,8 @@ export default function VivaStudioPage() {
 
             <button
               onClick={handleSkipQuestion}
-              disabled={isEvaluating}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-zinc-300 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
+              disabled={isEvaluating || isGuestLocked}
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E4E4E7] hover:border-zinc-300 text-xs font-mono text-[#52525B] hover:text-[#09090B] transition-all flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer disabled:opacity-50"
             >
               <HelpCircle className="w-3 h-3 text-zinc-400" />
               <span>⏭️ Next question</span>
@@ -1475,17 +1752,17 @@ export default function VivaStudioPage() {
           {/* Bottom Sticky Input Dock */}
           <div className="w-full space-y-2">
             {isGuestLocked ? (
-              <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="bg-[#FAFAFA] border border-[#E4E4E7] p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#2563EB] shrink-0">
                     <Lock className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs sm:text-sm font-bold text-amber-950 font-sans">
-                      2 Free Practice Rounds Completed
+                    <div className="text-xs sm:text-sm font-bold text-[#09090B] font-sans">
+                      Free Guest Preview Limit Reached (2/2)
                     </div>
-                    <div className="text-xs text-amber-800 font-sans">
-                      Sign in with your SETGOI student account to unlock unlimited viva practice.
+                    <div className="text-xs text-[#52525B] font-sans">
+                      Sign in with your SETGOI / Google account to continue AI Viva and save your chat history.
                     </div>
                   </div>
                 </div>
@@ -1493,7 +1770,7 @@ export default function VivaStudioPage() {
                   href="/sign-in?redirect_url=/viva"
                   className="px-4 py-2 rounded-xl bg-[#2563EB] text-white hover:bg-blue-700 text-xs font-semibold font-sans transition-all inline-flex items-center justify-center gap-2 shadow-xs shrink-0 cursor-pointer"
                 >
-                  <span>Sign in with SETGOI Account</span>
+                  <span>Continue with Google</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>

@@ -106,6 +106,11 @@ model VivaSession {
   userId         String
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject        String        // e.g. "DSA", "COA", "OS"
+  subjectCode    String?       // e.g. "PCC-CS301"
+  subjectName    String?       // e.g. "Data Structures & Algorithms"
+  branch         String?       // e.g. "CSE"
+  semester       Int?          // e.g. 3
+  title          String?       // e.g. "PCC-CS301 • Data Structures & Algorithms"
   language       String        @default("en") // "en" | "hi"
   score          Int?          @default(0)
   totalQuestions Int?          @default(0)
@@ -116,21 +121,28 @@ model VivaSession {
 
   @@index([userId])
   @@index([subject])
+  @@index([subjectCode])
+  @@index([updatedAt])
   @@index([createdAt])
 }
 
 model VivaMessage {
-  id          String      @id @default(cuid())
-  sessionId   String
-  session     VivaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role        String      // "user" | "assistant"
-  content     String      @db.Text
-  reaction    String?     @db.Text
-  explanation String?     @db.Text
-  emotion     String?     @default("idle") // "idle" | "happy" | "shocked" | "thinking"
-  isCorrect   Boolean?
-  topicTag    String?
-  createdAt   DateTime    @default(now())
+  id           String      @id @default(cuid())
+  sessionId    String
+  session      VivaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role         String      // "user" | "assistant"
+  content      String      @db.Text
+  reaction     String?     @db.Text
+  explanation  String?     @db.Text
+  nextQuestion String?     @db.Text
+  spokenText   String?     @db.Text
+  emotion      String?     @default("idle") // "idle" | "happy" | "shocked" | "thinking"
+  isCorrect    Boolean?
+  score        Int?
+  feedback     String?     @db.Text
+  topicTag     String?
+  provider     String?
+  createdAt    DateTime    @default(now())
 
   @@index([sessionId])
   @@index([createdAt])

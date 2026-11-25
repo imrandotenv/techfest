@@ -30,8 +30,8 @@ export async function GET() {
           orderBy: { createdAt: 'asc' },
         },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
+      orderBy: { updatedAt: 'desc' },
+      take: 30,
     });
 
     return NextResponse.json({ success: true, sessions });

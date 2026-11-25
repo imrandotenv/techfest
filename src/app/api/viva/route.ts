@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { checkRateLimit, getClientIdentifier } from '@/lib/rateLimit';
+import { prisma } from '@/lib/prisma';
+import {
+  getGuestAiStatus,
+  recordGuestAiUsage,
+  guestLimitExceededResponse,
+} from '@/lib/guestAiLimit';
 
 export const runtime = 'nodejs';
 
@@ -14,12 +20,15 @@ export interface VivaRequest {
   question: string;
   answer: string;
   subject: string;
+  subjectCode?: string;
+  subjectName?: string;
   difficulty?: 'Quick Viva' | 'External Examiner';
   language?: 'en' | 'hi';
   history?: ChatMessage[];
-  intent?: 'answer' | 'hint' | 'example' | 'skip' | 'harder';
+  intent?: 'answer' | 'hint' | 'example' | 'skip' | 'harder' | 'opening';
   branch?: string;
   semester?: number;
+  sessionId?: string | null;
 }
 
 export interface VivaResponse {
@@ -31,6 +40,81 @@ export interface VivaResponse {
   provider: 'groq' | 'gemini' | 'simulation';
   isCorrect: boolean | null; // null for follow-up hints, examples, or questions
   topicTag: string;
+  sessionId?: string | null;
+  guestRemaining?: number;
+}
+
+const SYLLABUS_ANGLES = [
+  'Conceptual Foundations',
+  'Code / Circuit Analysis',
+  'Edge-Case Debugging',
+  'Practical Lab Viva',
+] as const;
+
+async function resolveDbUser(clerkUserId: string) {
+  const existing = await prisma.user.findUnique({
+    where: { clerkId: clerkUserId },
+    select: { id: true, branch: true, semester: true },
+  });
+  if (existing) return existing;
+
+  const clerkUser = await currentUser();
+  const primaryEmail =
+    clerkUser?.emailAddresses.find((e) => e.id === clerkUser?.primaryEmailAddressId)?.emailAddress ||
+    clerkUser?.emailAddresses[0]?.emailAddress ||
+    `${clerkUserId}@student.setgoi.ac.in`;
+  const fullName =
+    [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') ||
+    clerkUser?.username ||
+    'SETGOI Scholar';
+
+  return prisma.user.upsert({
+    where: { clerkId: clerkUserId },
+    update: { email: primaryEmail, fullName },
+    create: {
+      clerkId: clerkUserId,
+      email: primaryEmail,
+      fullName,
+      role: 'STUDENT',
+      degree: 'B.Tech',
+      branch: 'CSE',
+      semester: 3,
+      onboardingCompleted: true,
+    },
+    select: { id: true, branch: true, semester: true },
+  });
+}
+
+async function getPreviousQuestionsForSubject(
+  dbUserId: string,
+  subject: string,
+  subjectCode?: string
+): Promise<string[]> {
+  const pastMessages = await prisma.vivaMessage.findMany({
+    where: {
+      role: 'assistant',
+      session: {
+        userId: dbUserId,
+        OR: subjectCode
+          ? [{ subjectCode }, { subject }]
+          : [{ subject }],
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 15,
+    select: { nextQuestion: true, content: true },
+  });
+
+  const seen = new Set<string>();
+  const results: string[] = [];
+  for (const m of pastMessages) {
+    const q = (m.nextQuestion || '').trim();
+    if (q && !seen.has(q.toLowerCase())) {
+      seen.add(q.toLowerCase());
+      results.push(q);
+    }
+  }
+  return results;
 }
 
 // System prompts for English and Conversational Hinglish
@@ -480,8 +564,14 @@ function getSimulatedVivaResponse(
 
 export async function POST(req: Request) {
   try {
-    // 1. Rate limiting check (40 requests / hour per user/IP)
+    // 1. Auth & Strict 2-Response Guest Gate (BEFORE calling any LLM)
     const { userId } = await auth().catch(() => ({ userId: null }));
+    const guestStatus = getGuestAiStatus(req, userId);
+    if (!guestStatus.allowed) {
+      return guestLimitExceededResponse();
+    }
+
+    // 2. Rate limiting check (40 requests / hour per user/IP)
     const clientId = getClientIdentifier(req, userId);
     const rateCheck = await checkRateLimit(`${clientId}:viva`, 40, 60 * 60 * 1000);
     if (!rateCheck.success) {
@@ -514,27 +604,59 @@ export async function POST(req: Request) {
       question,
       answer,
       subject = 'DSA',
+      subjectCode,
+      subjectName,
       difficulty = 'Quick Viva',
       language = 'en',
       history = [],
       intent = 'answer',
       branch,
       semester,
+      sessionId,
     } = body;
 
-    if (!question || !answer) {
+    if (intent !== 'opening' && (!question || !answer)) {
       return NextResponse.json(
         { error: 'Both question and student answer are required.' },
         { status: 400 }
       );
     }
 
-    const systemPrompt = getSystemPrompt(language);
+    // Resolve DB user & anti-repeat question history for logged-in students
+    let dbUser: { id: string; branch: string | null; semester: number | null } | null = null;
+    let previousQuestions: string[] = [];
+    if (userId) {
+      try {
+        dbUser = await resolveDbUser(userId);
+        previousQuestions = await getPreviousQuestionsForSubject(dbUser.id, subject, subjectCode);
+      } catch (dbErr) {
+        console.warn('[Viva Buddy] Could not fetch previous questions:', dbErr);
+      }
+    }
+
+    const rotatedAngle =
+      SYLLABUS_ANGLES[previousQuestions.length % SYLLABUS_ANGLES.length];
+
+    const antiRepeatBlock =
+      previousQuestions.length > 0
+        ? `\n\nANTI-REPETITION & SYLLABUS ROTATION (CRITICAL):
+- Focus this question on the syllabus angle: "${rotatedAngle}".
+- DO NOT REPEAT THESE PREVIOUSLY ASKED QUESTIONS: ${JSON.stringify(previousQuestions.slice(0, 15))}`
+        : `\n\nSYLLABUS FOCUS ANGLE: "${rotatedAngle}". Ask a fresh, varied MAKAUT viva question from this angle.`;
+
+    const systemPrompt = getSystemPrompt(language) + antiRepeatBlock;
 
     // Prepare conversational message list (last 8 turns)
     const recentHistory = (history || []).slice(-8);
 
-    const currentUserPrompt = `SUBJECT: ${subject}
+    const currentUserPrompt =
+      intent === 'opening'
+        ? `SUBJECT: ${subject}${subjectCode ? ` (${subjectCode})` : ''}${subjectName ? ` - ${subjectName}` : ''}
+STUDENT PROFILE: ${branch || dbUser?.branch ? `B.Tech ${branch || dbUser?.branch}` : 'B.Tech Engineering'}${semester || dbUser?.semester ? `, Semester ${semester || dbUser?.semester}` : ''} (MAKAUT Curriculum)
+DIFFICULTY: ${difficulty}
+LANGUAGE MODE: ${language === 'hi' ? 'Hinglish (Conversational Roman Hindi)' : 'Natural Indian English'}
+TASK: Generate ONE fresh, engaging opening viva question for this subject from the "${rotatedAngle}" angle. Set "emotion": "idle", "isCorrect": null, "reaction": short warm welcome line, "explanation": "", "nextQuestion": "<your fresh opening question>", "spokenText": "<short spoken welcome + the opening question>", "topicTag": "<concise topic tag>".`
+        : `SUBJECT: ${subject}${subjectCode ? ` (${subjectCode})` : ''}
 STUDENT PROFILE: ${branch ? `B.Tech ${branch}` : 'B.Tech Engineering'}${semester ? `, Semester ${semester}` : ''} (MAKAUT Curriculum)
 DIFFICULTY: ${difficulty}
 STUDENT INTENT: ${intent}
@@ -547,6 +669,107 @@ Remember:
 1. If answering: state EXACT SHORT ACCURATE technical answer FIRST.
 2. If asking for a hint or example or harder question: set "isCorrect": null, provide insightful hint/example/harder question without penalizing score.
 3. Always supply a concise "topicTag" representing the subject syllabus concept.`;
+
+    const finalizeResponse = async (vivaRes: VivaResponse): Promise<NextResponse> => {
+      const headers = new Headers();
+      let finalSessionId: string | null = sessionId || null;
+
+      // Persist turn to Neon DB for logged-in users (except initial opening prompt)
+      if (dbUser && intent !== 'opening') {
+        try {
+          let activeSession = finalSessionId
+            ? await prisma.vivaSession.findUnique({ where: { id: finalSessionId } })
+            : null;
+
+          if (activeSession && activeSession.userId !== dbUser.id) {
+            activeSession = null;
+          }
+
+          const scoreDelta = vivaRes.isCorrect === true ? 1 : 0;
+          const totalDelta = vivaRes.isCorrect !== null ? 1 : 0;
+
+          if (!activeSession) {
+            activeSession = await prisma.vivaSession.create({
+              data: {
+                userId: dbUser.id,
+                subject,
+                subjectCode: subjectCode || null,
+                subjectName: subjectName || subject,
+                branch: branch || dbUser.branch || 'CSE',
+                semester: semester || dbUser.semester || 3,
+                title: `${subjectCode ? `${subjectCode} • ` : ''}${subjectName || subject}`,
+                language,
+                score: scoreDelta,
+                totalQuestions: totalDelta,
+                weakTopics: vivaRes.isCorrect === false ? vivaRes.topicTag || subject : null,
+              },
+            });
+          } else {
+            activeSession = await prisma.vivaSession.update({
+              where: { id: activeSession.id },
+              data: {
+                score: (activeSession.score || 0) + scoreDelta,
+                totalQuestions: (activeSession.totalQuestions || 0) + totalDelta,
+                ...(vivaRes.isCorrect === false && vivaRes.topicTag
+                  ? {
+                      weakTopics: activeSession.weakTopics
+                        ? `${activeSession.weakTopics}, ${vivaRes.topicTag}`
+                        : vivaRes.topicTag,
+                    }
+                  : {}),
+              },
+            });
+          }
+
+          finalSessionId = activeSession.id;
+
+          await prisma.vivaMessage.createMany({
+            data: [
+              {
+                sessionId: activeSession.id,
+                role: 'user',
+                content: answer,
+                topicTag: vivaRes.topicTag || null,
+              },
+              {
+                sessionId: activeSession.id,
+                role: 'assistant',
+                content: vivaRes.explanation || vivaRes.reaction || vivaRes.nextQuestion,
+                reaction: vivaRes.reaction || null,
+                explanation: vivaRes.explanation || null,
+                nextQuestion: vivaRes.nextQuestion || null,
+                spokenText: vivaRes.spokenText || null,
+                emotion: vivaRes.emotion || 'idle',
+                isCorrect: vivaRes.isCorrect,
+                score: vivaRes.isCorrect === true ? 1 : vivaRes.isCorrect === false ? 0 : null,
+                feedback: vivaRes.explanation || null,
+                topicTag: vivaRes.topicTag || null,
+                provider: vivaRes.provider || null,
+              },
+            ],
+          });
+        } catch (persistErr) {
+          console.error('[Viva Buddy] Failed to persist VivaSession/VivaMessage:', persistErr);
+        }
+      }
+
+      let guestRemaining: number | undefined = undefined;
+      if (guestStatus.isGuest && intent !== 'opening') {
+        const usage = recordGuestAiUsage(req, guestStatus.count);
+        headers.set('Set-Cookie', usage.setCookieHeader);
+        headers.set('X-Guest-Remaining', String(usage.remaining));
+        guestRemaining = usage.remaining;
+      }
+
+      return NextResponse.json(
+        {
+          ...vivaRes,
+          sessionId: finalSessionId,
+          ...(guestRemaining !== undefined ? { guestRemaining } : {}),
+        },
+        { headers }
+      );
+    };
 
     // 1. Primary: Groq API
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -576,7 +799,7 @@ Remember:
             body: JSON.stringify({
               model: modelName,
               messages: groqMessages,
-              temperature: 0.6,
+              temperature: 0.8,
               response_format: { type: 'json_object' },
             }),
             signal: groqController.signal,
@@ -599,16 +822,16 @@ Remember:
               const nextQuestion = parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: Array aur Linked list mein kya fark hai?' : 'Next question: Explain the difference between an array and a linked list.');
               const spokenText = parsed.spokenText || `${reaction} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
 
-              return NextResponse.json({
-                emotion,
+              return finalizeResponse({
+                emotion: intent === 'opening' ? 'idle' : emotion,
                 reaction,
                 explanation: parsed.explanation || '',
                 nextQuestion,
                 spokenText,
                 provider: 'groq',
-                isCorrect: parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy'),
+                isCorrect: intent === 'opening' ? null : (parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy')),
                 topicTag: parsed.topicTag || `${subject} Core`,
-              } as VivaResponse);
+              });
             }
           } else {
             console.warn(`[Viva Buddy] Groq model ${modelName} returned status ${groqResponse.status}.`);
@@ -641,7 +864,7 @@ Remember:
             contents: fullGeminiPrompt,
             config: {
               systemInstruction: systemPrompt,
-              temperature: 0.6,
+              temperature: 0.8,
               responseMimeType: 'application/json',
             },
           });
@@ -659,16 +882,16 @@ Remember:
             const nextQuestion = parsed.nextQuestion || (language === 'hi' ? 'Agla sawal: QuickSort ka worst case kya hai?' : 'What is the worst-case time complexity of QuickSort?');
             const spokenText = parsed.spokenText || `${reaction} ${language === 'hi' ? 'Agla sawal suno: ' : 'Next question: '}${nextQuestion}`.trim();
 
-            return NextResponse.json({
-              emotion,
+            return finalizeResponse({
+              emotion: intent === 'opening' ? 'idle' : emotion,
               reaction,
               explanation: parsed.explanation || '',
               nextQuestion,
               spokenText,
               provider: 'gemini',
-              isCorrect: parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy'),
+              isCorrect: intent === 'opening' ? null : (parsed.isCorrect !== undefined ? parsed.isCorrect : (emotion === 'happy')),
               topicTag: parsed.topicTag || `${subject} Core`,
-            } as VivaResponse);
+            });
           }
         } catch (geminiErr: any) {
           console.warn(`[Viva Buddy] Gemini model ${modelName} error:`, geminiErr?.message || geminiErr);
@@ -680,6 +903,23 @@ Remember:
 
     // 3. Fallback to Grounded Educational Simulation Engine (Zero Cost & Zero Key Failure)
     console.info('[Viva Buddy] Using Grounded Educational Simulation Engine for response.');
+    if (intent === 'opening') {
+      const openingNextQ =
+        language === 'hi'
+          ? `${subject} (${rotatedAngle}) se ek fresh sawal: is subject ke core practical tradeoff ko real-world example se explain karo.`
+          : `Let us start ${subject} (${rotatedAngle}): explain one core architectural tradeoff and how it behaves under edge-case load.`;
+      return finalizeResponse({
+        emotion: 'idle',
+        reaction: language === 'hi' ? `Namaste! ${subject} viva shuru karte hain:` : `Welcome to ${subject} Viva Studio! Let us begin:`,
+        explanation: '',
+        nextQuestion: openingNextQ,
+        spokenText: openingNextQ,
+        provider: 'simulation',
+        isCorrect: null,
+        topicTag: rotatedAngle,
+      });
+    }
+
     const fallbackResponse = getSimulatedVivaResponse(
       question,
       answer,
@@ -688,7 +928,7 @@ Remember:
       intent
     );
 
-    return NextResponse.json(fallbackResponse);
+    return finalizeResponse(fallbackResponse);
   } catch (error: any) {
     console.error('[Viva Buddy] API Error:', error);
     return NextResponse.json(
