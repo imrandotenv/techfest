@@ -800,6 +800,7 @@ Remember:
               model: modelName,
               messages: groqMessages,
               temperature: 0.8,
+              max_tokens: 450,
               response_format: { type: 'json_object' },
             }),
             signal: groqController.signal,
@@ -865,6 +866,7 @@ Remember:
             config: {
               systemInstruction: systemPrompt,
               temperature: 0.8,
+              maxOutputTokens: 450,
               responseMimeType: 'application/json',
             },
           });

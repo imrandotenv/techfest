@@ -39,6 +39,7 @@ import { VivaBuddyCharacter, VivaEmotion } from '@/components/VivaBuddyCharacter
 import { VivaResponse, ChatMessage } from '@/app/api/viva/route';
 import { useAcademicProfile } from '@/hooks/useAcademicProfile';
 import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
+import { buildSpokenSummary, sanitizeForSpeech } from '@/lib/tts-sanitizer';
 
 export type VivaSubject = 'DSA' | 'COA' | 'OS' | 'Digital Electronics' | 'DBMS';
 export type VivaLanguage = 'en' | 'hi';
@@ -258,6 +259,17 @@ export default function VivaStudioPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ttsAbortControllerRef = useRef<AbortController | null>(null);
   const blobUrlsRef = useRef<Set<string>>(new Set());
+  const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Pre-unlock HTML5 Audio on first user interaction for instant 0ms playback
+  const unlockAudioElement = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (!audioRef.current) {
+      const el = new Audio();
+      el.preload = 'auto';
+      audioRef.current = el;
+    }
+  }, []);
 
   // Score stats
   const [scorecard, setScorecard] = useState({
@@ -387,13 +399,16 @@ export default function VivaStudioPage() {
     window.speechSynthesis.speak(utterance);
   }, [playbackSpeed]);
 
-  // High-Quality Speech Player (Microsoft Edge Azure Neural Voices + Sarvam AI + In-Memory Caching)
+  // High-Quality Speech Player (Expressive Indian Neural Voices + Pre-Unlocked Audio + Smooth Fade-In)
   const speakVoice = useCallback(
     async (textToSpeak: string, msgId?: string) => {
       if (!isVoiceEnabled || typeof window === 'undefined' || !textToSpeak?.trim()) return;
 
       // Stop any active speech and cancel in-flight TTS fetches
       stopVoice();
+
+      const sanitizedScript = sanitizeForSpeech(textToSpeak);
+      if (!sanitizedScript) return;
 
       const controller = new AbortController();
       ttsAbortControllerRef.current = controller;
@@ -403,7 +418,7 @@ export default function VivaStudioPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text: textToSpeak,
+            text: sanitizedScript,
             language,
             gender: voiceGender,
             speed: playbackSpeed,
@@ -413,7 +428,7 @@ export default function VivaStudioPage() {
 
         if (ttsRes.ok) {
           const ttsData = await ttsRes.json();
-          const cleanText = ttsData.cleanText || textToSpeak;
+          const cleanText = ttsData.cleanText || sanitizedScript;
 
           if (ttsData.audio) {
             const mime = ttsData.format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
@@ -434,27 +449,45 @@ export default function VivaStudioPage() {
               );
             }
 
-            const audio = new Audio(blobUrl);
+            const audio = audioRef.current || new Audio();
+            audio.src = blobUrl;
             audio.playbackRate = playbackSpeed;
+            audio.volume = 0.15;
             audioRef.current = audio;
             setIsSpeaking(true);
             if (msgId) setActiveSpeakingMsgId(msgId);
 
             audio.onended = () => {
+              if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
               setIsSpeaking(false);
               setActiveSpeakingMsgId(null);
             };
             audio.onerror = () => {
+              if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
               setIsSpeaking(false);
               setActiveSpeakingMsgId(null);
               playBrowserSpeech(cleanText, language);
             };
 
             await audio.play();
+            // Smooth 150ms fade-in
+            if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+            fadeIntervalRef.current = setInterval(() => {
+              if (!audioRef.current) {
+                if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+                return;
+              }
+              if (audioRef.current.volume < 0.95) {
+                audioRef.current.volume = Math.min(1, audioRef.current.volume + 0.17);
+              } else {
+                audioRef.current.volume = 1;
+                if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+              }
+            }, 30);
             return;
           }
 
-          // Fallback to neural browser speech with cleanText
+          // Fallback to browser speech only if neural audio returned null
           playBrowserSpeech(cleanText, language);
           return;
         }
@@ -463,7 +496,7 @@ export default function VivaStudioPage() {
         console.warn('[TTS] Cloud audio playback skipped, falling back to browser speech:', e);
       }
 
-      playBrowserSpeech(textToSpeak, language);
+      playBrowserSpeech(sanitizedScript, language);
     },
     [isVoiceEnabled, language, voiceGender, playbackSpeed, stopVoice, playBrowserSpeech]
   );
@@ -659,6 +692,7 @@ export default function VivaStudioPage() {
         setShowSignInModal(true);
         return;
       }
+      unlockAudioElement();
 
       const textToSend = (overrideText !== undefined ? overrideText : studentAnswer).trim();
       if (!textToSend && forcedIntent === 'answer') return;
@@ -791,13 +825,14 @@ export default function VivaStudioPage() {
           setCurrentQuestion(data.nextQuestion);
         }
 
-        // Parallel speech synthesis: spokenText is punchy 2-3 sentences (<350ms TTS time)
+        // Parallel speech synthesis: strictly 2-sentence sanitized summary
         if (isVoiceEnabled) {
-          const voiceScript =
-            data.spokenText?.trim() ||
-            `${data.reaction || ''} ${data.explanation || ''} ${
-              data.nextQuestion ? (language === 'hi' ? 'Agla sawal suno: ' : 'Here is your next question: ') + data.nextQuestion : ''
-            }`.trim();
+          const voiceScript = buildSpokenSummary(
+            data.spokenText,
+            data.reaction,
+            data.nextQuestion,
+            language
+          );
           speakVoice(voiceScript, assistantMsgId);
         }
       } catch (err) {
@@ -1187,7 +1222,7 @@ export default function VivaStudioPage() {
             {isVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Neural Voice Persona Toggle (Neerja/Swara vs Prabhat/Madhur) */}
+          {/* Neural Voice Persona Toggle (Neerja/Prabhat or Swara/Madhur) */}
           <div className="hidden sm:inline-flex items-center bg-zinc-100 p-0.5 rounded-lg border border-zinc-200 text-[11px] font-mono font-medium">
             <button
               onClick={() => setVoiceGender('female')}
@@ -1196,9 +1231,9 @@ export default function VivaStudioPage() {
                   ? 'bg-white text-zinc-900 shadow-2xs font-bold'
                   : 'text-zinc-500 hover:text-zinc-900'
               }`}
-              title={language === 'hi' ? 'Azure Indian Neural: Swara' : 'Azure Indian Neural: Neerja'}
+              title={language === 'hi' ? 'hi-IN-SwaraNeural' : 'en-IN-NeerjaExpressiveNeural'}
             >
-              ♀ {language === 'hi' ? 'Swara' : 'Neerja'}
+              {language === 'hi' ? 'Swara (IN • Neural)' : 'Neerja (IN • Neural)'}
             </button>
             <button
               onClick={() => setVoiceGender('male')}
@@ -1207,9 +1242,9 @@ export default function VivaStudioPage() {
                   ? 'bg-white text-zinc-900 shadow-2xs font-bold'
                   : 'text-zinc-500 hover:text-zinc-900'
               }`}
-              title={language === 'hi' ? 'Azure Indian Neural: Madhur' : 'Azure Indian Neural: Prabhat'}
+              title={language === 'hi' ? 'hi-IN-MadhurNeural' : 'en-IN-PrabhatNeural'}
             >
-              ♂ {language === 'hi' ? 'Madhur' : 'Prabhat'}
+              {language === 'hi' ? 'Madhur (IN • Neural)' : 'Prabhat (IN • Neural)'}
             </button>
           </div>
 
@@ -1896,7 +1931,17 @@ export default function VivaStudioPage() {
             {/* Subtle Bottom Helper Notes */}
             <div className="flex items-center justify-between text-[11px] font-mono text-[#52525B] px-2">
               <span>
-                Mode: {language === 'hi' ? 'हिंदी / Hinglish' : 'Indian English'} • {subject}
+                Voice:{' '}
+                <strong className="text-[#09090B]">
+                  {language === 'hi'
+                    ? voiceGender === 'male'
+                      ? 'Madhur (IN • Neural)'
+                      : 'Swara (IN • Neural)'
+                    : voiceGender === 'male'
+                    ? 'Prabhat (IN • Neural)'
+                    : 'Neerja (IN • Neural)'}
+                </strong>{' '}
+                • {subject}
               </span>
               <span className="flex items-center gap-1.5">
                 <Link href="/notes" className="hover:text-[#2563EB] underline transition-colors">

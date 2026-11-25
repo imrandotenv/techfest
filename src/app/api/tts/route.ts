@@ -3,6 +3,10 @@ import crypto from 'crypto';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { auth } from '@clerk/nextjs/server';
 import { checkRateLimit, getClientIdentifier } from '@/lib/rateLimit';
+import { sanitizeForSpeech } from '@/lib/tts-sanitizer';
+
+export { sanitizeForSpeech };
+export const normalizeTextForSpeech = sanitizeForSpeech;
 
 export const runtime = 'nodejs';
 
@@ -53,96 +57,7 @@ function addToCache(key: string, entry: CacheEntry) {
   AUDIO_CACHE.set(key, entry);
 }
 
-/**
- * Spoken-text sanitizer:
- * Strips markdown symbols, code blocks, URLs, and emojis.
- * Expands mathematical complexity (Big-O) and engineering acronyms into natural Indian phonetics.
- * Preserves commas and ellipses for natural breathing pauses.
- */
-export function sanitizeForSpeech(rawText: string): string {
-  if (!rawText) return '';
-
-  return (
-    rawText
-      // Remove multiline code blocks or replace with a brief natural spoken cue
-      .replace(/```[\s\S]*?```/g, ' code concept ')
-      // Remove inline code backticks while keeping words
-      .replace(/`([^`]+)`/g, '$1')
-      // Remove markdown headings, blockquotes, horizontal rules
-      .replace(/^#{1,6}\s+/gm, '')
-      .replace(/^>\s+/gm, '')
-      .replace(/^[-*_]{3,}\s*$/gm, '')
-      // Remove bullet dashes / asterisks at line starts
-      .replace(/^[ \t]*[-*•]\s+/gm, '')
-      // Remove bold, italic, strikethrough markers
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
-      .replace(/_([^_]+)_/g, '$1')
-      .replace(/~~([^~]+)~~/g, '$1')
-      // Remove markdown links [title](url) -> title
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      // Remove bare URLs
-      .replace(/https?:\/\/\S+/gi, '')
-      // Remove unicode emojis
-      .replace(
-        /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
-        ''
-      )
-      // Expand Big-O Complexity Notation naturally into spoken English
-      .replace(/\bO\(1\)/gi, 'O of 1')
-      .replace(/\bO\(log\s*n\)/gi, 'O of log n')
-      .replace(/\bO\(n\s*log\s*n\)/gi, 'O of n log n')
-      .replace(/\bO\(n\^?2\)/gi, 'O of n squared')
-      .replace(/\bO\(n²\)/gi, 'O of n squared')
-      .replace(/\bO\(n\^?3\)/gi, 'O of n cubed')
-      .replace(/\bO\(n³\)/gi, 'O of n cubed')
-      .replace(/\bO\(2\^?n\)/gi, 'O of 2 to the power n')
-      .replace(/\bO\(2ⁿ\)/gi, 'O of 2 to the power n')
-      .replace(/\bO\(n!\)/gi, 'O of n factorial')
-      .replace(/\bO\(n\)/gi, 'O of n')
-      // Expand common engineering acronyms naturally for phonetics
-      .replace(/\bB\+\s*tree\b/gi, 'B plus tree')
-      .replace(/\bFIFO\b/g, 'Fifo')
-      .replace(/\bLIFO\b/g, 'Lifo')
-      .replace(/\bLRU\b/g, 'L-R-U')
-      .replace(/\bDBMS\b/g, 'D-B-M-S')
-      .replace(/\bSQL\b/g, 'Sequel')
-      .replace(/\bCPU\b/g, 'C-P-U')
-      .replace(/\bRAM\b/g, 'Ram')
-      .replace(/\bROM\b/g, 'Rom')
-      .replace(/\bOS\b/g, 'O-S')
-      .replace(/\bDSA\b/g, 'D-S-A')
-      .replace(/\bCOA\b/g, 'C-O-A')
-      .replace(/\bAVL\b/g, 'A-V-L')
-      .replace(/\bBST\b/g, 'B-S-T')
-      .replace(/\bTLB\b/g, 'T-L-B')
-      .replace(/\bAPI\b/g, 'A-P-I')
-      .replace(/\bMAKAUT\b/g, 'Makaut')
-      .replace(/\bSETGOI\b/g, 'Setgoi')
-      // Slashes between words (e.g. LIFO/FIFO or DFS/BFS) -> " or "
-      .replace(/\b([A-Za-z0-9]+)\/([A-Za-z0-9]+)\b/g, '$1 or $2')
-      // Expand directional and equality operators
-      .replace(/->|→|=>/g, ' to ')
-      .replace(/<-|←/g, ' from ')
-      .replace(/!=|≠/g, ' not equal to ')
-      .replace(/===|==/g, ' equals ')
-      .replace(/>=|≥/g, ' greater than or equal to ')
-      .replace(/<=|≤/g, ' less than or equal to ')
-      .replace(/&&|&/g, ' and ')
-      .replace(/\|\|/g, ' or ')
-      // Clean harsh special characters while PRESERVING commas, periods, question marks, and ellipses (...)
-      .replace(/[\^|\$#@~{}[\]]/g, ' ')
-      // Collapse whitespace while keeping commas and ellipses intact for breathing pauses
-      .replace(/[ \t]+/g, ' ')
-      .replace(/\s*,\s*/g, ', ')
-      .replace(/\s*\.\.\.\s*/g, '... ')
-      .trim()
-  );
-}
-
-// Backward-compatible alias
-export const normalizeTextForSpeech = sanitizeForSpeech;
+// Speech sanitizer imported from '@/lib/tts-sanitizer'
 
 /**
  * Synthesize speech buffer using MsEdgeTTS with expressive pitch & natural pacing
@@ -215,11 +130,11 @@ function resolveVoice(
   const pref = (voicePref || genderPref || '').toLowerCase().trim();
 
   if (lang === 'hi' || lang === 'hinglish') {
-    // Hinglish defaults to male professor (hi-IN-MadhurNeural), or female professor (hi-IN-SwaraNeural)
-    if (pref === 'female' || pref.includes('swara')) {
-      return 'hi-IN-SwaraNeural';
+    // Hinglish defaults to expressive female (hi-IN-SwaraNeural), or male (hi-IN-MadhurNeural)
+    if (pref === 'male' || pref.includes('madhur')) {
+      return 'hi-IN-MadhurNeural';
     }
-    return 'hi-IN-MadhurNeural';
+    return 'hi-IN-SwaraNeural';
   } else {
     // English defaults to expressive female (en-IN-NeerjaExpressiveNeural), or male (en-IN-PrabhatNeural)
     if (pref === 'male' || pref.includes('prabhat')) {
@@ -232,7 +147,7 @@ function resolveVoice(
 function formatSpeechRate(speedOrRate: number | string | undefined): string {
   if (typeof speedOrRate === 'number') {
     const pct = Math.round((speedOrRate - 1) * 100);
-    return pct >= 0 ? `+${pct + 4}%` : `${pct}%`;
+    return pct >= 0 ? `+${pct + 3}%` : `${pct}%`;
   }
   if (typeof speedOrRate === 'string') {
     const trimmed = speedOrRate.trim();
@@ -240,11 +155,11 @@ function formatSpeechRate(speedOrRate: number | string | undefined): string {
     if (!isNaN(Number(trimmed))) {
       const num = Number(trimmed);
       const pct = Math.round((num - 1) * 100);
-      return pct >= 0 ? `+${pct + 4}%` : `${pct}%`;
+      return pct >= 0 ? `+${pct + 3}%` : `${pct}%`;
     }
     return `+${trimmed}`;
   }
-  return '+4%';
+  return '+3%';
 }
 
 export async function POST(req: Request) {
