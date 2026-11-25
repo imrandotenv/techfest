@@ -181,6 +181,27 @@ export function NotesVaultView() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [viewQueue, setViewQueue] = useState<boolean>(false);
   const [activeVaultTab, setActiveVaultTab] = useState<'theory' | 'practicals'>('theory');
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('settech_bookmarked_notes');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setBookmarkedIds(parsed);
+      }
+    } catch {}
+  }, []);
+
+  const toggleBookmark = (noteId: string) => {
+    setBookmarkedIds((prev) => {
+      const next = prev.includes(noteId) ? prev.filter((id) => id !== noteId) : [...prev, noteId];
+      try {
+        localStorage.setItem('settech_bookmarked_notes', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Modals
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -312,23 +333,22 @@ export function NotesVaultView() {
     if (previewNote && previewNote.id === note.id && targetNote) {
       setPreviewNote(targetNote);
     }
-    showToast(`Downloading "${note.title}". Download counter updated!`);
+    showToast(`Downloading print-ready study sheet for ${note.subjectCode}...`);
 
     if (typeof window !== 'undefined') {
-      const blob = new Blob(
-        [
-          `SETGOI MAKAUT VAULT DOCUMENT\nTitle: ${note.title}\nSubject: ${note.subjectName} (${note.subjectCode})\nDepartment: ${note.departmentCode}\nSemester: ${note.semester}\nAcademic Year: ${note.academicYear}\nStatus: ${note.status}\n\n[Official MAKAUT Curriculum Verified Copy]`,
-        ],
-        { type: 'text/plain' }
-      );
-      const url = URL.createObjectURL(blob);
+      const params = new URLSearchParams({
+        title: note.title,
+        code: note.subjectCode,
+        subject: note.subjectName || note.title,
+        branch: note.departmentCode,
+        semester: String(note.semester),
+      });
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${note.subjectCode}-${note.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.txt`;
+      a.href = `/api/notes/${encodeURIComponent(note.id)}/download?${params.toString()}`;
+      a.download = `${note.subjectCode}-${note.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     }
   };
 
@@ -464,7 +484,7 @@ export function NotesVaultView() {
               }`}
             >
               <BookOpen className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span>Theory Notes &amp; PYQs</span>
+              <span>Theory Notes &amp; PYQs ({step3Notes.length})</span>
             </button>
             <button
               onClick={() => setActiveVaultTab('practicals')}
@@ -823,16 +843,6 @@ export function NotesVaultView() {
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Change Semester</span>
               </button>
-              <span className="text-zinc-300">|</span>
-              <button
-                onClick={() => {
-                  setSelectedBranch(null);
-                  setSelectedSemester(null);
-                }}
-                className="text-xs font-sans text-zinc-500 hover:text-zinc-900 cursor-pointer"
-              >
-                All Branches
-              </button>
             </div>
           </div>
 
@@ -861,10 +871,11 @@ export function NotesVaultView() {
               branch={selectedBranch}
               semester={selectedSemester}
               onOpenUpload={handleOpenUpload}
+              onDownloadNote={handleDownload}
             />
           ) : (
             <>
-              {/* Subject Code Filter Chips from Official MAKAUT Syllabus */}
+              {/* Subject Code Filter Chips from Official MAKAUT Syllabus (THEORY/ELECTIVE/MANDATORY only) */}
               <SyllabusChipsBar
                 branch={selectedBranch}
                 semester={selectedSemester}
@@ -894,13 +905,12 @@ export function NotesVaultView() {
               )}
             </div>
 
-            {/* Category Pills */}
+            {/* Category Pills (Strictly Theory & PYQs) */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
               {[
                 { id: 'ALL', label: 'All' },
                 { id: 'LECTURE_NOTE', label: 'Notes' },
-                { id: 'MAKAUT_PYQ', label: 'PYQ' },
-                { id: 'LAB_MANUAL', label: 'Lab Manual' },
+                { id: 'MAKAUT_PYQ', label: 'PYQs' },
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -967,6 +977,8 @@ export function NotesVaultView() {
                   key={note.id}
                   note={note}
                   currentRole={activeRole}
+                  isBookmarked={bookmarkedIds.includes(note.id)}
+                  onToggleBookmark={toggleBookmark}
                   onPreview={(n) => setPreviewNote(n)}
                   onDownload={handleDownload}
                   onApprove={handleApprove}
@@ -1019,13 +1031,17 @@ function SyllabusChipsBar({
   searchQuery: string;
   onSelectCode: (code: string) => void;
 }) {
-  const subjects = useSyllabusSubjects(branch, semester);
+  const allSubjects = useSyllabusSubjects(branch, semester);
+  // Strictly exclude LAB and SESSIONAL papers from Theory Notes & PYQs pills
+  const subjects = allSubjects.filter(
+    (sub) => sub.type !== 'LAB' && sub.type !== 'SESSIONAL'
+  );
   if (subjects.length === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 bg-white border border-[#E4E4E7] rounded-2xl p-3 shadow-xs">
       <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 px-1.5">
-        Syllabus Codes:
+        Syllabus Courses:
       </span>
       <button
         type="button"

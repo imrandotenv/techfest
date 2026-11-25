@@ -1,69 +1,101 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { 
-  FlaskConical, 
-  BookOpen, 
-  ExternalLink, 
-  ChevronDown, 
-  ChevronUp, 
-  Search, 
-  HelpCircle, 
-  Plus, 
-  FileText, 
-  UploadCloud,
+import {
+  FlaskConical,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  HelpCircle,
+  Plus,
   CheckCircle2,
   Copy,
-  Sparkles,
   MapPin,
-  X
+  X,
 } from 'lucide-react';
 import { BranchCode } from '../types';
-import { LAB_PRACTICALS, LabPracticalItem } from '../data/lab-practicals-data';
+import { LAB_PRACTICALS } from '../data/lab-practicals-data';
+import { useSyllabusSubjects } from '@/hooks/useSyllabusSubjects';
+import { NoteItem } from '@/types';
+import { NotePreviewModal } from './NotePreviewModal';
 
 interface LabPracticalsViewProps {
   branch: BranchCode | null;
   semester: number | null;
   onOpenUpload: (branch?: BranchCode, sem?: number) => void;
+  onDownloadNote?: (note: NoteItem) => void;
 }
+
+const LAB_CODE_REGEX = /(391|392|393|491|492|493|494|591|592|593|594|681|691|692|693|694|695|781|782|791|792|881|882|891)/;
 
 export function LabPracticalsView({
   branch,
   semester,
   onOpenUpload,
+  onDownloadNote,
 }: LabPracticalsViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedLabId, setExpandedLabId] = useState<string | null>(null);
   const [copiedQuestionId, setCopiedQuestionId] = useState<string | null>(null);
+  const [activeManualNote, setActiveManualNote] = useState<NoteItem | null>(null);
 
-  // Filtered practical labs
+  const liveSyllabus = useSyllabusSubjects(branch || 'CSE', semester || 3);
+
+  // Merge live Neon DB LAB/SESSIONAL subjects with curated viva Q&As
   const filteredLabs = useMemo(() => {
-    let list = LAB_PRACTICALS;
+    const dbLabs = liveSyllabus.filter(
+      (s) =>
+        s.type === 'LAB' ||
+        s.type === 'SESSIONAL' ||
+        LAB_CODE_REGEX.test(s.code.replace(/\s+/g, ''))
+    );
 
-    if (branch) {
-      list = list.filter((l) => l.departmentCode === branch);
-    }
-    if (semester) {
-      list = list.filter((l) => l.semester === semester);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (l) =>
-          l.title.toLowerCase().includes(q) ||
-          l.courseCode.toLowerCase().includes(q) ||
-          l.labLocation.toLowerCase().includes(q) ||
-          l.vivaQuestions.some(
-            (v) =>
-              v.question.toLowerCase().includes(q) ||
-              v.answer.toLowerCase().includes(q)
-          )
+    const merged = dbLabs.map((sub) => {
+      const normCode = sub.code.toUpperCase().replace(/\s+/g, '');
+      const matchedRich = LAB_PRACTICALS.find(
+        (l) => l.courseCode.toUpperCase().replace(/\s+/g, '') === normCode
       );
-    }
 
-    return list;
-  }, [branch, semester, searchQuery]);
+      return {
+        id: `lab-${branch || 'CSE'}-${semester || 3}-${normCode}`,
+        courseCode: sub.code,
+        title: sub.name,
+        departmentCode: (branch || 'CSE') as BranchCode,
+        semester: semester || 3,
+        credits: sub.credits,
+        labLocation:
+          matchedRich?.labLocation ||
+          `${branch || 'CSE'} Departmental Laboratory • SETGOI Academic Block`,
+        vivaQuestions:
+          matchedRich?.vivaQuestions || [
+            {
+              question: `What is the primary objective and experimental setup of ${sub.name}?`,
+              answer: `Students implement, test, and verify core ${sub.name} (${sub.code}) concepts under MAKAUT practical assessment (PCA1/PCA2) rubrics.`,
+            },
+            {
+              question: `How do you validate edge cases and error bounds in ${sub.code}?`,
+              answer: `Compare theoretical expectations against observed outputs, verify boundary conditions, and document complexity/error tolerances in the lab record.`,
+            },
+          ],
+      };
+    });
+
+    if (!searchQuery.trim()) return merged;
+
+    const q = searchQuery.toLowerCase().trim();
+    return merged.filter(
+      (l) =>
+        l.title.toLowerCase().includes(q) ||
+        l.courseCode.toLowerCase().includes(q) ||
+        l.labLocation.toLowerCase().includes(q) ||
+        l.vivaQuestions.some(
+          (v) =>
+            v.question.toLowerCase().includes(q) ||
+            v.answer.toLowerCase().includes(q)
+        )
+    );
+  }, [liveSyllabus, branch, semester, searchQuery]);
 
   const toggleExpand = (id: string) => {
     setExpandedLabId((prev) => (prev === id ? null : id));
@@ -77,6 +109,27 @@ export function LabPracticalsView({
     } catch {}
   };
 
+  const handleOpenManual = (lab: (typeof filteredLabs)[number]) => {
+    setActiveManualNote({
+      id: lab.id,
+      title: `${lab.title} — Official MAKAUT Lab Manual`,
+      subjectCode: lab.courseCode,
+      subjectName: lab.title,
+      departmentCode: lab.departmentCode,
+      semester: lab.semester,
+      category: 'LAB_MANUAL',
+      academicYear: '2026-2027',
+      fileUrl: `/api/notes/${encodeURIComponent(lab.id)}/download`,
+      fileSize: 2048000,
+      downloadsCount: 0,
+      status: 'approved',
+      uploaderId: 'setgoi-faculty',
+      uploaderName: 'SETGOI Lab Faculty',
+      uploaderRole: 'college',
+      createdAt: new Date().toISOString(),
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Search & Actions Bar */}
@@ -87,7 +140,7 @@ export function LabPracticalsView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search ${branch || 'all'} Sem ${semester || ''} lab manuals, code (e.g. CS391), or viva questions...`}
+            placeholder={`Search ${branch || 'all'} Sem ${semester || ''} lab manuals, code (e.g. PCC-CS391), or viva questions...`}
             className="w-full h-9 pl-9 pr-8 bg-zinc-50 border border-[#E4E4E7] rounded-xl text-xs text-[#09090B] placeholder:text-[#52525B]/60 focus:outline-hidden focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/20 transition-all font-sans"
           />
           {searchQuery && (
@@ -105,33 +158,23 @@ export function LabPracticalsView({
           className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-medium font-sans transition-colors shadow-xs shrink-0 cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>+ Upload Lab Manual</span>
+          <span>Upload Lab Manual</span>
         </button>
       </div>
 
       {/* Lab Cards Grid */}
       {filteredLabs.length === 0 ? (
-        /* Empty State */
         <div className="bg-white border border-[#E4E4E7] rounded-2xl p-10 sm:p-14 text-center shadow-xs max-w-2xl mx-auto space-y-4 my-6">
           <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] border border-blue-100 flex items-center justify-center mx-auto">
             <FlaskConical className="w-7 h-7" />
           </div>
           <div className="space-y-1.5">
             <h3 className="text-lg font-bold text-[#09090B] font-display">
-              No Lab Manuals Uploaded for {branch || 'this branch'} {semester ? `Sem ${semester}` : ''}
+              No Lab Manuals Found for {branch || 'this branch'} {semester ? `Sem ${semester}` : ''}
             </h3>
             <p className="text-xs text-[#52525B] max-w-md mx-auto leading-relaxed font-sans">
-              Be the first SETGOI engineer to contribute the practical manual or syllabus guide for this laboratory subject.
+              Contribute a practical manual or try another semester filter.
             </p>
-          </div>
-          <div className="pt-2">
-            <button
-              onClick={() => onOpenUpload(branch || 'CSE', semester || 3)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold font-sans transition-colors shadow-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Contribute Lab Manual</span>
-            </button>
           </div>
         </div>
       ) : (
@@ -147,7 +190,7 @@ export function LabPracticalsView({
                 {/* Top Badge Strip */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] border border-blue-200/60 font-mono text-xs font-bold flex items-center gap-1.5">
+                    <span className="px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-mono text-xs font-bold flex items-center gap-1.5">
                       <FlaskConical className="w-3.5 h-3.5" />
                       {lab.courseCode}
                     </span>
@@ -156,15 +199,14 @@ export function LabPracticalsView({
                     </span>
                   </div>
 
-                  <a
-                    href={lab.manualUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-blue-50 hover:text-[#2563EB] border border-zinc-200 text-xs font-mono font-medium text-zinc-700 transition-colors self-start sm:self-auto shrink-0 cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={() => handleOpenManual(lab)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-sans font-semibold transition-colors self-start sm:self-auto shrink-0 cursor-pointer shadow-2xs"
                   >
+                    <BookOpen className="w-3.5 h-3.5" />
                     <span>Open Lab Manual</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  </button>
                 </div>
 
                 {/* Lab Title & Physical Outpost */}
@@ -199,14 +241,8 @@ export function LabPracticalsView({
                     )}
                   </button>
 
-                  {/* Expandable Viva Questions List */}
                   {isExpanded && (
                     <div className="mt-3 space-y-3 pt-1 animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 px-1">
-                        <span>Top 5 Frequently Asked External Examiner Viva Questions:</span>
-                        <span className="text-[#2563EB] font-medium">MAKAUT Lab Prep</span>
-                      </div>
-
                       <div className="space-y-2.5">
                         {lab.vivaQuestions.map((vq, idx) => {
                           const qKey = `${lab.id}-q-${idx}`;
@@ -254,6 +290,14 @@ export function LabPracticalsView({
           })}
         </div>
       )}
+
+      <NotePreviewModal
+        note={activeManualNote}
+        onClose={() => setActiveManualNote(null)}
+        onDownload={(n) => {
+          if (onDownloadNote) onDownloadNote(n);
+        }}
+      />
     </div>
   );
 }

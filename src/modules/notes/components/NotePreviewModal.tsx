@@ -1,15 +1,18 @@
 'use client';
 
-import React from 'react';
-import { 
-  X, 
-  Download, 
-  CheckCircle2, 
-  Clock,
-  ArrowUpRight,
-  ExternalLink
+import React, { useState } from 'react';
+import {
+  X,
+  Download,
+  CheckCircle2,
+  Printer,
+  Copy,
+  Check,
+  BookOpen,
+  HelpCircle,
 } from 'lucide-react';
 import { NoteItem } from '@/types';
+import { getStudyContentForSubject } from '@/lib/study-document-content';
 
 interface NotePreviewModalProps {
   note: NoteItem | null;
@@ -17,218 +20,189 @@ interface NotePreviewModalProps {
   onDownload: (note: NoteItem) => void;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
+export function NotePreviewModal({ note, onClose, onDownload }: NotePreviewModalProps) {
+  const [copiedCodeIdx, setCopiedCodeIdx] = useState<number | null>(null);
 
-export function NotePreviewModal({
-  note,
-  onClose,
-  onDownload,
-}: NotePreviewModalProps) {
   if (!note) return null;
 
+  const studyContent = getStudyContentForSubject(
+    note.subjectCode,
+    note.subjectName,
+    note.title
+  );
+
+  const handleCopyCode = (snippet: string, idx: number) => {
+    try {
+      navigator.clipboard.writeText(snippet);
+      setCopiedCodeIdx(idx);
+      setTimeout(() => setCopiedCodeIdx(null), 2000);
+    } catch {}
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-xs">
-      <div 
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/60 backdrop-blur-xs">
+      <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="note-preview-title"
-        className="bg-white border border-zinc-200 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+        className="bg-white border border-[#E4E4E7] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden"
       >
-        
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-zinc-200 bg-zinc-50">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-[#E4E4E7] bg-zinc-50 print:hidden">
           <div className="flex items-center gap-2">
-            <span id="note-preview-title" className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-zinc-900 text-white">
+            <span
+              id="note-preview-title"
+              className="px-2.5 py-0.5 rounded font-mono font-bold text-xs bg-[#09090B] text-white"
+            >
               {note.subjectCode}
             </span>
             <span className="text-xs text-zinc-500 font-mono">
-              Document Preview • {formatBytes(note.fileSize)}
+              {note.departmentCode} • Sem {note.semester} • In-App Study Reader
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            {note.fileUrl.startsWith('http') ? (
-              <a
-                href={note.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => onDownload(note)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563EB] text-white hover:bg-blue-700 text-xs font-medium transition-colors"
-              >
-                <span>Open Resource</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onDownload(note)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-900 text-white hover:bg-zinc-800 text-xs font-medium transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download ({note.downloadsCount} dl)</span>
-              </button>
-            )}
             <button
               type="button"
-              onClick={onClose}
-              className="p-1 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E4E4E7] bg-white hover:bg-zinc-100 text-xs font-sans font-medium text-[#09090B] transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Content / Simulated Document Sheet */}
-        <div className="p-6 overflow-y-auto space-y-6 text-zinc-800 text-xs">
-          
-          {/* Institutional Document Header */}
-          <div className="border border-zinc-200 rounded-lg p-5 bg-zinc-50/40 relative overflow-hidden">
-            <div className="absolute right-4 top-4 opacity-5 pointer-events-none select-none font-bold text-6xl text-zinc-900 font-mono">
-              SETGOI
-            </div>
-
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                  Sanaka Educational Trust&apos;s Group of Institutions • Durgapur
-                </div>
-                <h3 className="text-lg font-bold text-zinc-900 mt-1 leading-snug">
-                  {note.title}
-                </h3>
-                <p className="text-xs text-zinc-600 mt-1">
-                  <strong>Course:</strong> {note.subjectName} ({note.subjectCode})
-                </p>
-              </div>
-
-              {note.status === 'approved' ? (
-                <div className="shrink-0 text-right">
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Verified Resource
-                  </div>
-                  {note.verifiedByName && (
-                    <div className="text-[10px] text-zinc-500 font-mono mt-1">
-                      By {note.verifiedByName}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="shrink-0 text-right">
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    Pending Verification
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Curriculum Metadata Matrix */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-4 border-t border-zinc-200 text-[11px] font-mono">
-              <div>
-                <span className="text-zinc-400 block">Department</span>
-                <span className="font-semibold text-zinc-800">{note.departmentCode}</span>
-              </div>
-              <div>
-                <span className="text-zinc-400 block">Semester</span>
-                <span className="font-semibold text-zinc-800">Semester {note.semester}</span>
-              </div>
-              <div>
-                <span className="text-zinc-400 block">Category</span>
-                <span className="font-semibold text-zinc-800">{note.category}</span>
-              </div>
-              <div>
-                <span className="text-zinc-400 block">Academic Year</span>
-                <span className="font-semibold text-zinc-800">{note.academicYear}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Simulated Document Body & Units Index */}
-          <div className="border border-zinc-200 rounded-lg p-5 bg-white space-y-4">
-            <h4 className="font-semibold text-zinc-900 text-xs uppercase tracking-wider font-mono border-b border-zinc-100 pb-2 flex items-center justify-between">
-              <span>Syllabus Modules &amp; Chapters Covered</span>
-              <span className="text-zinc-400 font-normal">MAKAUT 2026-27</span>
-            </h4>
-
-            <div className="space-y-2 text-zinc-700">
-              <div className="p-2.5 rounded bg-zinc-50 border border-zinc-100 flex items-start gap-2">
-                <span className="font-mono text-zinc-400 font-bold">01</span>
-                <div>
-                  <strong className="text-zinc-900 block text-xs">Module 1: Foundations &amp; Theoretical Concepts</strong>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Formal definitions, time &amp; space complexity bounds, asymptotic notations, and fundamental theorems.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded bg-zinc-50 border border-zinc-100 flex items-start gap-2">
-                <span className="font-mono text-zinc-400 font-bold">02</span>
-                <div>
-                  <strong className="text-zinc-900 block text-xs">Module 2: Core Architectures &amp; Standard Models</strong>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Implementation mechanics, memory organization, state diagrams, and pipeline analysis.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded bg-zinc-50 border border-zinc-100 flex items-start gap-2">
-                <span className="font-mono text-zinc-400 font-bold">03</span>
-                <div>
-                  <strong className="text-zinc-900 block text-xs">Module 3: Solved Problems &amp; MAKAUT PYQ Exercises</strong>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Step-by-step mathematical solutions for past 5 years university examination questions.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Audit Verification Log */}
-          <div className="p-3 rounded bg-zinc-50 border border-zinc-200 text-[11px] font-mono text-zinc-600 flex items-center justify-between">
-            <div>
-              <span>Uploaded: <strong>{new Date(note.createdAt).toLocaleString()}</strong></span>
-              <span className="mx-2">•</span>
-              <span>Uploader: <strong>{note.uploaderName}</strong> ({note.uploaderRole})</span>
-            </div>
-            {note.verifiedAt && (
-              <span className="text-emerald-700 font-semibold">
-                Audit Verified: {new Date(note.verifiedAt).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-
-        </div>
-
-        {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-zinc-200 bg-zinc-50 text-xs">
-          <span className="font-mono text-zinc-500">
-            Vault downloads increment on confirmation
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3.5 py-1.5 rounded border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-            >
-              Close
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / Save PDF</span>
             </button>
             <button
               type="button"
               onClick={() => onDownload(note)}
-              className="px-4 py-1.5 rounded bg-zinc-900 text-white hover:bg-zinc-800 font-medium inline-flex items-center gap-1.5"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563EB] text-white hover:bg-blue-700 text-xs font-sans font-semibold transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              Download Full File
+              <span>Download</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/70 transition-colors cursor-pointer"
+              aria-label="Close reader"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
+        {/* Distraction-Free Study Reader Sheet */}
+        <div className="p-5 sm:p-7 overflow-y-auto space-y-6 text-[#09090B]">
+          {/* Institutional Header */}
+          <div className="border border-[#E4E4E7] rounded-xl p-5 bg-[#FAFAFA] flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-[#52525B]">
+                SETGOI Durgapur • Official MAKAUT Academic Vault
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold font-display text-[#09090B] mt-1 leading-snug">
+                {note.title}
+              </h3>
+              <p className="text-xs text-[#52525B] mt-1">
+                <strong>Subject:</strong> {note.subjectName} ({note.subjectCode})
+              </p>
+            </div>
+            {note.status === 'approved' && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-mono font-semibold shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Faculty Verified</span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed font-sans">
+            {studyContent.summary}
+          </p>
+
+          {/* Key Formulas & Invariants */}
+          <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/70 space-y-2">
+            <div className="text-xs font-mono font-bold text-[#2563EB] uppercase tracking-wider flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Key Formulas &amp; Exam Quick Reference</span>
+            </div>
+            <ul className="space-y-1.5">
+              {studyContent.keyFormulas.map((f, idx) => (
+                <li key={idx} className="text-xs font-mono text-[#09090B] flex items-start gap-2">
+                  <span className="text-[#2563EB] font-bold">•</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Module Sections + Syntax-Highlighted Code */}
+          <div className="space-y-5">
+            {studyContent.sections.map((sec, idx) => (
+              <div key={idx} className="space-y-2.5">
+                <h4 className="text-sm font-bold font-display text-[#09090B] border-b border-[#E4E4E7] pb-1.5">
+                  {sec.heading}
+                </h4>
+                <ul className="space-y-1.5">
+                  {sec.bullets.map((b, bIdx) => (
+                    <li
+                      key={bIdx}
+                      className="text-xs sm:text-sm text-[#3F3F46] leading-relaxed flex items-start gap-2"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] mt-2 shrink-0" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {sec.code && (
+                  <div className="rounded-xl overflow-hidden border border-zinc-800 bg-[#09090B] text-zinc-100">
+                    <div className="flex items-center justify-between px-3.5 py-2 bg-zinc-900 border-b border-zinc-800 text-[11px] font-mono text-zinc-400">
+                      <span className="uppercase">{sec.code.language}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(sec.code!.snippet, idx)}
+                        className="inline-flex items-center gap-1 text-zinc-300 hover:text-white cursor-pointer"
+                      >
+                        {copiedCodeIdx === idx ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-400">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Code</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <pre className="p-4 text-xs font-mono overflow-x-auto leading-relaxed">
+                      <code>{sec.code.snippet}</code>
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Solved PYQs */}
+          <div className="space-y-2.5 pt-2 border-t border-[#E4E4E7]">
+            <div className="text-xs font-mono font-bold text-[#09090B] uppercase tracking-wider flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>Solved MAKAUT Previous Year Questions</span>
+            </div>
+            <div className="space-y-2.5">
+              {studyContent.solvedPyqs.map((qa, idx) => (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-xl bg-[#FAFAFA] border border-[#E4E4E7] space-y-1"
+                >
+                  <div className="text-xs font-bold text-[#09090B]">Q: {qa.q}</div>
+                  <div className="text-xs text-[#52525B] leading-relaxed">
+                    <strong className="text-[#09090B]">Answer:</strong> {qa.a}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
