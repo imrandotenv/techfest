@@ -34,43 +34,46 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(50, Math.max(5, parseInt(searchParams.get('limit') || '20', 10) || 20));
 
-    // 1. Clean up leftover audit test rows & backfill department from branch
-    await prisma.user
-      .deleteMany({
-        where: { email: { contains: 'clerk_test@example.com', mode: 'insensitive' } },
+    // 1. Purge any leftover dummy/seed user rows (@setgoi.ac.in, @example.com, seed_*) safely
+    const masterUser = await prisma.user
+      .findFirst({
+        where: { email: { equals: MASTER_ADMIN_EMAIL, mode: 'insensitive' } },
+        select: { id: true },
       })
-      .catch(() => {});
+      .catch(() => null);
+
+    const seedUsers = await prisma.user
+      .findMany({
+        where: {
+          OR: [
+            { email: { endsWith: '@setgoi.ac.in', mode: 'insensitive' } },
+            { email: { endsWith: '@example.com', mode: 'insensitive' } },
+            { clerkId: { startsWith: 'seed_' } },
+          ],
+        },
+        select: { id: true },
+      })
+      .catch(() => []);
+
+    const seedIds = seedUsers
+      .map((s) => s.id)
+      .filter((id) => !masterUser || id !== masterUser.id);
+
+    if (seedIds.length > 0 && masterUser) {
+      await Promise.all([
+        prisma.note.updateMany({ where: { uploaderId: { in: seedIds } }, data: { uploaderId: masterUser.id } }),
+        prisma.forumPost.updateMany({ where: { authorId: { in: seedIds } }, data: { authorId: masterUser.id } }),
+        prisma.forumReply.updateMany({ where: { authorId: { in: seedIds } }, data: { authorId: masterUser.id } }),
+        prisma.notice.updateMany({ where: { authorId: { in: seedIds } }, data: { authorId: masterUser.id } }),
+        prisma.vivaSession.updateMany({ where: { userId: { in: seedIds } }, data: { userId: masterUser.id } }),
+        prisma.attendanceRecord.deleteMany({ where: { userId: { in: seedIds } } }),
+      ]).catch(() => {});
+      await prisma.user.deleteMany({ where: { id: { in: seedIds } } }).catch(() => {});
+    }
 
     await prisma.$executeRawUnsafe(
       `UPDATE "User" SET "department" = "branch" WHERE "department" IS NULL AND "branch" IS NOT NULL`
     ).catch(() => {});
-
-    // Ensure seeded faculty have default assignedScopes if currently unset
-    const defaultFacultyScopes = [
-      { branch: 'CSE', semesters: [3], subjectCodes: ['PCC-CS301', 'PCC-CS391'] },
-    ];
-    const facultyNeedingScopes = await prisma.user
-      .findMany({
-        where: {
-          role: 'FACULTY',
-          OR: [
-            { fullName: { contains: 'Sourav Sengupta', mode: 'insensitive' } },
-            { fullName: { contains: 'Subhash Mukherjee', mode: 'insensitive' } },
-          ],
-        },
-        select: { id: true, assignedScopes: true },
-      })
-      .catch(() => []);
-    for (const f of facultyNeedingScopes) {
-      if (!Array.isArray(f.assignedScopes) || f.assignedScopes.length === 0) {
-        await prisma.user
-          .update({
-            where: { id: f.id },
-            data: { assignedScopes: defaultFacultyScopes as any },
-          })
-          .catch(() => {});
-      }
-    }
 
     // 2. Fetch live Clerk users and upsert them into Neon PostgreSQL
     const clerkUsers = await clerkClient()
@@ -382,6 +385,102 @@ export async function PATCH(req: Request) {
     console.error('[Admin Users API] PATCH Error:', err);
     return NextResponse.json(
       { error: err?.message || 'Failed to update user role' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/admin/users
+ * Admin-only: Pre-authorizes a Faculty or Admin email so when they sign in via Clerk,
+ * resolveAndHealUser() automatically binds their role and department.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const caller = await getCurrentAuthUser();
+    if (!caller.isAuthenticated || caller.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: Admin clearance required.' }, { status: 403 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const {
+      email,
+      fullName,
+      role = 'FACULTY',
+      department = 'CSE',
+      designation,
+    } = body;
+
+    if (!email?.trim() || !email.includes('@')) {
+      return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const targetRoleUpper = String(role).toUpperCase() === 'ADMIN' ? 'ADMIN' : 'FACULTY';
+    const callerIsMasterAdmin =
+      (caller.email || '').trim().toLowerCase() === MASTER_ADMIN_EMAIL;
+
+    if (targetRoleUpper === 'ADMIN' && !callerIsMasterAdmin) {
+      return NextResponse.json(
+        { error: 'Only Master Admin can pre-authorize ADMIN accounts.' },
+        { status: 403 }
+      );
+    }
+
+    const cleanDept = String(department || 'CSE').toUpperCase().trim();
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: cleanEmail, mode: 'insensitive' } },
+    });
+
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            role: targetRoleUpper,
+            department: cleanDept,
+            branch: cleanDept,
+            approvalStatus: 'APPROVED',
+            onboardingCompleted: true,
+            ...(fullName?.trim() ? { fullName: fullName.trim() } : {}),
+            ...(designation?.trim() ? { designation: designation.trim() } : {}),
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            clerkId: `invited_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            email: cleanEmail,
+            fullName: fullName?.trim() || cleanEmail.split('@')[0],
+            role: targetRoleUpper,
+            department: cleanDept,
+            branch: cleanDept,
+            designation: designation?.trim() || (targetRoleUpper === 'ADMIN' ? 'Department Admin' : 'Faculty'),
+            approvalStatus: 'APPROVED',
+            degree: 'B.Tech',
+            onboardingCompleted: true,
+          },
+        });
+
+    await recordAuditLog({
+      actorId: caller.userId || 'admin',
+      actor: caller.email || caller.fullName || 'Super Admin',
+      actorEmail: caller.email || undefined,
+      actorRole: callerIsMasterAdmin ? 'MASTER_ADMIN' : 'ADMIN',
+      action: 'USER_PREAUTHORIZED',
+      target: cleanEmail,
+      targetType: 'USER',
+      targetLabel: user.fullName || cleanEmail,
+      details: `Pre-authorized ${cleanEmail} as ${targetRoleUpper} (${cleanDept})`,
+    });
+
+    return NextResponse.json({
+      success: true,
+      user,
+      message: `${cleanEmail} pre-authorized as ${targetRoleUpper} (${cleanDept}).`,
+    }, { status: 201 });
+  } catch (err: any) {
+    console.error('[Admin Users POST] Error:', err);
+    return NextResponse.json(
+      { error: err?.message || 'Failed to pre-authorize user' },
       { status: 500 }
     );
   }

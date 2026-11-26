@@ -55,11 +55,11 @@ export function StudentCockpitView({
   const branchInfo = getBranchDetails(branch);
   const mySubjects = getSemesterSubjects(branch, semester);
 
-  const attendancePct = stats.attendancePct || 81.4;
-  const attendedClasses = stats.attendedClasses || 48;
-  const totalClasses = stats.totalClasses || 59;
-  const cgpa = stats.cgpa || 8.84;
-  const targetSgpa = stats.targetSgpa || 9.10;
+  const attendancePct = stats.attendancePct ?? 0;
+  const attendedClasses = stats.attendedClasses ?? 0;
+  const totalClasses = stats.totalClasses ?? 0;
+  const cgpa = stats.cgpa ?? 0;
+  const targetSgpa = stats.targetSgpa ?? 0;
 
   const isSafeAttendance = attendancePct >= 75;
   const safeBunks = isSafeAttendance

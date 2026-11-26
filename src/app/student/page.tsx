@@ -25,11 +25,11 @@ export default async function StudentWorkspacePage() {
   const passoutYear = Number(user.passoutYear) || 2028;
 
   let stats: AcademicStats = {
-    cgpa: 8.84,
-    targetSgpa: 9.10,
-    attendancePct: 81.4,
-    attendedClasses: 48,
-    totalClasses: 59,
+    cgpa: 0,
+    targetSgpa: 0,
+    attendancePct: 0,
+    attendedClasses: 0,
+    totalClasses: 0,
   };
 
   let liveNotices: any[] = [];
@@ -45,6 +45,7 @@ export default async function StudentWorkspacePage() {
       const dbUser = await prisma.user.findUnique({
         where: { clerkId: user.userId },
         select: {
+          id: true,
           academicStats: true,
           approvalStatus: true,
           requestedRole: true,
@@ -54,6 +55,19 @@ export default async function StudentWorkspacePage() {
       });
       if (dbUser?.academicStats) {
         stats = { ...stats, ...(dbUser.academicStats as unknown as AcademicStats) };
+      }
+      if (dbUser?.id) {
+        const attendanceRows = await prisma.attendanceRecord.findMany({
+          where: { userId: dbUser.id },
+          select: { attended: true, total: true },
+        });
+        if (attendanceRows.length > 0) {
+          const attended = attendanceRows.reduce((sum, r) => sum + r.attended, 0);
+          const total = attendanceRows.reduce((sum, r) => sum + r.total, 0);
+          stats.attendedClasses = attended;
+          stats.totalClasses = total;
+          stats.attendancePct = total > 0 ? Number(((attended / total) * 100).toFixed(1)) : 0;
+        }
       }
       if (dbUser?.approvalStatus === 'PENDING') {
         pendingInfo = {

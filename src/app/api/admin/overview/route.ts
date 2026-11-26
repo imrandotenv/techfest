@@ -29,6 +29,7 @@ export async function GET() {
       totalNotices,
       recentAuditLogs,
       recentUsers,
+      branchGroups,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'STUDENT' } }),
       prisma.user.count({ where: { role: 'FACULTY' } }),
@@ -44,8 +45,13 @@ export async function GET() {
       }),
       prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: { id: true, fullName: true, email: true, role: true, branch: true, createdAt: true },
+        take: 10,
+        select: { id: true, fullName: true, email: true, role: true, branch: true, department: true, createdAt: true },
+      }),
+      prisma.user.groupBy({
+        by: ['branch'],
+        where: { role: 'STUDENT' },
+        _count: true,
       }),
     ]);
 
@@ -61,6 +67,10 @@ export async function GET() {
         totalForumPosts,
         totalNotices,
       },
+      branchBreakdown: branchGroups.map((g) => ({
+        branch: g.branch || 'UNASSIGNED',
+        count: g._count,
+      })),
       recentAuditLogs,
       recentUsers,
       health: {

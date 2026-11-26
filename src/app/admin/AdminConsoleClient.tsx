@@ -180,6 +180,13 @@ export function AdminConsoleClient({
     Record<string, Array<{ code: string; name: string; type: string; semester: number }>>
   >({});
   const [savingScope, setSavingScope] = useState(false);
+  const [branchBreakdown, setBranchBreakdown] = useState<Array<{ branch: string; count: number }>>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviteRole, setInviteRole] = useState<'FACULTY' | 'ADMIN'>('FACULTY');
+  const [inviteDept, setInviteDept] = useState('CSE');
+  const [inviting, setInviting] = useState(false);
 
   // Tab 3: Notices, Exam Countdown & Campus Events
   const [notices, setNotices] = useState<NoticeItem[]>([]);
@@ -212,6 +219,9 @@ export function AdminConsoleClient({
       const data = await res.json();
       if (data.success && data.kpis) {
         setKpis(data.kpis);
+        if (Array.isArray(data.branchBreakdown)) {
+          setBranchBreakdown(data.branchBreakdown);
+        }
       }
     } catch {}
   }, []);
@@ -296,6 +306,19 @@ export function AdminConsoleClient({
     loadUsers();
     loadAccessRequests();
   }, [loadOverview, loadUsers, loadAccessRequests]);
+
+  useEffect(() => {
+    const syncHash = () => {
+      const h = window.location.hash.replace('#', '').toLowerCase();
+      if (h === 'users') setActiveTab('users');
+      else if (h === 'syllabus') setActiveTab('syllabus');
+      else if (h === 'schedule' || h === 'notices') setActiveTab('schedule');
+      else if (h === 'audit' || h === 'governance') setActiveTab('governance');
+    };
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'schedule') loadScheduleAndEvents();
@@ -939,6 +962,14 @@ export function AdminConsoleClient({
                 <option value="FACULTY">Faculty</option>
                 <option value="ADMIN">Admin</option>
               </select>
+              <button
+                type="button"
+                onClick={() => setInviteOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Invite / Pre-Authorize</span>
+              </button>
               <button
                 type="button"
                 onClick={loadUsers}
@@ -1633,6 +1664,134 @@ export function AdminConsoleClient({
                   : 'Save Designated Scope'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite / Pre-Authorize Faculty or Admin Modal */}
+      {inviteOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E4E4E7] rounded-2xl max-w-md w-full shadow-xl overflow-hidden">
+            <div className="p-5 border-b border-[#E4E4E7] flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-[#09090B]">
+                  Invite / Pre-Authorize Staff
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  Pre-assign Faculty or Admin clearance by email before first Clerk sign-in.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInviteOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setInviting(true);
+                try {
+                  const res = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      email: inviteEmail.trim(),
+                      fullName: inviteName.trim() || undefined,
+                      role: inviteRole,
+                      department: inviteDept,
+                    }),
+                  });
+                  const d = await res.json();
+                  if (!res.ok) {
+                    showToast(d.error || 'Failed to pre-authorize email.', true);
+                    return;
+                  }
+                  showToast(d.message || 'Staff account pre-authorized.');
+                  setInviteEmail('');
+                  setInviteName('');
+                  setInviteOpen(false);
+                  loadUsers();
+                  loadOverview();
+                } catch {
+                  showToast('Network error pre-authorizing email.', true);
+                } finally {
+                  setInviting(false);
+                }
+              }}
+              className="p-5 space-y-3.5"
+            >
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="professor@gmail.com"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                  Full Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  placeholder="Dr. Ananya Chatterjee"
+                  className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">Role</label>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium"
+                  >
+                    <option value="FACULTY">FACULTY</option>
+                    {isMasterAdmin && <option value="ADMIN">ADMIN</option>}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono text-zinc-600 mb-1">
+                    Department
+                  </label>
+                  <select
+                    value={inviteDept}
+                    onChange={(e) => setInviteDept(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] text-xs font-medium"
+                  >
+                    {SYLLABUS_BRANCHES.map((b) => (
+                      <option key={b.code} value={b.code}>
+                        {b.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setInviteOpen(false)}
+                  className="px-3.5 py-2 rounded-xl border border-[#E4E4E7] bg-white text-xs font-semibold text-zinc-700 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer"
+                >
+                  {inviting ? 'Saving...' : 'Pre-Authorize'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
