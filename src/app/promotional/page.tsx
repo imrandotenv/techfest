@@ -708,6 +708,36 @@ export default function PromotionalShowcasePage() {
       </div>
 
       {/* =====================================================================
+          PERMANENT STATIC BOTTOM-LEFT FEEDBACK QR DOCK (NEVER ANIMATES)
+         ===================================================================== */}
+      <div className="fixed bottom-5 left-5 z-40 bg-white border border-zinc-200 rounded-2xl p-3 shadow-sm flex items-center gap-3">
+        <div className="relative p-1.5 bg-white shrink-0">
+          <span className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-[#09090B]" />
+          <span className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-[#09090B]" />
+          <span className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-[#09090B]" />
+          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-[#09090B]" />
+          <QRCodeSVG
+            value="https://docs.google.com/forms/d/e/1FAIpQLSeG1UpkAeMH0i0ypad_81F1tkT7Z44Zy5OCgBg5Xzkc_AN3yQ/viewform"
+            size={88}
+            level="M"
+            fgColor="#09090B"
+            bgColor="#FFFFFF"
+          />
+        </div>
+        <div className="pr-1 space-y-1">
+          <p className="text-[10px] font-mono font-semibold tracking-wider text-blue-600 uppercase">
+            VISITOR FEEDBACK
+          </p>
+          <p className="text-sm font-bold text-zinc-950 leading-tight">
+            Rate &amp; Review
+          </p>
+          <span className="inline-block text-[11px] font-mono text-zinc-600 bg-zinc-100 px-2 py-0.5 rounded">
+            Google Form
+          </span>
+        </div>
+      </div>
+
+      {/* =====================================================================
           PERMANENT STATIC BOTTOM-RIGHT QR DOCK (NEVER ANIMATES OR UNMOUNTS)
          ===================================================================== */}
       <div className="fixed bottom-5 right-5 z-40 bg-white border border-zinc-200 rounded-2xl p-3 shadow-sm flex items-center gap-3">
@@ -738,10 +768,10 @@ export default function PromotionalShowcasePage() {
       </div>
 
       {/* =====================================================================
-          AUTO-HIDING FLOATING STUDIO CONTROLS
+          AUTO-HIDING FLOATING STUDIO CONTROLS (CENTERED BETWEEN QR DOCKS)
          ===================================================================== */}
       <div
-        className={`fixed bottom-36 sm:bottom-5 left-5 z-40 w-[calc(100vw-2.5rem)] sm:w-[calc(100vw-280px)] max-w-2xl bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${
+        className={`fixed bottom-36 lg:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100vw-2.5rem)] lg:w-[calc(100vw-540px)] max-w-2xl bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
         }`}
       >
