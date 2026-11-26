@@ -249,7 +249,7 @@ export default function PromotionalShowcasePage() {
       {/* =====================================================================
           MAIN WIDESCREEN STAGE (6 CHOREOGRAPHED SCENES)
          ===================================================================== */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pb-28 sm:pb-24 flex items-center justify-center min-h-[560px]">
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pb-40 lg:pb-28 flex items-center justify-center min-h-[560px]">
         <AnimatePresence mode="wait">
           {/* SCENE 1 (0s–6s): Kinetic Hook & Brand Reveal */}
           {activeSceneIndex === 0 && (
@@ -771,7 +771,7 @@ export default function PromotionalShowcasePage() {
           AUTO-HIDING FLOATING STUDIO CONTROLS (CENTERED BETWEEN QR DOCKS)
          ===================================================================== */}
       <div
-        className={`fixed bottom-36 lg:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100vw-2.5rem)] lg:w-[calc(100vw-540px)] max-w-2xl bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${
+        className={`fixed bottom-40 lg:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100vw-2.5rem)] lg:w-[calc(100vw-540px)] max-w-2xl bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
         }`}
       >
