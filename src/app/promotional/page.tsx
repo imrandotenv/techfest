@@ -249,7 +249,7 @@ export default function PromotionalShowcasePage() {
       {/* =====================================================================
           MAIN WIDESCREEN STAGE (6 CHOREOGRAPHED SCENES)
          ===================================================================== */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 flex items-center justify-center min-h-[560px]">
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 sm:px-10 pb-28 sm:pb-24 flex items-center justify-center min-h-[560px]">
         <AnimatePresence mode="wait">
           {/* SCENE 1 (0s–6s): Kinetic Hook & Brand Reveal */}
           {activeSceneIndex === 0 && (
@@ -663,59 +663,85 @@ export default function PromotionalShowcasePage() {
             </motion.div>
           )}
 
-          {/* SCENE 6 (38s–45s): Commercial End-Card & Live Scannable QR */}
+          {/* SCENE 6 (38s–45s): Authoritative Brand Finale (QR lives in permanent corner dock) */}
           {activeSceneIndex === 5 && (
             <motion.div
               key="scene-6"
-              initial={{ opacity: 0, scale: 0.92 }}
+              initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.65, ease: EASE_OUT_EXPO }}
-              className="bg-white border border-[#E4E4E7] rounded-3xl p-8 sm:p-12 shadow-[0_24px_60px_rgba(9,9,11,0.08)] flex flex-col sm:flex-row items-center gap-8 sm:gap-12"
+              className="bg-white border border-[#E4E4E7] rounded-3xl p-8 sm:p-12 shadow-[0_24px_60px_rgba(9,9,11,0.08)] max-w-3xl w-full text-center space-y-6"
             >
-              <div className="space-y-4 text-center sm:text-left">
-                <SetTechLogo variant="full" size={30} textClassName="text-xl font-bold" />
-                <h2 className="text-3xl sm:text-4xl font-display font-extrabold tracking-tight text-[#09090B]">
-                  SETTech — Built for SETGOI Engineers
-                </h2>
-                <p className="text-sm text-zinc-600">
-                  Sanaka Educational Trust&apos;s Group of Institutions • Malandighi, Durgapur
-                </p>
-                <div className="pt-1">
-                  <span className="inline-block px-4 py-2 rounded-full bg-[#09090B] text-white font-mono text-sm font-semibold">
-                    https://settech.ceimran.in
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center shrink-0">
-                <div className="relative p-4 bg-white">
-                  <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#09090B]" />
-                  <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#09090B]" />
-                  <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#09090B]" />
-                  <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#09090B]" />
-                  <QRCodeSVG
-                    value="https://settech.ceimran.in"
-                    size={148}
-                    level="H"
-                    bgColor="#FFFFFF"
-                    fgColor="#09090B"
-                  />
-                </div>
-                <span className="font-mono text-[10px] font-bold tracking-widest text-[#2563EB] mt-2">
-                  SCAN TO TRY LIVE ON YOUR PHONE
+              <div className="inline-flex flex-wrap items-center justify-center gap-3 px-4 py-2 rounded-2xl bg-[#FAFAFA] border border-[#E4E4E7]">
+                <SetTechLogo variant="full" size={26} textClassName="text-lg font-bold" />
+                <span className="text-zinc-300 font-mono">×</span>
+                <span className="text-xs font-mono font-bold tracking-wider uppercase text-[#09090B]">
+                  SETGOI Durgapur
                 </span>
               </div>
+
+              <div className="space-y-3">
+                <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">
+                  Sanaka Educational Trust&apos;s Group of Institutions • Malandighi, Durgapur
+                </p>
+                <h2 className="text-3xl sm:text-5xl font-display font-extrabold tracking-tight text-[#09090B] leading-[1.08]">
+                  Your Entire B.Tech Semester, Organized in One Place.
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <span className="px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 font-mono text-[11px] font-bold text-[#2563EB]">
+                  {BRANCHES.join(' • ')}
+                </span>
+                <span className="px-4 py-1.5 rounded-full bg-[#09090B] text-white font-mono text-xs font-semibold">
+                  https://settech.ceimran.in
+                </span>
+              </div>
+
+              <p className="text-xs sm:text-sm font-medium text-zinc-600 pt-1">
+                Point your phone camera at the QR code in the corner to explore live.
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* =====================================================================
+          PERMANENT STATIC BOTTOM-RIGHT QR DOCK (NEVER ANIMATES OR UNMOUNTS)
+         ===================================================================== */}
+      <div className="fixed bottom-5 right-5 z-40 bg-white border border-zinc-200 rounded-2xl p-3 shadow-sm flex items-center gap-3">
+        <div className="relative p-1.5 bg-white shrink-0">
+          <span className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-[#09090B]" />
+          <span className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-[#09090B]" />
+          <span className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-[#09090B]" />
+          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-[#09090B]" />
+          <QRCodeSVG
+            value="https://settech.ceimran.in"
+            size={84}
+            level="H"
+            fgColor="#09090B"
+            bgColor="#FFFFFF"
+          />
+        </div>
+        <div className="pr-1 space-y-1">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#2563EB]">
+            LIVE PORTAL
+          </p>
+          <p className="font-display text-sm font-bold text-[#09090B] leading-tight">
+            Scan to Open
+          </p>
+          <span className="inline-block px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 font-mono text-[10.5px] font-semibold text-[#09090B]">
+            settech.ceimran.in
+          </span>
+        </div>
+      </div>
+
+      {/* =====================================================================
           AUTO-HIDING FLOATING STUDIO CONTROLS
          ===================================================================== */}
       <div
-        className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[92vw] max-w-3xl bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${
+        className={`fixed bottom-36 sm:bottom-5 left-5 z-40 w-[calc(100vw-2.5rem)] sm:w-[calc(100vw-280px)] max-w-2xl bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-4 py-2.5 shadow-lg transition-all duration-500 ${
           controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'
         }`}
       >
