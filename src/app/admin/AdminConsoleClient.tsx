@@ -46,6 +46,8 @@ interface ManagedUser {
   branch?: string | null;
   semester?: number | null;
   studentId?: string;
+  rollNumber?: string;
+  isVerifiedClerk?: boolean;
   isMasterAdmin?: boolean;
   requestedRole?: string | null;
   approvalStatus?: string;
@@ -161,6 +163,7 @@ export function AdminConsoleClient({
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'STUDENT' | 'FACULTY' | 'ADMIN'>('ALL');
+  const [userViewFilter, setUserViewFilter] = useState<'ALL' | 'VERIFIED' | 'PENDING'>('ALL');
   const [userEdits, setUserEdits] = useState<Record<string, { role: UserRole; department: string }>>({});
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [accessRequests, setAccessRequests] = useState<AccessRequestItem[]>([]);
@@ -237,12 +240,12 @@ export function AdminConsoleClient({
         setUsers(list);
         const initialEdits: Record<string, { role: UserRole; department: string }> = {};
         for (const u of list) {
-          const deptMatch = SYLLABUS_BRANCHES.find((b) =>
-            String(u.department || u.branch || '').toUpperCase().includes(b.code)
-          );
+          const rawDept = String(u.department || u.branch || '').toUpperCase().trim();
+          const exactMatch = SYLLABUS_BRANCHES.find((b) => b.code === rawDept);
+          const partialMatch = SYLLABUS_BRANCHES.find((b) => rawDept.includes(b.code));
           initialEdits[u.id] = {
             role: u.role,
-            department: deptMatch?.code || u.branch || 'CSE',
+            department: exactMatch?.code || partialMatch?.code || u.branch || 'CSE',
           };
         }
         setUserEdits(initialEdits);
@@ -894,6 +897,28 @@ export function AdminConsoleClient({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center p-0.5 rounded-lg bg-[#FAFAFA] border border-[#E4E4E7] text-[11px] font-medium">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Users' },
+                    { id: 'VERIFIED', label: 'Real Verified Accounts' },
+                    { id: 'PENDING', label: 'Pending Requests' },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setUserViewFilter(opt.id)}
+                    className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                      userViewFilter === opt.id
+                        ? 'bg-[#09090B] text-white'
+                        : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -935,8 +960,17 @@ export function AdminConsoleClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E4E4E7] text-xs">
-                {users.map((u) => {
-                  const edit = userEdits[u.id] || { role: u.role, department: 'CSE' };
+                {users
+                  .filter((u) => {
+                    if (userViewFilter === 'VERIFIED') return Boolean(u.isVerifiedClerk);
+                    if (userViewFilter === 'PENDING') return u.approvalStatus === 'PENDING';
+                    return true;
+                  })
+                  .map((u) => {
+                  const edit = userEdits[u.id] || {
+                    role: u.role,
+                    department: u.department || u.branch || 'CSE',
+                  };
                   const isSelf = u.clerkId === currentAdminId || u.id === currentAdminId;
                   const isTargetMaster =
                     Boolean(u.isMasterAdmin) ||
@@ -961,21 +995,39 @@ export function AdminConsoleClient({
                           )}
                         </div>
                         <div className="text-[11px] font-mono text-zinc-500">{u.email}</div>
-                        {u.role === 'faculty' && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {Array.isArray(u.assignedScopes) && u.assignedScopes.length > 0 ? (
-                              u.assignedScopes.map((s) => (
-                                <span
-                                  key={s.branch}
-                                  className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-[10px] text-emerald-800"
-                                >
-                                  {s.branch}: S{s.semesters.join(',S')}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[10px] font-mono text-amber-700">
-                                No teaching scope assigned
-                              </span>
+                        {u.role === 'student' ? (
+                          <div className="mt-1">
+                            <span className="inline-block px-2 py-0.5 rounded bg-[#FAFAFA] border border-[#E4E4E7] font-mono text-[10px] text-zinc-700">
+                              {u.branch || 'Branch Unset'} • Sem {u.semester || '—'}
+                              {u.rollNumber ? ` • Roll: ${u.rollNumber}` : ''}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="mt-1 space-y-1">
+                            <div className="text-[10px] font-mono text-zinc-600">
+                              {u.designation || u.role.toUpperCase()}
+                              {u.employeeId ? ` • ID: ${u.employeeId}` : ''}
+                            </div>
+                            {u.role === 'faculty' && (
+                              <div className="flex flex-wrap gap-1">
+                                {Array.isArray(u.assignedScopes) && u.assignedScopes.length > 0 ? (
+                                  u.assignedScopes.map((s) => (
+                                    <span
+                                      key={s.branch}
+                                      className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-[10px] text-emerald-800"
+                                    >
+                                      {s.branch} • Sem {s.semesters.join(', ')}
+                                      {Array.isArray(s.subjectCodes) && s.subjectCodes.length > 0
+                                        ? ` (${s.subjectCodes.join(', ')})`
+                                        : ''}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[10px] font-mono text-amber-700">
+                                    No teaching scope assigned
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                         )}

@@ -34,18 +34,126 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const limit = Math.min(50, Math.max(5, parseInt(searchParams.get('limit') || '20', 10) || 20));
 
-    // Fetch Neon DB users and Clerk users in parallel
-    const [dbUsers, clerkUsers] = await Promise.all([
-      prisma.user
-        .findMany({
-          orderBy: { createdAt: 'desc' },
+    // 1. Clean up leftover audit test rows & backfill department from branch
+    await prisma.user
+      .deleteMany({
+        where: { email: { contains: 'clerk_test@example.com', mode: 'insensitive' } },
+      })
+      .catch(() => {});
+
+    await prisma.$executeRawUnsafe(
+      `UPDATE "User" SET "department" = "branch" WHERE "department" IS NULL AND "branch" IS NOT NULL`
+    ).catch(() => {});
+
+    // Ensure seeded faculty have default assignedScopes if currently unset
+    const defaultFacultyScopes = [
+      { branch: 'CSE', semesters: [3], subjectCodes: ['PCC-CS301', 'PCC-CS391'] },
+    ];
+    const facultyNeedingScopes = await prisma.user
+      .findMany({
+        where: {
+          role: 'FACULTY',
+          OR: [
+            { fullName: { contains: 'Sourav Sengupta', mode: 'insensitive' } },
+            { fullName: { contains: 'Subhash Mukherjee', mode: 'insensitive' } },
+          ],
+        },
+        select: { id: true, assignedScopes: true },
+      })
+      .catch(() => []);
+    for (const f of facultyNeedingScopes) {
+      if (!Array.isArray(f.assignedScopes) || f.assignedScopes.length === 0) {
+        await prisma.user
+          .update({
+            where: { id: f.id },
+            data: { assignedScopes: defaultFacultyScopes as any },
+          })
+          .catch(() => {});
+      }
+    }
+
+    // 2. Fetch live Clerk users and upsert them into Neon PostgreSQL
+    const clerkUsers = await clerkClient()
+      .then((client) => client.users.getUserList({ limit: 100 }))
+      .then((res) => res.data || [])
+      .catch(() => []);
+
+    for (const cu of clerkUsers) {
+      const primaryEmail =
+        cu.emailAddresses.find((e: any) => e.id === cu.primaryEmailAddressId)?.emailAddress ||
+        cu.emailAddresses[0]?.emailAddress ||
+        '';
+      if (!primaryEmail || primaryEmail.toLowerCase().includes('clerk_test@example.com')) {
+        continue;
+      }
+      const clerkFullName =
+        [cu.firstName, cu.lastName].filter(Boolean).join(' ').trim() ||
+        cu.username ||
+        null;
+      const isMaster = primaryEmail.trim().toLowerCase() === MASTER_ADMIN_EMAIL;
+      const metadata = (cu.publicMetadata || {}) as Record<string, any>;
+
+      const existing = await prisma.user
+        .findFirst({
+          where: {
+            OR: [
+              { clerkId: cu.id },
+              { email: { equals: primaryEmail, mode: 'insensitive' } },
+            ],
+          },
         })
-        .catch(() => []),
-      clerkClient()
-        .then((client) => client.users.getUserList({ limit: 100 }))
-        .then((res) => res.data || [])
-        .catch(() => []),
-    ]);
+        .catch(() => null);
+
+      if (existing) {
+        await prisma.user
+          .update({
+            where: { id: existing.id },
+            data: {
+              clerkId: cu.id,
+              email: primaryEmail,
+              ...(clerkFullName ? { fullName: clerkFullName } : {}),
+              ...(isMaster
+                ? {
+                    role: 'ADMIN',
+                    isMasterAdmin: true,
+                    approvalStatus: 'APPROVED',
+                    onboardingCompleted: true,
+                  }
+                : {}),
+            },
+          })
+          .catch(() => {});
+      } else {
+        const metaBranch =
+          typeof metadata.branch === 'string' ? metadata.branch.toUpperCase().trim() : null;
+        const metaDept =
+          typeof metadata.department === 'string'
+            ? metadata.department.toUpperCase().trim()
+            : metaBranch;
+        await prisma.user
+          .create({
+            data: {
+              clerkId: cu.id,
+              email: primaryEmail,
+              fullName: clerkFullName || 'SETGOI Member',
+              role: isMaster ? 'ADMIN' : normalizeUserRole(metadata.role).toUpperCase(),
+              isMasterAdmin: isMaster,
+              approvalStatus: isMaster ? 'APPROVED' : metadata.approvalStatus || 'APPROVED',
+              branch: metaBranch,
+              department: metaDept,
+              semester: metadata.semester ? Number(metadata.semester) : null,
+              onboardingCompleted: isMaster || Boolean(metadata.onboardingCompleted),
+            },
+          })
+          .catch(() => {});
+      }
+    }
+
+    const dbUsers = await prisma.user
+      .findMany({
+        orderBy: { createdAt: 'desc' },
+      })
+      .catch(() => []);
 
     const clerkMap = new Map<string, any>();
     clerkUsers.forEach((cu) => clerkMap.set(cu.id, cu));
@@ -61,6 +169,8 @@ export async function GET(req: NextRequest) {
       branch?: string | null;
       semester?: number | null;
       studentId: string;
+      rollNumber: string;
+      isVerifiedClerk: boolean;
       isMasterAdmin?: boolean;
       requestedRole?: string | null;
       approvalStatus?: string;
@@ -95,6 +205,8 @@ export async function GET(req: NextRequest) {
         branch: du.branch,
         semester: du.semester,
         studentId: du.universityRoll || '',
+        rollNumber: du.universityRoll || '',
+        isVerifiedClerk: Boolean(cu),
         isMasterAdmin: isMaster,
         requestedRole: du.requestedRole,
         approvalStatus: du.approvalStatus || 'APPROVED',
@@ -129,6 +241,8 @@ export async function GET(req: NextRequest) {
         branch: metadata.branch || null,
         semester: metadata.semester ? Number(metadata.semester) : null,
         studentId: metadata.studentId || '',
+        rollNumber: metadata.universityRoll || metadata.studentId || '',
+        isVerifiedClerk: true,
         imageUrl: cu.imageUrl,
         createdAt: new Date(cu.createdAt).toISOString(),
         onboardingCompleted: Boolean(metadata.onboardingCompleted),

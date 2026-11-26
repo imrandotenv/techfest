@@ -119,7 +119,7 @@ export async function PATCH(
           where: { id: existingUser.id },
           data: {
             ...(targetRoleUpper ? { role: targetRoleUpper, approvalStatus: 'APPROVED', requestedRole: null } : {}),
-            ...(cleanDept ? { department: cleanDept, branch: existingUser.branch || cleanDept } : {}),
+            ...(cleanDept ? { department: cleanDept, branch: cleanDept } : {}),
             ...(sanitizedScopes !== undefined ? { assignedScopes: sanitizedScopes as any } : {}),
             ...(targetRoleLower
               ? {
