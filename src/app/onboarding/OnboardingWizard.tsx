@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import {
@@ -665,6 +666,20 @@ export function OnboardingWizard({
             </div>
           </div>
         </form>
+
+        <footer className="text-center text-[11px] text-zinc-500 flex flex-wrap items-center justify-center gap-3 pt-2">
+          <Link href="/privacy" className="hover:text-[#09090B] underline underline-offset-4">
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-[#09090B] underline underline-offset-4">
+            Terms of Use
+          </Link>
+          <span>•</span>
+          <Link href="/cookies" className="hover:text-[#09090B] underline underline-offset-4">
+            Cookie Policy
+          </Link>
+        </footer>
       </div>
     </div>
   );

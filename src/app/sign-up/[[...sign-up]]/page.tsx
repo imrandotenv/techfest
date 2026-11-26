@@ -76,8 +76,9 @@ export default function SignUpPage() {
         <div className="text-center pt-4">
           <p className="text-[11px] text-zinc-500">
             By registering, you agree to SETTech&apos;s{' '}
-            <Link href="/terms" className="underline hover:text-zinc-900">Terms of Service</Link> and{' '}
-            <Link href="/privacy" className="underline hover:text-zinc-900">Privacy Policy</Link>.
+            <Link href="/terms" className="underline hover:text-zinc-900">Terms of Use</Link>,{' '}
+            <Link href="/privacy" className="underline hover:text-zinc-900">Privacy Policy</Link>, and{' '}
+            <Link href="/cookies" className="underline hover:text-zinc-900">Cookie Policy</Link>.
           </p>
         </div>
       </div>
