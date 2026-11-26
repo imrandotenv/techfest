@@ -16,11 +16,14 @@ export const metadata = {
 
 const DEPARTMENTS = [
   { name: 'MAKAUT WB', href: '/notes?category=MAKAUT_PYQ' },
-  { name: 'Computer Science (CSE)', href: '/notes?branch=CSE' },
-  { name: 'Electronics & Comm (ECE)', href: '/notes?branch=ECE' },
-  { name: 'Electrical Engg (EE)', href: '/notes?branch=EE' },
-  { name: 'Mechanical Engg (ME)', href: '/notes?branch=ME' },
-  { name: 'Civil Engg (CE)', href: '/notes?branch=CE' },
+  { name: 'CSE', href: '/notes?branch=CSE' },
+  { name: 'CSE (AI & ML)', href: '/notes?branch=CSE-AIML' },
+  { name: 'CSE (Data Science)', href: '/notes?branch=CSE-DS' },
+  { name: 'ECE', href: '/notes?branch=ECE' },
+  { name: 'EE', href: '/notes?branch=EE' },
+  { name: 'EEE', href: '/notes?branch=EEE' },
+  { name: 'ME', href: '/notes?branch=ME' },
+  { name: 'CE', href: '/notes?branch=CE' },
 ];
 
 export default function HomePage() {
