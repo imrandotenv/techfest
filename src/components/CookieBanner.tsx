@@ -39,7 +39,11 @@ export function CookieBanner() {
 
   // Hide completely on auth routes
   if (!mounted) return null;
-  if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
+  if (
+    pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/sign-up') ||
+    pathname.startsWith('/promotional')
+  ) {
     return null;
   }
 

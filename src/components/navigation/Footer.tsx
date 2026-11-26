@@ -20,7 +20,8 @@ export function Footer() {
     pathname.startsWith('/student') ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/viva') ||
-    pathname.startsWith('/poster')
+    pathname.startsWith('/poster') ||
+    pathname.startsWith('/promotional')
   ) {
     return null;
   }
