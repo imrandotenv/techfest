@@ -33,6 +33,7 @@ type AdminTab = 'users' | 'syllabus' | 'schedule' | 'governance';
 interface FacultyScopeItem {
   branch: string;
   semesters: number[];
+  subjectCodes?: string[];
 }
 
 interface ManagedUser {
@@ -170,7 +171,11 @@ export function AdminConsoleClient({
     fullName: string;
     email: string;
     scopes: Record<string, number[]>;
+    subjectCodes: Record<string, string[]>;
   } | null>(null);
+  const [scopeModalSubjects, setScopeModalSubjects] = useState<
+    Record<string, Array<{ code: string; name: string; type: string; semester: number }>>
+  >({});
   const [savingScope, setSavingScope] = useState(false);
 
   // Tab 3: Notices, Exam Countdown & Campus Events
@@ -330,10 +335,15 @@ export function AdminConsoleClient({
     }
   ) => {
     const map: Record<string, number[]> = {};
+    const subjMap: Record<string, string[]> = {};
     if (Array.isArray(target.initialScopes)) {
       for (const item of target.initialScopes) {
         if (item?.branch && Array.isArray(item.semesters)) {
-          map[item.branch.toUpperCase()] = item.semesters.map(Number);
+          const b = item.branch.toUpperCase();
+          map[b] = item.semesters.map(Number);
+          if (Array.isArray(item.subjectCodes) && item.subjectCodes.length > 0) {
+            subjMap[b] = item.subjectCodes.map((c) => c.toUpperCase());
+          }
         }
       }
     }
@@ -343,6 +353,49 @@ export function AdminConsoleClient({
       fullName: target.fullName,
       email: target.email,
       scopes: map,
+      subjectCodes: subjMap,
+    });
+  };
+
+  useEffect(() => {
+    if (!scopeModal) return;
+    const entries = Object.entries(scopeModal.scopes).filter(([, sems]) => sems.length > 0);
+    for (const [branch, sems] of entries) {
+      for (const sem of sems) {
+        const key = `${branch}::${sem}`;
+        if (scopeModalSubjects[key]) continue;
+        fetch(`/api/syllabus?branch=${encodeURIComponent(branch)}&semester=${sem}`)
+          .then((r) => r.json())
+          .then((d) => {
+            if (d?.success && Array.isArray(d.subjects)) {
+              setScopeModalSubjects((prev) => ({
+                ...prev,
+                [key]: d.subjects.map((s: any) => ({
+                  code: s.code,
+                  name: s.name,
+                  type: s.type,
+                  semester: sem,
+                })),
+              }));
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [scopeModal, scopeModalSubjects]);
+
+  const toggleScopeModalSubject = (branchCode: string, subjectCode: string) => {
+    setScopeModal((prev) => {
+      if (!prev) return null;
+      const current = prev.subjectCodes[branchCode] || [];
+      const upper = subjectCode.toUpperCase();
+      const next = current.includes(upper)
+        ? current.filter((c) => c !== upper)
+        : [...current, upper];
+      return {
+        ...prev,
+        subjectCodes: { ...prev.subjectCodes, [branchCode]: next },
+      };
     });
   };
 
@@ -364,7 +417,14 @@ export function AdminConsoleClient({
     if (!scopeModal) return;
     const assignedScopes: FacultyScopeItem[] = Object.entries(scopeModal.scopes)
       .filter(([, sems]) => sems.length > 0)
-      .map(([branch, semesters]) => ({ branch, semesters }));
+      .map(([branch, semesters]) => {
+        const codes = scopeModal.subjectCodes[branch] || [];
+        return {
+          branch,
+          semesters,
+          ...(codes.length > 0 ? { subjectCodes: codes } : {}),
+        };
+      });
 
     if (assignedScopes.length === 0) {
       showToast('Select at least one Branch & Semester scope.', true);
@@ -1430,35 +1490,71 @@ export function AdminConsoleClient({
               </p>
               {SYLLABUS_BRANCHES.map((b) => {
                 const selectedSems = scopeModal.scopes[b.code] || [];
+                const selectedCodes = scopeModal.subjectCodes[b.code] || [];
+                const availableSubjects = selectedSems.flatMap(
+                  (sem) => scopeModalSubjects[`${b.code}::${sem}`] || []
+                );
                 return (
                   <div
                     key={b.code}
-                    className="p-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    className="p-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] space-y-2.5"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                      <span className="font-mono text-xs font-bold text-[#09090B]">{b.code}</span>
-                      <span className="text-[11px] text-zinc-500 truncate">{b.name}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Building2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                        <span className="font-mono text-xs font-bold text-[#09090B]">{b.code}</span>
+                        <span className="text-[11px] text-zinc-500 truncate">{b.name}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 shrink-0">
+                        {[3, 4, 5, 6, 7, 8].map((sem) => {
+                          const active = selectedSems.includes(sem);
+                          return (
+                            <button
+                              key={sem}
+                              type="button"
+                              onClick={() => toggleScopeModalSem(b.code, sem)}
+                              className={`px-2 py-1 rounded-lg border font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
+                                active
+                                  ? 'bg-emerald-600 text-white border-emerald-600'
+                                  : 'bg-white text-zinc-600 border-[#E4E4E7] hover:border-zinc-400'
+                              }`}
+                            >
+                              S{sem}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 shrink-0">
-                      {[3, 4, 5, 6, 7, 8].map((sem) => {
-                        const active = selectedSems.includes(sem);
-                        return (
-                          <button
-                            key={sem}
-                            type="button"
-                            onClick={() => toggleScopeModalSem(b.code, sem)}
-                            className={`px-2 py-1 rounded-lg border font-mono text-[11px] font-semibold transition-colors cursor-pointer ${
-                              active
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'bg-white text-zinc-600 border-[#E4E4E7] hover:border-zinc-400'
-                            }`}
-                          >
-                            S{sem}
-                          </button>
-                        );
-                      })}
-                    </div>
+
+                    {selectedSems.length > 0 && availableSubjects.length > 0 && (
+                      <div className="pt-2 border-t border-[#E4E4E7] space-y-1.5">
+                        <p className="text-[10px] font-mono text-zinc-500">
+                          Designated Subjects (optional — leave unchecked to allow all subjects in selected semesters):
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                          {availableSubjects.map((subj) => {
+                            const checked = selectedCodes.includes(subj.code.toUpperCase());
+                            return (
+                              <label
+                                key={`${subj.semester}-${subj.code}-${subj.name}`}
+                                className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white border border-[#E4E4E7] text-[11px] cursor-pointer hover:border-zinc-400"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleScopeModalSubject(b.code, subj.code)}
+                                  className="rounded border-zinc-300"
+                                />
+                                <span className="font-mono font-semibold text-zinc-800 shrink-0">
+                                  {subj.code}
+                                </span>
+                                <span className="text-zinc-600 truncate">{subj.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

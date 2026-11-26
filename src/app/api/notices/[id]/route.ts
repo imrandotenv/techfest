@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentAuthUser } from '@/lib/rbac';
+import { getCurrentAuthUser, syncAndGetCurrentUser } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { recordAuditLog } from '@/lib/audit';
 
@@ -7,8 +7,7 @@ export const runtime = 'nodejs';
 
 /**
  * PATCH /api/notices/[id]
- * Strictly FACULTY or ADMIN only.
- * Edits or pins/unpins an official notice.
+ * Strictly the notice's authorId or any ADMIN.
  */
 export async function PATCH(
   req: NextRequest,
@@ -29,6 +28,15 @@ export async function PATCH(
     const existing = await prisma.notice.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Notice not found.' }, { status: 404 });
+    }
+
+    const syncedUser = await syncAndGetCurrentUser();
+    const isOwner = syncedUser && existing.authorId === syncedUser.id;
+    if (caller.role !== 'admin' && !isOwner) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only the notice author or an Admin can edit this notice.' },
+        { status: 403 }
+      );
     }
 
     const updated = await prisma.notice.update({
@@ -86,6 +94,15 @@ export async function DELETE(
     const notice = await prisma.notice.findUnique({ where: { id } });
     if (!notice) {
       return NextResponse.json({ error: 'Notice not found.' }, { status: 404 });
+    }
+
+    const syncedUser = await syncAndGetCurrentUser();
+    const isOwner = syncedUser && notice.authorId === syncedUser.id;
+    if (caller.role !== 'admin' && !isOwner) {
+      return NextResponse.json(
+        { error: 'Forbidden: Only the notice author or an Admin can delete this notice.' },
+        { status: 403 }
+      );
     }
 
     await prisma.notice.delete({ where: { id } });

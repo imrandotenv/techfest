@@ -8,6 +8,7 @@ export type UserRole = 'admin' | 'faculty' | 'student';
 export interface FacultyScope {
   branch: string;
   semesters: number[];
+  subjectCodes?: string[];
 }
 
 export const MASTER_ADMIN_EMAIL = 'mdimransps955@gmail.com';
@@ -546,7 +547,8 @@ export async function syncAndGetCurrentUser() {
 }
 
 /**
- * Verifies whether a user has Faculty/Admin clearance for a specific SETGOI branch and semester.
+ * Verifies whether a user has Faculty/Admin clearance for a specific SETGOI branch, semester, and optional subjectCode.
+ * If scope.subjectCodes is omitted or empty, all subjects in that branch & semester are allowed.
  */
 export function canFacultyAccessScope(
   user: {
@@ -556,7 +558,8 @@ export function canFacultyAccessScope(
     assignedScopes?: unknown;
   } | null | undefined,
   branch: string,
-  semester: number
+  semester: number,
+  subjectCode?: string | null
 ): boolean {
   if (!user) return false;
   const roleUpper = (user.role || '').toUpperCase();
@@ -569,15 +572,22 @@ export function canFacultyAccessScope(
 
   const targetBranch = branch.trim().toUpperCase();
   const targetSemester = Number(semester);
+  const targetSubject = subjectCode ? subjectCode.trim().toUpperCase() : null;
 
   return user.assignedScopes.some((scope: any) => {
     if (!scope || typeof scope.branch !== 'string' || !Array.isArray(scope.semesters)) {
       return false;
     }
-    return (
-      scope.branch.trim().toUpperCase() === targetBranch &&
-      scope.semesters.map((s: any) => Number(s)).includes(targetSemester)
-    );
+    const branchMatch = scope.branch.trim().toUpperCase() === targetBranch;
+    const semesterMatch = scope.semesters.map((s: any) => Number(s)).includes(targetSemester);
+    if (!branchMatch || !semesterMatch) return false;
+
+    if (targetSubject && Array.isArray(scope.subjectCodes) && scope.subjectCodes.length > 0) {
+      return scope.subjectCodes
+        .map((c: any) => String(c).trim().toUpperCase())
+        .includes(targetSubject);
+    }
+    return true;
   });
 }
 

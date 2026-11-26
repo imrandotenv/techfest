@@ -120,6 +120,17 @@ export async function POST(req: NextRequest) {
                   .filter((n) => Number.isInteger(n) && n >= 1 && n <= 8)
               )
             ).sort((a, b) => a - b),
+            ...(Array.isArray(s.subjectCodes) && s.subjectCodes.length > 0
+              ? {
+                  subjectCodes: Array.from<string>(
+                    new Set(
+                      s.subjectCodes
+                        .map((c) => String(c).toUpperCase().trim())
+                        .filter(Boolean)
+                    )
+                  ),
+                }
+              : {}),
           }))
       : [];
 

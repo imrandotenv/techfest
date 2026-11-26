@@ -70,6 +70,17 @@ export async function PATCH(
                   .filter((n: number) => Number.isInteger(n) && n >= 1 && n <= 8)
               )
             ).sort((a, b) => a - b),
+            ...(Array.isArray(s.subjectCodes) && s.subjectCodes.length > 0
+              ? {
+                  subjectCodes: Array.from<string>(
+                    new Set(
+                      s.subjectCodes
+                        .map((c: any) => String(c).toUpperCase().trim())
+                        .filter(Boolean)
+                    )
+                  ),
+                }
+              : {}),
           }))
       : undefined;
 

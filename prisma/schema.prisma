@@ -231,21 +231,30 @@ model NoteItem {
 }
 
 model Notice {
-  id             String    @id @default(cuid())
-  title          String
-  content        String    @db.Text
-  category       String    @default("ACADEMIC") // "EXAM" | "EVENT" | "ACADEMIC" | "URGENT" | "LAB"
-  targetBranch   String    @default("ALL")      // "ALL" | "CSE" | "CSE-AIML" | "CSE-DS" | "ECE" | "EE" | "EEE" | "ME" | "CE"
-  targetSemester Int?
-  examDate       DateTime?
-  isPinned       Boolean   @default(false)
-  authorId     String
-  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                String    @id @default(cuid())
+  title             String
+  content           String    @db.Text
+  category          String    @default("ACADEMIC") // "EXAM" | "LAB_VIVA" | "ASSIGNMENT" | "ACADEMIC" | "URGENT"
+  subjectCode       String?
+  subjectName       String?
+  targetBranch      String    @default("ALL")      // legacy single-branch field kept for compatibility
+  targetSemester    Int?
+  targetBranches    String[]  @default(["ALL"])
+  targetSemesters   Int[]     @default([])
+  examDate          DateTime?
+  eventDate         DateTime?
+  isPinned          Boolean   @default(false)
+  authorId          String
+  authorName        String?
+  authorRole        String?   // "FACULTY" | "ADMIN"
+  authorDesignation String?
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([category])
   @@index([targetBranch])
+  @@index([subjectCode])
   @@index([isPinned])
   @@index([createdAt])
 }
