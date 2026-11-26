@@ -74,23 +74,22 @@ export function TechFestBoard() {
       .then((data) => {
         if (data?.success && Array.isArray(data.events) && data.events.length > 0) {
           const liveEvents: TechFestEvent[] = data.events.map((ev: any) => ({
-            id: ev.id,
-            title: ev.title,
+            id: String(ev.id),
+            title: String(ev.title || 'SETGOI Campus Event'),
             category:
-              ev.category === 'WORKSHOP'
+              ev.category === 'WORKSHOP' || ev.category === 'SEMINAR'
                 ? 'workshop'
-                : ev.category === 'SEMINAR'
-                ? 'seminar'
                 : ev.category === 'CULTURAL'
                 ? 'cultural'
-                : 'hackathon',
-            date: ev.dateLabel,
-            venue: ev.venue,
-            description: ev.description,
-            teamSize: ev.isFeatured ? 'Featured Campus Event' : 'Open to All Branches',
-            prizePool: ev.category,
-            organizer: 'SETGOI Admin Desk',
-            isLive: Boolean(ev.isFeatured),
+                : 'technical',
+            dateString: String(ev.dateLabel || ev.dateString || 'TBA'),
+            venue: String(ev.venue || 'SETGOI Campus, Durgapur'),
+            description: String(ev.description || ''),
+            coordinators:
+              Array.isArray(ev.coordinators) && ev.coordinators.length > 0
+                ? ev.coordinators
+                : ['SETGOI Student Council'],
+            registrationOpen: true,
           }));
           setEvents([...liveEvents, ...TECHFEST_EVENTS]);
         }
@@ -302,7 +301,7 @@ export function TechFestBoard() {
 
                   <span className="inline-flex items-center gap-1 text-[11px] font-mono text-zinc-500">
                     <Calendar className="w-3 h-3 text-zinc-400" />
-                    {ev.dateString}
+                    {ev.dateString || 'TBA'}
                   </span>
                 </div>
 
@@ -322,7 +321,12 @@ export function TechFestBoard() {
                   </div>
                   <div className="flex items-start gap-1.5">
                     <Users className="w-3.5 h-3.5 text-zinc-400 shrink-0 mt-0.5" />
-                    <span className="truncate">{ev.coordinators.join(', ')}</span>
+                    <span className="truncate">
+                      {(Array.isArray(ev.coordinators) && ev.coordinators.length > 0
+                        ? ev.coordinators
+                        : ['SETGOI Student Council']
+                      ).join(', ')}
+                    </span>
                   </div>
                 </div>
               </div>

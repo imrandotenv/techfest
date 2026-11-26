@@ -122,14 +122,16 @@ export function NoticeBoard() {
           </div>
         ) : (
           filteredNotices.map((notice) => {
-            const branches = notice.targetBranches?.length
-              ? notice.targetBranches
-              : [notice.targetBranch];
-            const sems = notice.targetSemesters?.length
-              ? notice.targetSemesters
-              : notice.targetSemester
-              ? [notice.targetSemester]
-              : [];
+            const branches =
+              Array.isArray(notice.targetBranches) && notice.targetBranches.length > 0
+                ? notice.targetBranches
+                : [notice.targetBranch || 'ALL'];
+            const sems =
+              Array.isArray(notice.targetSemesters) && notice.targetSemesters.length > 0
+                ? notice.targetSemesters
+                : notice.targetSemester
+                ? [notice.targetSemester]
+                : [];
             const dueDate = notice.eventDate || notice.examDate;
             const authorLabel =
               notice.authorName || notice.author?.fullName || 'SETGOI Faculty Desk';
