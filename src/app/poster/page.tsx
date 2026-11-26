@@ -11,20 +11,23 @@ import {
   ImagePlus,
   Lock,
   Sparkles,
-  BookOpen,
-  PlayCircle,
-  Calculator,
-  CheckCircle2,
-  Mic,
-  Compass,
 } from 'lucide-react';
 import { SetTechLogo } from '@/components/SetTechLogo';
+
+const BRANCHES = ['CSE', 'CSE-AIML', 'CSE-DS', 'ECE', 'EE', 'EEE', 'ME', 'CE'];
+
+const PROOF_METRICS = [
+  { value: '8 Branches', label: 'CSE, AIML, DS, ECE, EE, EEE, ME, CE' },
+  { value: 'Sem 3–8', label: 'Complete MAKAUT CBCS Syllabus' },
+  { value: '3 Workspaces', label: 'Student • Faculty • Admin RBAC' },
+  { value: 'Zero Install', label: 'Instant Web & Mobile Access' },
+];
 
 function SetgoiCrestSvg() {
   return (
     <svg
-      width="44"
-      height="44"
+      width="42"
+      height="42"
       viewBox="0 0 44 44"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -39,10 +42,7 @@ function SetgoiCrestSvg() {
         stroke="#2563EB"
         strokeWidth="1.4"
       />
-      <path
-        d="M22 10.5L29.5 14.2L22 17.8L14.5 14.2L22 10.5Z"
-        fill="#2563EB"
-      />
+      <path d="M22 10.5L29.5 14.2L22 17.8L14.5 14.2L22 10.5Z" fill="#2563EB" />
       <path
         d="M17.2 16.4V20.2C17.2 21.5 19.3 22.6 22 22.6C24.7 22.6 26.8 21.5 26.8 20.2V16.4"
         stroke="#FAFAFA"
@@ -62,6 +62,32 @@ function SetgoiCrestSvg() {
         SETGOI
       </text>
     </svg>
+  );
+}
+
+function FeatureCard({
+  num,
+  title,
+  desc,
+}: {
+  num: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="bg-white border border-[#E4E4E7] rounded-xl p-3 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="font-mono text-[10px] font-bold text-[#2563EB] bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded">
+            {num}
+          </span>
+        </div>
+        <h3 className="text-[12px] font-display font-bold text-[#09090B] leading-snug tracking-tight">
+          {title}
+        </h3>
+        <p className="text-[10.5px] font-sans text-[#52525B] leading-[1.42] mt-1">{desc}</p>
+      </div>
+    </div>
   );
 }
 
@@ -127,10 +153,8 @@ export default function PosterStudioPage() {
 
   return (
     <div className="min-h-screen bg-zinc-200/70 print:bg-[#FAFAFA] py-6 px-4 print:p-0 flex flex-col items-center gap-6 print:gap-0">
-      {/* =========================================================================
-          NON-PRINTABLE CONTROL TOOLBAR
-          ========================================================================= */}
-      <div className="print:hidden w-full max-w-[1080px] bg-white/90 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-3.5 py-2.5 shadow-sm flex flex-wrap items-center justify-between gap-2 sticky top-4 z-40">
+      {/* NON-PRINTABLE SINGLE-ROW CONTROL TOOLBAR */}
+      <div className="print:hidden w-full max-w-[1080px] bg-white/95 backdrop-blur-md border border-[#E4E4E7] rounded-2xl px-3.5 py-2.5 shadow-sm flex flex-wrap items-center justify-between gap-2 sticky top-4 z-40">
         <div className="flex items-center gap-2.5">
           <Link
             href="/"
@@ -148,7 +172,6 @@ export default function PosterStudioPage() {
             </div>
           </div>
 
-          {/* Format Switcher Segmented Toggle */}
           <div
             className="flex items-center gap-0.5 p-0.5 bg-zinc-100 border border-[#E4E4E7] rounded-xl text-[11px] font-mono ml-1"
             role="group"
@@ -219,7 +242,7 @@ export default function PosterStudioPage() {
             className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E4E4E7] hover:bg-zinc-50 text-xs font-sans font-medium text-zinc-700 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <ImagePlus className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Screenshot</span>
+            <span>Landing Screenshot</span>
           </button>
 
           <button
@@ -229,7 +252,7 @@ export default function PosterStudioPage() {
             className="px-3 py-1.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer disabled:opacity-60 whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{isExporting ? 'Exporting...' : 'Download PNG'}</span>
+            <span>{isExporting ? 'Exporting...' : 'Download High-Res PNG (300 DPI)'}</span>
           </button>
 
           <button
@@ -238,329 +261,398 @@ export default function PosterStudioPage() {
             className="px-3 py-1.5 rounded-xl bg-[#09090B] hover:bg-zinc-800 text-white text-xs font-sans font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print A4 PDF</span>
+            <span>Print / Save A4 PDF</span>
           </button>
         </div>
       </div>
 
+      {/* PRINT CSS */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          body {
+            background: #FAFAFA !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
+
       {/* =========================================================================
-          EXACT A4 PROPORTION POSTER CANVAS (794px × 1123px)
+          FORMAT A: A4 EXHIBITION POSTER SHEET (794px × 1123px)
           ========================================================================= */}
-      <div className="overflow-x-auto max-w-full pb-8 print:pb-0 print:overflow-visible">
+      {format === 'a4' && (
         <div
           ref={posterRef}
-          className={`${
-            format === 'social'
-              ? 'w-[1080px] h-[1080px] p-11'
-              : 'w-[794px] h-[1123px] p-10'
-          } print:w-[210mm] print:h-[297mm] bg-[#FAFAFA] text-[#09090B] border border-[#E4E4E7] print:border-0 shadow-2xl print:shadow-none relative overflow-hidden flex flex-col justify-between select-none`}
+          className="bg-[#FAFAFA] text-[#09090B] border border-[#E4E4E7] print:border-0 shadow-[0_24px_60px_rgba(9,9,11,0.10)] print:shadow-none flex flex-col justify-between overflow-hidden relative"
           style={{
-            backgroundImage: 'radial-gradient(rgba(148, 163, 184, 0.22) 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
+            width: '794px',
+            height: '1123px',
+            padding: '28px 30px 24px 30px',
           }}
         >
-          {/* -------------------------------------------------------------------
-              SECTION 1: TOP INSTITUTIONAL CO-BRANDING HEADER
-              ------------------------------------------------------------------- */}
-          <header className="flex items-center justify-between gap-4 pb-5 border-b border-[#E4E4E7]">
-            <div className="flex items-center gap-3.5 min-w-0">
-              {/* SETGOI College Logo with Automatic SVG Crest Fallback */}
-              <div className="w-12 h-12 rounded-xl bg-white border border-[#E4E4E7] shadow-2xs flex items-center justify-center overflow-hidden shrink-0 p-0.5">
-                {!logoError && logoSrc ? (
+          {/* BAND 1 — Institutional Co-Branding Header */}
+          <header className="flex items-center justify-between gap-4 pb-3 border-b border-[#E4E4E7]">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 rounded-xl bg-white border border-[#E4E4E7] flex items-center justify-center p-1 shrink-0">
+                {!logoError ? (
                   <img
                     src={logoSrc}
-                    alt="SETGOI Logo"
-                    className="w-full h-full object-contain rounded-lg"
+                    alt="SETGOI College Logo"
+                    className="w-full h-full object-contain"
                     onError={() => setLogoError(true)}
                   />
                 ) : (
                   <SetgoiCrestSvg />
                 )}
               </div>
-
               <div className="min-w-0">
-                <div className="text-[13px] font-display font-bold text-[#09090B] tracking-tight leading-snug">
+                <h2 className="text-[13.5px] font-display font-bold text-[#09090B] leading-tight tracking-tight">
                   Sanaka Educational Trust&apos;s Group of Institutions (SETGOI)
-                </div>
-                <div className="text-[10.5px] font-mono text-[#52525B] mt-0.5">
+                </h2>
+                <p className="text-[10px] font-mono text-[#52525B] mt-0.5">
                   Malandighi, Durgapur • Affiliated to MAKAUT • Approved by AICTE
-                </div>
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-1.5 shrink-0">
-              <SetTechLogo variant="full" size={22} textClassName="text-base font-bold" />
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563EB] font-mono text-[9.5px] font-bold tracking-wider uppercase">
-                OFFICIAL B.TECH PORTAL
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <SetTechLogo variant="full" size={20} textClassName="text-sm font-bold" />
+              <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 font-mono text-[9px] font-bold tracking-wider text-[#2563EB]">
+                OFFICIAL B.TECH ACADEMIC PORTAL
               </span>
             </div>
           </header>
 
-          {/* -------------------------------------------------------------------
-              SECTION 2: CRISP MINIMAL HERO HEADLINE
-              ------------------------------------------------------------------- */}
-          <section className="text-center space-y-2 pt-1">
-            <h1 className="text-[33px] font-display font-extrabold text-[#09090B] tracking-[-0.035em] leading-[1.1] max-w-[660px] mx-auto">
-              <span className="block">Your Entire B.Tech Semester,</span>
-              <span className="block text-[#2563EB]">Organized in One Place.</span>
-            </h1>
-            <p className="text-[13px] font-sans text-[#52525B] max-w-[600px] mx-auto leading-relaxed">
-              Verified MAKAUT notes, PYQs, SWAYAM lectures, AI Viva prep &amp; 75% attendance tracking.
-            </p>
+          {/* BAND 2 — Hero Title & 4-Column Institutional Proof Bar */}
+          <section className="space-y-3 pt-2.5">
+            <div className="text-center max-w-[680px] mx-auto space-y-1.5">
+              <h1 className="text-[28px] font-display font-extrabold tracking-[-0.03em] leading-[1.08] text-[#09090B]">
+                Your Entire B.Tech Semester, Organized in One Place.
+              </h1>
+              <p className="text-[12px] font-sans text-[#52525B] leading-[1.45]">
+                A unified MAKAUT CBCS academic cockpit for verified study resources, AI Viva voice
+                practice, attendance auditing, and faculty-verified campus updates.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {PROOF_METRICS.map((m) => (
+                <div
+                  key={m.value}
+                  className="bg-white border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-center"
+                >
+                  <div className="text-[13px] font-display font-extrabold text-[#09090B]">
+                    {m.value}
+                  </div>
+                  <div className="text-[9.5px] font-mono text-[#52525B] mt-0.5 leading-tight">
+                    {m.label}
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
-          {/* -------------------------------------------------------------------
-              SECTION 3: CENTERPIECE SETTECH LANDING PAGE SHOWCASE
-              ------------------------------------------------------------------- */}
-          <section className="my-0.5">
-            <div className="rounded-2xl border border-[#D4D4D8] bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden">
-              {/* macOS Browser Chrome */}
-              <div className="h-8 px-4 bg-zinc-50 border-b border-[#E4E4E7] flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
-                </div>
+          {/* BAND 3 — 3-Column Centerpiece Showcase */}
+          <section className="grid grid-cols-[1fr_1.45fr_1fr] gap-3 items-stretch my-2.5">
+            {/* Left Column (Cards 01 & 02) */}
+            <div className="flex flex-col gap-3">
+              <FeatureCard
+                num="01"
+                title="MAKAUT Notes, PYQs & Labs"
+                desc="Branch & semester-mapped module notes, solved 10-year PYQs, and step-by-step C/Python/Verilog lab manuals (PCC-CS301, ESC 301+)."
+              />
+              <FeatureCard
+                num="02"
+                title="AI Viva Voice Simulator"
+                desc="Interactive technical viva examiner with Indian Neural Voice (English & Hindi), instant concept scoring, and zero-repeat questions."
+              />
+            </div>
 
-                <div className="px-4 py-0.5 rounded-lg bg-white border border-[#E4E4E7] text-[10.5px] font-mono text-zinc-600 flex items-center gap-1.5 shadow-2xs">
+            {/* Center Column (Focal Landing Page Showcase) */}
+            <div className="flex flex-col justify-between bg-white border border-[#D4D4D8] rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(9,9,11,0.08)]">
+              {/* macOS Browser Top Bar */}
+              <div className="h-7 bg-[#F4F4F5] border-b border-[#E4E4E7] px-2.5 flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-zinc-300" />
+                  <span className="w-2 h-2 rounded-full bg-zinc-300" />
+                  <span className="w-2 h-2 rounded-full bg-zinc-300" />
+                </div>
+                <div className="flex items-center gap-1 bg-white border border-[#E4E4E7] rounded px-2 py-0.5 text-[9px] font-mono text-[#09090B]">
                   <Lock className="w-2.5 h-2.5 text-emerald-600" />
                   <span>https://settech.ceimran.in</span>
                 </div>
-
-                <div className="text-[10px] font-mono text-zinc-400">MAKAUT CBCS</div>
+                <span className="text-[8.5px] font-mono font-bold text-[#2563EB] bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                  MAKAUT CBCS
+                </span>
               </div>
 
-              {/* Landing Page Screenshot OR Faithful High-Craft Architectural Composition */}
-              <div
-                className={`w-full ${
-                  format === 'social' ? 'h-[365px]' : 'h-[410px] max-h-[455px]'
-                } bg-[#FAFAFA] overflow-hidden relative`}
-              >
+              {/* Clean Scrollbar-Free Preview Image */}
+              <div className="relative flex-1 bg-[#FAFAFA] overflow-hidden">
                 {!previewImgError ? (
                   <img
                     src={landingPreviewSrc}
-                    alt="SETTech Landing Page Preview"
+                    alt="SETTech Live Student Cockpit Preview"
                     className="w-full h-full object-cover object-top"
                     onError={() => setPreviewImgError(true)}
                   />
                 ) : (
-                  <div className="w-full h-full p-5 flex flex-col justify-between bg-[#FAFAFA]">
-                    {/* Miniature Floating Pill Navbar */}
-                    <div className="mx-auto w-[92%] h-10 bg-white/95 border border-[#E4E4E7] rounded-full px-4 flex items-center justify-between shadow-xs">
-                      <SetTechLogo variant="full" size={16} textClassName="text-xs font-bold" />
-                      <div className="flex items-center gap-4 text-[10px] font-sans text-zinc-600 font-medium">
-                        <span className="text-[#09090B] font-semibold">Home</span>
-                        <span>AI Viva</span>
-                        <span>Lectures</span>
-                        <span>Notes</span>
-                        <span>Forum</span>
-                        <span>Tools</span>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full bg-[#09090B] text-white text-[9.5px] font-semibold">
-                        Open Cockpit
-                      </span>
-                    </div>
-
-                    {/* Miniature Hero + Live Bento Workspace Preview */}
-                    <div className="grid grid-cols-12 gap-4 items-center px-3 my-auto">
-                      <div className="col-span-6 space-y-2.5">
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563EB] text-[9px] font-mono font-bold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
-                          MAKAUT B.TECH ACADEMIC SUITE
-                        </div>
-                        <div className="text-[22px] font-display font-extrabold text-[#09090B] leading-[1.1] tracking-tight">
-                          Engineering Cockpit for <span className="text-[#2563EB]">SETGOI</span> Scholars.
-                        </div>
-                        <p className="text-[10.5px] text-[#52525B] leading-relaxed">
-                          Access verified lecture notes, NPTEL courses, voice AI viva practice, and instant 10-point SGPA &amp; 75% attendance forecasting.
-                        </p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-[10px] font-semibold">
-                            Explore Notes Vault →
-                          </span>
-                          <span className="px-3 py-1.5 rounded-lg bg-white border border-[#E4E4E7] text-[#09090B] text-[10px] font-semibold">
-                            Launch AI Viva
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Right Mini Bento Cards */}
-                      <div className="col-span-6 grid grid-cols-2 gap-2.5">
-                        <div className="col-span-2 bg-white border border-[#E4E4E7] rounded-xl p-3 shadow-2xs space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] font-mono font-bold text-[#2563EB] bg-blue-50 px-1.5 py-0.5 rounded">
-                              PCC-CS301 • VERIFIED
-                            </span>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          </div>
-                          <div className="text-[11px] font-bold text-[#09090B]">
-                            Data Structures &amp; Algorithms Complete Notes
-                          </div>
-                          <div className="text-[9.5px] font-mono text-zinc-500">
-                            CSE Semester 3 • Faculty Stamped PDF
-                          </div>
-                        </div>
-
-                        <div className="bg-white border border-[#E4E4E7] rounded-xl p-3 shadow-2xs space-y-1">
-                          <div className="flex items-center justify-between text-[9.5px] font-mono text-zinc-500">
-                            <span>ATTENDANCE</span>
-                            <span className="text-emerald-700 font-bold">SAFE</span>
-                          </div>
-                          <div className="text-lg font-mono font-bold text-emerald-700 tabular-nums">
-                            82.4%
-                          </div>
-                          <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                            <div className="w-[82%] h-full bg-emerald-600 rounded-full" />
-                          </div>
-                        </div>
-
-                        <div className="bg-white border border-[#E4E4E7] rounded-xl p-3 shadow-2xs space-y-1">
-                          <div className="flex items-center justify-between text-[9.5px] font-mono text-zinc-500">
-                            <span>AI VIVA</span>
-                            <Mic className="w-3 h-3 text-purple-600" />
-                          </div>
-                          <div className="text-lg font-mono font-bold text-[#09090B] tabular-nums">
-                            8.5 / 10
-                          </div>
-                          <div className="text-[9px] font-mono text-purple-700">
-                            Groq Whisper Voice
-                          </div>
-                        </div>
-
-                        <div className="col-span-2 bg-white border border-[#E4E4E7] rounded-xl p-2.5 shadow-2xs flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Compass className="w-3.5 h-3.5 text-[#2563EB]" />
-                            <span className="text-[10px] font-semibold text-[#09090B]">
-                              SETGOI 3D Campus Guide &amp; HOD Directory
-                            </span>
-                          </div>
-                          <span className="text-[9px] font-mono text-zinc-400">24/7 SOS</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Subtle Bottom Bar */}
-                    <div className="flex items-center justify-between px-3 pt-2 border-t border-zinc-200/70 text-[9.5px] font-mono text-zinc-400">
-                      <span>CSE • ECE • EE • ME • CE</span>
-                      <span>SEMESTERS 1 TO 8 • MAKAUT AFFILIATED</span>
-                    </div>
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                    <Sparkles className="w-6 h-6 text-[#2563EB] mb-1" />
+                    <span className="text-xs font-bold text-[#09090B]">
+                      SETTech Academic Portal
+                    </span>
                   </div>
                 )}
               </div>
+
+              {/* Crisp Bottom Caption Bar */}
+              <div className="bg-[#09090B] text-white px-3 py-1.5 text-center font-mono text-[9.5px] font-semibold tracking-tight shrink-0">
+                Live Student Cockpit • Search Any Subject Code Instantly
+              </div>
+            </div>
+
+            {/* Right Column (Cards 03 & 04) */}
+            <div className="flex flex-col gap-3">
+              <FeatureCard
+                num="03"
+                title="75% Attendance & SGPA Suite"
+                desc="Real-time safe-bunk calculator synced to dashboard + 1-click MAKAUT 10-point CBCS SGPA/CGPA estimator."
+              />
+              <FeatureCard
+                num="04"
+                title="3D Campus & Faculty Forum"
+                desc="Interactive 3D SETGOI campus block explorer + peer Q&A forum with top-pinned Verified Faculty Answers."
+              />
             </div>
           </section>
 
-          {/* -------------------------------------------------------------------
-              SECTION 4: COMPACT 4-COLUMN MICRO-FEATURE STRIP
-              ------------------------------------------------------------------- */}
-          <section className="grid grid-cols-4 gap-3">
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-3.5 shadow-2xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-[#2563EB]">01</span>
-                <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
-              </div>
-              <div className="text-[12px] font-display font-bold text-[#09090B] leading-tight">
-                Verified Notes &amp; PYQs
-              </div>
-              <div className="text-[10px] font-sans text-[#52525B]">
-                MAKAUT Branch &amp; Sem Mapped
-              </div>
+          {/* BAND 4 — Secondary 2-Column Capabilities + All 8 Branches Strip */}
+          <section className="space-y-2.5">
+            <div className="grid grid-cols-2 gap-3">
+              <FeatureCard
+                num="05"
+                title="Curated SWAYAM & NPTEL Video Hub"
+                desc="Syllabus-aligned video playlists mapped directly to every MAKAUT theory paper for fast exam revision."
+              />
+              <FeatureCard
+                num="06"
+                title="Faculty-Verified Notices & Exam Alerts"
+                desc="Branch- and semester-targeted CA schedules, lab viva notices, and priority updates published directly by SETGOI faculty."
+              />
             </div>
 
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-3.5 shadow-2xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-[#2563EB]">02</span>
-                <PlayCircle className="w-3.5 h-3.5 text-zinc-400" />
-              </div>
-              <div className="text-[12px] font-display font-bold text-[#09090B] leading-tight">
-                SWAYAM &amp; NPTEL
-              </div>
-              <div className="text-[10px] font-sans text-[#52525B]">
-                Curated Video Lectures
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-3.5 shadow-2xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-[#2563EB]">03</span>
-                <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-              </div>
-              <div className="text-[12px] font-display font-bold text-[#09090B] leading-tight">
-                AI Viva Simulator
-              </div>
-              <div className="text-[10px] font-sans text-[#52525B]">
-                Lab &amp; Theory Exam Prep
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-3.5 shadow-2xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-[#2563EB]">04</span>
-                <Calculator className="w-3.5 h-3.5 text-zinc-400" />
-              </div>
-              <div className="text-[12px] font-display font-bold text-[#09090B] leading-tight">
-                SGPA, 75% &amp; 3D Map
-              </div>
-              <div className="text-[10px] font-sans text-[#52525B]">
-                Calculators &amp; Campus Guide
+            {/* Supported Branches Pill Bar */}
+            <div className="bg-white border border-[#E4E4E7] rounded-xl px-3.5 py-2 flex items-center justify-between gap-2">
+              <span className="font-mono text-[9.5px] font-bold uppercase tracking-wider text-[#52525B] shrink-0">
+                OFFERED B.TECH DISCIPLINES:
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {BRANCHES.map((b) => (
+                  <span
+                    key={b}
+                    className="px-2 py-0.5 rounded-md bg-[#FAFAFA] border border-[#E4E4E7] font-mono text-[10px] font-bold text-[#09090B]"
+                  >
+                    {b}
+                  </span>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* -------------------------------------------------------------------
-              SECTION 5: BOTTOM REAL QR SCAN DOCK
-              ------------------------------------------------------------------- */}
-          <footer className="space-y-3">
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl px-6 py-5 shadow-xs flex items-center justify-between gap-6">
-              <div className="space-y-2">
-                <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#2563EB]">
-                  FREE FOR ALL SETGOI B.TECH STUDENTS
-                </div>
-                <h2 className="text-[22px] font-display font-bold text-[#09090B] tracking-tight leading-tight">
-                  Scan to Access SETTech Instantly
-                </h2>
-                <p className="text-[12.5px] font-sans text-[#52525B]">
-                  Open Camera &rarr; Scan QR &rarr; Sign in with Google
+          {/* BAND 5 — Bottom Scannable QR Dock & Institutional Footer */}
+          <footer className="space-y-2 pt-2.5">
+            <div className="bg-white border border-zinc-200 rounded-xl px-5 py-3.5 flex items-center justify-between gap-5">
+              <div className="space-y-1.5">
+                <span className="font-mono text-[9.5px] font-bold uppercase tracking-widest text-[#2563EB] block">
+                  EXPERIENCE SETTECH LIVE ON YOUR PHONE
+                </span>
+                <h3 className="text-[19px] font-display font-extrabold text-[#09090B] leading-tight tracking-tight">
+                  Scan QR to Open the Portal
+                </h3>
+                <p className="text-[10.5px] font-mono text-[#52525B]">
+                  1. Open Phone Camera &nbsp;→&nbsp; 2. Scan QR Code &nbsp;→&nbsp; 3. Sign in with Google
                 </p>
                 <div className="pt-0.5">
-                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#09090B] text-white font-mono text-xs font-semibold tracking-wide">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    settech.ceimran.in
+                  <span className="inline-block px-3 py-1 rounded-full bg-[#09090B] text-white font-mono text-[11px] font-semibold">
+                    https://settech.ceimran.in
                   </span>
                 </div>
               </div>
 
-              {/* Sharp White QR Frame with Corner Viewfinder Marks */}
-              <div className="flex flex-col items-center gap-2.5 shrink-0">
-                <div className="relative p-3.5 bg-white border border-[#E4E4E7] rounded-xl shadow-2xs">
-                  {/* Corner Viewfinder Accents */}
-                  <span className="absolute -top-0.5 -left-0.5 w-3 h-3 border-t-2 border-l-2 border-[#09090B] rounded-tl" />
-                  <span className="absolute -top-0.5 -right-0.5 w-3 h-3 border-t-2 border-r-2 border-[#09090B] rounded-tr" />
-                  <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 border-b-2 border-l-2 border-[#09090B] rounded-bl" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 border-b-2 border-r-2 border-[#09090B] rounded-br" />
-
+              {/* QR Code with Viewfinder Corner Crop Marks */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="relative p-2.5 bg-white">
+                  <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#09090B]" />
+                  <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#09090B]" />
+                  <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[#09090B]" />
+                  <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#09090B]" />
                   <QRCodeSVG
                     value="https://settech.ceimran.in"
-                    size={112}
+                    size={104}
                     level="H"
                     bgColor="#FFFFFF"
                     fgColor="#09090B"
                   />
                 </div>
-                <span className="text-[9.5px] font-mono font-bold tracking-[0.2em] text-[#09090B]">
+                <span className="font-mono text-[9px] font-bold tracking-widest text-[#09090B] mt-1">
                   SCAN TO OPEN
                 </span>
               </div>
             </div>
 
-            {/* Sleek Bottom Micro-Footer Bar */}
-            <div className="flex items-center justify-between px-1 pt-1 text-[10px] font-mono text-[#52525B]">
+            <div className="flex items-center justify-between text-[9.5px] font-mono text-[#52525B] px-1">
               <span>Sanaka Educational Trust&apos;s Group of Institutions • Malandighi, Durgapur</span>
-              <span className="text-[#09090B] font-semibold">Built for SETGOI Engineers • Free Access</span>
+              <span>Engineered by Dept. of CSE • Free for All SETGOI Students</span>
             </div>
           </footer>
         </div>
-      </div>
+      )}
+
+      {/* =========================================================================
+          FORMAT B: WHATSAPP SHARE CARD (1080px × 1080px)
+          ========================================================================= */}
+      {format === 'social' && (
+        <div
+          ref={posterRef}
+          className="bg-[#FAFAFA] text-[#09090B] border border-[#E4E4E7] shadow-[0_24px_60px_rgba(9,9,11,0.10)] flex flex-col justify-between overflow-hidden"
+          style={{
+            width: '1080px',
+            height: '1080px',
+            padding: '44px 48px',
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-5 border-b border-[#E4E4E7]">
+            <div className="flex items-center gap-3.5">
+              <div className="w-14 h-14 rounded-2xl bg-white border border-[#E4E4E7] flex items-center justify-center p-1.5">
+                {!logoError ? (
+                  <img
+                    src={logoSrc}
+                    alt="SETGOI College Logo"
+                    className="w-full h-full object-contain"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <SetgoiCrestSvg />
+                )}
+              </div>
+              <div>
+                <div className="text-lg font-display font-bold text-[#09090B]">
+                  Sanaka Educational Trust&apos;s Group of Institutions (SETGOI)
+                </div>
+                <div className="text-xs font-mono text-[#52525B]">
+                  Malandighi, Durgapur • Affiliated to MAKAUT • Approved by AICTE
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <SetTechLogo variant="full" size={26} textClassName="text-lg font-bold" />
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 font-mono text-[10px] font-bold text-[#2563EB]">
+                OFFICIAL B.TECH ACADEMIC PORTAL
+              </span>
+            </div>
+          </div>
+
+          {/* Headline + 4-Metric Strip */}
+          <div className="space-y-4">
+            <h1 className="text-[42px] font-display font-extrabold tracking-tight leading-[1.08] text-[#09090B]">
+              Your Entire B.Tech Semester, Organized in One Place.
+            </h1>
+            <div className="grid grid-cols-4 gap-3">
+              {PROOF_METRICS.map((m) => (
+                <div
+                  key={m.value}
+                  className="bg-white border border-[#E4E4E7] rounded-2xl p-3.5 text-center"
+                >
+                  <div className="text-lg font-display font-extrabold text-[#09090B]">
+                    {m.value}
+                  </div>
+                  <div className="text-[11px] font-mono text-[#52525B] mt-0.5">{m.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature Highlights + Browser Preview */}
+          <div className="grid grid-cols-12 gap-5 items-stretch flex-1 my-5">
+            <div className="col-span-5 flex flex-col justify-between gap-3">
+              <FeatureCard
+                num="01"
+                title="MAKAUT Notes, PYQs & Labs"
+                desc="Module notes, solved 10-year PYQs, and C/Python/Verilog lab manuals."
+              />
+              <FeatureCard
+                num="02"
+                title="AI Viva Voice Simulator"
+                desc="Indian Neural Voice examiner (EN/HI) with zero-repeat questions."
+              />
+              <FeatureCard
+                num="03"
+                title="75% Attendance & SGPA Suite"
+                desc="Safe-bunk calculator + MAKAUT 10-point CBCS SGPA/CGPA estimator."
+              />
+            </div>
+
+            <div className="col-span-7 bg-white border border-[#D4D4D8] rounded-2xl overflow-hidden flex flex-col shadow-md">
+              <div className="h-8 bg-[#F4F4F5] border-b border-[#E4E4E7] px-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+                </div>
+                <span className="text-[11px] font-mono text-[#09090B]">
+                  https://settech.ceimran.in
+                </span>
+                <span className="text-[10px] font-mono font-bold text-[#2563EB]">MAKAUT</span>
+              </div>
+              <div className="flex-1 overflow-hidden bg-[#FAFAFA]">
+                {!previewImgError && (
+                  <img
+                    src={landingPreviewSrc}
+                    alt="SETTech Preview"
+                    className="w-full h-full object-cover object-top"
+                    onError={() => setPreviewImgError(true)}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom QR Dock */}
+          <div className="bg-white border border-zinc-200 rounded-2xl px-7 py-5 flex items-center justify-between gap-6">
+            <div className="space-y-2">
+              <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#2563EB] block">
+                EXPERIENCE SETTECH LIVE ON YOUR PHONE
+              </span>
+              <h3 className="text-2xl font-display font-extrabold text-[#09090B]">
+                Scan QR to Open the Portal
+              </h3>
+              <p className="text-xs font-mono text-[#52525B]">
+                1. Open Phone Camera → 2. Scan QR Code → 3. Sign in with Google
+              </p>
+              <span className="inline-block px-4 py-1.5 rounded-full bg-[#09090B] text-white font-mono text-sm font-semibold">
+                https://settech.ceimran.in
+              </span>
+            </div>
+            <div className="flex flex-col items-center shrink-0">
+              <QRCodeSVG
+                value="https://settech.ceimran.in"
+                size={120}
+                level="H"
+                bgColor="#FFFFFF"
+                fgColor="#09090B"
+              />
+              <span className="font-mono text-[10px] font-bold tracking-widest text-[#09090B] mt-1.5">
+                SCAN TO OPEN
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
