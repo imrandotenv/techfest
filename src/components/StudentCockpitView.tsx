@@ -33,7 +33,10 @@ export interface StudentCockpitProps {
     title: string;
     content: string;
     category: string;
+    subjectCode?: string | null;
+    subjectName?: string | null;
     targetBranch: string;
+    authorName?: string | null;
     isPinned: boolean;
     createdAt: string | Date;
     author?: { fullName?: string | null; role?: string | null } | null;
@@ -469,14 +472,19 @@ export function StudentCockpitView({
                   <div className="space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-200/70 text-zinc-800">
-                        {notice.category}
+                        {notice.category.replace('_', ' ')}
                       </span>
+                      {notice.subjectCode && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200">
+                          {notice.subjectCode}
+                        </span>
+                      )}
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono text-blue-700 bg-blue-50 border border-blue-200">
                         {notice.targetBranch === 'ALL' ? 'All B.Tech' : `B.Tech ${notice.targetBranch}`}
                       </span>
                       {notice.isPinned && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-200 text-amber-900">
-                          📌 Pinned
+                          Pinned
                         </span>
                       )}
                     </div>
@@ -485,7 +493,7 @@ export function StudentCockpitView({
                 </div>
                 <p className="text-xs text-zinc-600 line-clamp-2 leading-relaxed">{notice.content}</p>
                 <div className="text-[11px] font-mono text-zinc-400 pt-1 flex items-center justify-between border-t border-zinc-100">
-                  <span>By {notice.author?.fullName || 'Faculty Desk'}</span>
+                  <span>By {notice.authorName || notice.author?.fullName || 'Faculty Desk'}</span>
                   <span>
                     {new Date(notice.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                   </span>

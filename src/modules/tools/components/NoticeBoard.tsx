@@ -1,200 +1,182 @@
 'use client';
 
-import React, { useState } from 'react';
-import { 
-  Bell, 
-  Search, 
-  Clock, 
-  Building2, 
-  AlertCircle, 
-  CheckCircle2, 
-  Filter, 
-  Calendar,
-  ShieldCheck,
-  Tag
-} from 'lucide-react';
-import { CampusNotice } from '@/modules/rbac/actions';
+import React, { useState, useEffect } from 'react';
+import { Bell, Search, Clock, ShieldCheck, Calendar, BookOpen } from 'lucide-react';
 import { ExamCountdown } from '@/components/ExamCountdown';
 
-interface NoticeBoardProps {
-  initialNotices?: CampusNotice[];
+interface LiveNotice {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  subjectCode?: string | null;
+  subjectName?: string | null;
+  targetBranch: string;
+  targetSemester?: number | null;
+  targetBranches?: string[];
+  targetSemesters?: number[];
+  examDate?: string | null;
+  eventDate?: string | null;
+  isPinned: boolean;
+  authorName?: string | null;
+  authorRole?: string | null;
+  createdAt: string;
+  author?: { fullName?: string | null; role?: string | null } | null;
 }
 
-const DEFAULT_NOTICES: CampusNotice[] = [
-  {
-    id: 'notice-01',
-    title: 'MAKAUT Odd Semester 2026-27 Examination Form Fill-up',
-    content:
-      'All B.Tech students (Semesters 3, 5, 7) must complete MAKAUT odd semester examination forms and fee clearance by Nov 20, 2026. Admit cards will be distributed via respective department coordinators.',
-    department: 'All Departments',
-    category: 'Examination',
-    priority: 'urgent',
-    postedById: 'usr-admin-01',
-    postedByName: 'SETGOI Examination Cell',
-    postedByRole: 'admin',
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    id: 'notice-02',
-    title: 'Department of CSE: PCC-CS301 Mid-Term Syllabus & Lab Schedule',
-    content:
-      'Data Structures & Algorithms lab viva and component evaluation will commence on Monday in Lab 304. Verified lecture slides and lab manual have been uploaded to the Notes Vault.',
-    department: 'CSE',
-    category: 'Academic',
-    priority: 'high',
-    postedById: 'usr-faculty-01',
-    postedByName: 'Dr. Sourav Sengupta',
-    postedByRole: 'college',
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-  },
-  {
-    id: 'notice-03',
-    title: 'Campus Evening Transit Route Adjustment (Bus Route #3 & #5)',
-    content:
-      'Evening departure from SETGOI Main Gate to Durgapur Railway Station is adjusted to 4:45 PM to facilitate post-lab departures. Route passes through City Centre and Muchipara.',
-    department: 'Transport',
-    category: 'Transit',
-    priority: 'medium',
-    postedById: 'usr-admin-02',
-    postedByName: 'Campus Transport Desk',
-    postedByRole: 'admin',
-    createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-  },
-  {
-    id: 'notice-04',
-    title: 'Central Computing & IoT Engineering Labs Extended Access for TechFest 2026',
-    content:
-      'Night lab access approved for B.Tech project teams and hackathon participants in Central Computing Labs 304/305 with biometric logging.',
-    department: 'Laboratories',
-    category: 'Laboratories',
-    priority: 'medium',
-    postedById: 'usr-admin-01',
-    postedByName: 'Director of Engineering Labs',
-    postedByRole: 'admin',
-    createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
-  },
-];
-
-export function NoticeBoard({ initialNotices = DEFAULT_NOTICES }: NoticeBoardProps) {
-  const [notices] = useState<CampusNotice[]>(initialNotices);
+export function NoticeBoard() {
+  const [notices, setNotices] = useState<LiveNotice[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
-  const categories = ['ALL', 'Examination', 'Academic', 'Transit', 'Laboratories', 'Administration'];
+  useEffect(() => {
+    fetch('/api/notices')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.notices)) {
+          setNotices(data.notices);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const categories = ['ALL', 'EXAM', 'LAB_VIVA', 'ASSIGNMENT', 'ACADEMIC', 'URGENT'];
 
   const filteredNotices = notices.filter((n) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.department.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'ALL' || n.category === selectedCategory;
+      !q ||
+      n.title.toLowerCase().includes(q) ||
+      n.content.toLowerCase().includes(q) ||
+      (n.subjectCode || '').toLowerCase().includes(q) ||
+      (n.targetBranch || '').toLowerCase().includes(q);
+    const matchesCategory =
+      selectedCategory === 'ALL' || n.category.toUpperCase() === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   return (
     <div className="space-y-6">
-      {/* Live MAKAUT Semester Exam Countdown Strip */}
       <ExamCountdown variant="strip" />
 
-      {/* Header & Controls */}
       <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="p-1 rounded bg-sky-50 text-sky-700 border border-sky-200 font-mono text-[11px] font-bold">
               OFFICIAL DISPATCH
             </span>
-            <span className="text-xs text-zinc-500 font-mono">Real-time SETGOI Institutional Board</span>
+            <span className="text-xs text-zinc-500 font-mono">
+              Live SETGOI Departmental &amp; Subject Feed
+            </span>
           </div>
           <h2 className="text-xl font-bold text-zinc-900 tracking-tight">
             Campus Priority Notice Board
           </h2>
           <p className="text-xs text-zinc-500 mt-0.5">
-            Verified academic circulars, MAKAUT examination updates, laboratory circulars, and transit bulletins.
+            Targeted academic circulars, CA/Lab Viva schedules, and assignment deadlines from your faculty &amp; admin.
           </p>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter notices..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs font-mono border border-zinc-200 rounded-lg bg-zinc-50/50 focus:bg-white focus:outline-none focus:border-zinc-900"
-            />
-          </div>
+        <div className="relative w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter by title or subject..."
+            className="w-full pl-8 pr-3 py-1.5 text-xs font-mono border border-zinc-200 rounded-lg bg-zinc-50/50 focus:bg-white focus:outline-none focus:border-zinc-900"
+          />
         </div>
       </div>
 
-      {/* Category Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1 rounded-full text-xs font-mono transition-colors whitespace-nowrap ${
+            className={`px-3 py-1 rounded-full text-xs font-mono transition-colors whitespace-nowrap cursor-pointer ${
               selectedCategory === cat
                 ? 'bg-zinc-900 text-white font-medium shadow-xs'
                 : 'bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50'
             }`}
           >
-            {cat === 'ALL' ? 'All Notices' : cat}
+            {cat === 'ALL' ? 'All Notices' : cat.replace('_', ' ')}
           </button>
         ))}
       </div>
 
-      {/* Notice Cards List */}
       <div className="space-y-4">
-        {filteredNotices.length === 0 ? (
+        {loading ? (
+          <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center text-xs text-zinc-500">
+            Loading live notices...
+          </div>
+        ) : filteredNotices.length === 0 ? (
           <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center">
             <Bell className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
             <p className="text-sm font-semibold text-zinc-700">No notices found</p>
-            <p className="text-xs text-zinc-400 font-mono mt-0.5">Try adjusting your search or category filter.</p>
+            <p className="text-xs text-zinc-400 font-mono mt-0.5">
+              No active circulars match your branch, semester, or filter.
+            </p>
           </div>
         ) : (
           filteredNotices.map((notice) => {
-            const isUrgent = notice.priority === 'urgent';
-            const isHigh = notice.priority === 'high';
+            const branches = notice.targetBranches?.length
+              ? notice.targetBranches
+              : [notice.targetBranch];
+            const sems = notice.targetSemesters?.length
+              ? notice.targetSemesters
+              : notice.targetSemester
+              ? [notice.targetSemester]
+              : [];
+            const dueDate = notice.eventDate || notice.examDate;
+            const authorLabel =
+              notice.authorName || notice.author?.fullName || 'SETGOI Faculty Desk';
 
             return (
               <div
                 key={notice.id}
                 className={`bg-white rounded-xl p-5 border transition-all ${
-                  isUrgent
+                  notice.category === 'URGENT'
                     ? 'border-rose-300 bg-rose-50/20 shadow-xs'
-                    : isHigh
+                    : notice.isPinned
                     ? 'border-amber-300 bg-amber-50/10 shadow-xs'
                     : 'border-zinc-200 hover:border-zinc-300'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded border ${
-                        isUrgent
-                          ? 'bg-rose-100 text-rose-800 border-rose-300'
-                          : isHigh
-                          ? 'bg-amber-100 text-amber-800 border-amber-300'
-                          : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                      }`}
-                    >
-                      {notice.priority}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-200 font-semibold">
+                      {notice.category.replace('_', ' ')}
                     </span>
 
-                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
-                      {notice.category}
-                    </span>
+                    {notice.subjectCode && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+                        <BookOpen className="w-3 h-3" />
+                        {notice.subjectCode}
+                        {notice.subjectName ? ` • ${notice.subjectName}` : ''}
+                      </span>
+                    )}
 
-                    <span className="text-xs font-mono text-zinc-500">
-                      {notice.department}
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      {branches.includes('ALL')
+                        ? 'All B.Tech'
+                        : `${branches.join(', ')}${sems.length ? ` • Sem ${sems.join(', ')}` : ''}`}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-400 font-mono">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{new Date(notice.createdAt).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2 text-xs text-zinc-400 font-mono">
+                    {dueDate && (
+                      <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-semibold">
+                        <Calendar className="w-3 h-3" />
+                        Due: {new Date(dueDate).toLocaleDateString('en-IN')}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      {new Date(notice.createdAt).toLocaleDateString('en-IN')}
+                    </span>
                   </div>
                 </div>
 
@@ -202,14 +184,16 @@ export function NoticeBoard({ initialNotices = DEFAULT_NOTICES }: NoticeBoardPro
                   {notice.title}
                 </h3>
 
-                <p className="text-xs sm:text-sm text-zinc-600 mt-2 leading-relaxed">
+                <p className="text-xs sm:text-sm text-zinc-600 mt-2 leading-relaxed whitespace-pre-wrap">
                   {notice.content}
                 </p>
 
                 <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500 font-mono">
                   <div className="flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Published by: <strong className="text-zinc-800">{notice.postedByName}</strong></span>
+                    <span>
+                      Published by: <strong className="text-zinc-800">{authorLabel}</strong>
+                    </span>
                   </div>
 
                   <span className="text-[11px] text-emerald-600 font-medium">

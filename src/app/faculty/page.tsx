@@ -92,6 +92,7 @@ export default async function FacultyWorkspacePage() {
         userName={user.fullName || 'Faculty Member'}
         assignedScopes={assignedScopes}
         isAdminUnrestricted={isAdminUnrestricted}
+        currentDbUserId={syncedUser?.id || null}
       />
     </WorkspaceShell>
   );

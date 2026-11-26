@@ -65,16 +65,29 @@ export default async function StudentWorkspacePage() {
       }
     }
 
-    liveNotices = await prisma.notice.findMany({
-      where: {
-        OR: [{ targetBranch: 'ALL' }, { targetBranch: branch }],
-      },
+    const allNotices = await prisma.notice.findMany({
       orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-      take: 4,
+      take: 40,
       include: {
         author: { select: { fullName: true, role: true } },
       },
     });
+
+    liveNotices = allNotices
+      .filter((n) => {
+        const branches = (n.targetBranches?.length ? n.targetBranches : [n.targetBranch]).map(
+          (b) => b.toUpperCase()
+        );
+        const branchOk = branches.includes('ALL') || branches.includes(branch.toUpperCase());
+        if (!branchOk) return false;
+        const sems = n.targetSemesters?.length
+          ? n.targetSemesters
+          : n.targetSemester
+          ? [n.targetSemester]
+          : [];
+        return sems.length === 0 || sems.map(Number).includes(semester);
+      })
+      .slice(0, 6);
   } catch (dbErr) {
     console.warn('[student/page] Neon read note:', dbErr);
   }
