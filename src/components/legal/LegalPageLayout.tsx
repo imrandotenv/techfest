@@ -29,7 +29,7 @@ export function LegalPageLayout({
   children,
 }: LegalPageLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-[#09090B] py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FAFAFA] text-[#09090B] pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Top Header Bar */}
         <div className="space-y-4">

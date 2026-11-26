@@ -97,8 +97,8 @@ export default function PosterStudioPage() {
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
 
   const [format, setFormat] = useState<'a4' | 'social'>('a4');
-  const [logoSrc, setLogoSrc] = useState<string>('/setgoi-logo.png');
-  const [logoError, setLogoError] = useState<boolean>(false);
+  const [logoSrc, setLogoSrc] = useState<string>('');
+  const [logoError, setLogoError] = useState<boolean>(true);
 
   const [landingPreviewSrc, setLandingPreviewSrc] = useState<string>('/poster/landing-preview.png');
   const [previewImgError, setPreviewImgError] = useState<boolean>(false);
